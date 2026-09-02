@@ -1,0 +1,80 @@
+/* public/assets/css/evently.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Paleta de colores (coincide con la de Stitch y tus páginas) */
+:root {
+    --primary: #630ed4;
+    --primary-container: #7c3aed;
+    --on-primary: #ffffff;
+    --surface: #f9f9f9;
+    --surface-container: #eeeeee;
+    --surface-container-low: #f3f3f4;
+    --surface-container-lowest: #ffffff;
+    --on-surface: #1a1c1c;
+    --on-surface-variant: #4a4455;
+    --outline: #7b7487;
+    --outline-variant: #ccc3d8;
+    --error: #ba1a1a;
+    --error-container: #ffdad6;
+    --on-error-container: #93000a;
+}
+
+/* Clases auxiliares (las que usabas en admin) */
+.active-link {
+    background: #ede9fe;
+    color: #7c3aed;
+    border-left: 4px solid #7c3aed;
+}
+
+.hover-card {
+    transition: box-shadow 0.2s;
+}
+.hover-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Para las pestañas de reportes */
+.tab-btn {
+    padding: 8px 16px;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.tab-btn.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+    font-weight: 600;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+
+/* Para subtabs de transacciones */
+.subtab-btn {
+    padding: 4px 14px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.subtab-btn.active {
+    background: #7c3aed;
+    color: white;
+}
+.subtab-btn.inactive {
+    background: #ede9fe;
+    color: #4b5563;
+}
+.subtab-btn.inactive:hover {
+    background: #d8c9f9;
+}

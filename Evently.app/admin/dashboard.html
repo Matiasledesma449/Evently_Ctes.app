@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evently - Dashboard</title>
+    <!-- Tailwind desde CDN (no requiere ruta) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/evently.css">
+    <!-- Fuentes desde CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <!-- Estilos personalizados (ruta absoluta desde raíz) -->
+    <link rel="stylesheet" href="/shared/evently.css">
+    <!-- Favicon (opcional) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>">
+</head>
+<body>
+    <div class="flex min-h-screen">
+        <!-- Sidebar (escritorio) -->
+        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Administración</span>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a href="dashboard.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
+                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
+                </a>
+                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">event</span> Eventos
+                </a>
+                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">bar_chart</span> Reportes
+                </a>
+                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="login.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
+                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- KPIs -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Capacidad total</span>
+                        <span class="material-symbols-outlined text-violet-600">groups</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">1.000</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Entradas vendidas</span>
+                        <span class="material-symbols-outlined text-violet-600">confirmation_number</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">750 <span class="text-sm font-normal text-gray-400">/ 1.000</span></p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Aforo restante</span>
+                        <span class="material-symbols-outlined text-violet-600">event_seat</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">250</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Tasa de ocupación</span>
+                        <span class="material-symbols-outlined text-violet-600">pie_chart</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">75%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2"><div class="bg-violet-600 h-2 rounded-full" style="width:75%"></div></div>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Recaudación total</span>
+                        <span class="material-symbols-outlined text-violet-600">payments</span>
+                    </div>
+                    <p class="text-3xl font-bold text-violet-600 mt-2">$18.5M</p>
+                    <span class="text-xs text-gray-400">ventas confirmadas</span>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Total transacciones</span>
+                        <span class="material-symbols-outlined text-violet-600">receipt_long</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">360</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Prom. entradas/compra</span>
+                        <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">2,1</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Lote más vendido</span>
+                        <span class="material-symbols-outlined text-violet-600">sell</span>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800 mt-2">Lote 1 <span class="text-sm font-normal text-gray-400">300 entradas</span></p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Lote más rentable</span>
+                        <span class="material-symbols-outlined text-violet-600">trending_up</span>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800 mt-2">Lote 3 <span class="text-sm font-normal text-gray-400">$7.000.000</span></p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-violet-600">account_balance_wallet</span><span class="text-sm text-gray-500">Método más usado</span></div>
+                        <p class="text-2xl font-bold text-gray-800">Mixto</p>
+                    </div>
+                    <div class="flex items-center gap-4 mt-4 sm:mt-0">
+                        <div class="relative w-16 h-16">
+                            <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="4" />
+                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#7c3aed" stroke-width="4" stroke-dasharray="38 100" />
+                            </svg>
+                            <span class="absolute inset-0 flex items-center justify-center text-sm font-bold">38%</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-violet-600"></span> Mixto (38%)</div>
+                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-gray-300"></span> Otros (62%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom nav (móvil) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+        <a href="dashboard.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
+        <a href="eventos.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">event</span><span class="text-[10px]">Eventos</span></a>
+        <a href="reportes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+    </nav>
+</body>
+</html>

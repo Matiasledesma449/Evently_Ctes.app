@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Reportes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/evently.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f9f9f9;
+        }
+        .active-link {
+            background: #ede9fe;
+            color: #7c3aed;
+            border-left: 4px solid #7c3aed;
+        }
+        .tab-btn {
+            padding: 8px 16px;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #7c3aed;
+            border-bottom-color: #7c3aed;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .subtab-btn {
+            padding: 4px 14px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .subtab-btn.active {
+            background: #7c3aed;
+            color: white;
+        }
+        .subtab-btn.inactive {
+            background: #ede9fe;
+            color: #4b5563;
+        }
+        .subtab-btn.inactive:hover {
+            background: #d8c9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="flex min-h-screen">
+        <!-- Sidebar (escritorio) -->
+        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Administración</span>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
+                </a>
+                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">event</span> Eventos
+                </a>
+                <a href="reportes.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
+                    <span class="material-symbols-outlined">bar_chart</span> Reportes
+                </a>
+                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="login.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
+                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6">Reportes / Consultas</h1>
+
+            <!-- Filtros (sin Evento) -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap gap-4 items-end">
+                <div class="w-40">
+                    <label class="block text-xs font-medium text-gray-500 uppercase">Lote</label>
+                    <select class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" id="loteFilter">
+                        <option value="todos">Todos</option>
+                        <option value="1">Lote 1</option>
+                        <option value="2">Lote 2</option>
+                        <option value="3">Lote 3</option>
+                    </select>
+                </div>
+                <div class="w-48">
+                    <label class="block text-xs font-medium text-gray-500 uppercase">Método de pago</label>
+                    <select class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" id="metodoFilter">
+                        <option value="todos">Todos</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Débito">Débito</option>
+                        <option value="Crédito">Crédito</option>
+                        <option value="Mixto">Mixto</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 ml-auto">
+                    <button class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
+                    <button class="px-4 py-2 bg-violet-600 text-white rounded-full text-sm font-medium hover:bg-violet-700 transition" onclick="aplicarFiltros()">Aplicar Filtros</button>
+                </div>
+            </div>
+
+            <!-- Pestañas -->
+            <div class="flex flex-wrap gap-2 border-b border-gray-200 mb-4">
+                <button class="tab-btn active" onclick="switchTab(event, 'resumen')">Resumen general</button>
+                <button class="tab-btn" onclick="switchTab(event, 'desglose')">Desglose por Lote</button>
+                <button class="tab-btn" onclick="switchTab(event, 'transacciones')">Transacciones</button>
+                <button class="tab-btn" onclick="switchTab(event, 'metodos')">Métodos de pago</button>
+                <button class="tab-btn" onclick="switchTab(event, 'comportamiento')">Comportamiento de compra</button>
+                <button class="tab-btn" onclick="switchTab(event, 'indicadores')">Indicadores clave</button>
+            </div>
+
+            <!-- Contenido de pestañas (se llenan con JS) -->
+            <div id="resumen" class="tab-content active">
+                <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+            </div>
+
+            <div id="desglose" class="tab-content">
+                <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 text-left">Lote</th>
+                                <th class="p-3 text-left">Período</th>
+                                <th class="p-3 text-right">Precio</th>
+                                <th class="p-3 text-right">Disponibles</th>
+                                <th class="p-3 text-right">Vendidas</th>
+                                <th class="p-3 text-right">Pico de ventas</th>
+                                <th class="p-3 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaDesgloseBody"></tbody>
+                        <tfoot class="bg-gray-50 font-semibold border-t-2" id="tablaDesgloseFoot"></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div id="transacciones" class="tab-content">
+                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 text-gray-600">
+                                <tr>
+                                    <th class="p-3 text-left">Fecha</th>
+                                    <th class="p-3 text-left">Comprador</th>
+                                    <th class="p-3 text-right">Cantidad</th>
+                                    <th class="p-3 text-left">Método</th>
+                                    <th class="p-3 text-right">Monto</th>
+                                    <th class="p-3 text-left">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaTransaccionesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="metodos" class="tab-content">
+                <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 text-left">Método</th>
+                                <th class="p-3 text-right">Transacciones</th>
+                                <th class="p-3 text-right">Monto</th>
+                                <th class="p-3 text-right">%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaMetodosBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="comportamiento" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-xl border border-gray-200 p-4">
+                        <h3 class="font-semibold mb-3">Distribución por compra</h3>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr><th class="p-2 text-left">Entradas por compra</th><th class="p-2 text-right">Transacciones</th><th class="p-2 text-right">%</th></tr>
+                            </thead>
+                            <tbody id="tablaComportamientoBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-4">
+                        <h3 class="font-semibold mb-3">Evolución de ventas</h3>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr><th class="p-2 text-left">Fecha</th><th class="p-2 text-right">Transacciones</th><th class="p-2 text-right">Entradas</th><th class="p-2 text-right">Monto</th></tr>
+                            </thead>
+                            <tbody id="tablaEvolucionBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="indicadores" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="indicadoresGrid"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom nav (móvil) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+        <a href="dashboard.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
+        <a href="eventos.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">event</span><span class="text-[10px]">Eventos</span></a>
+        <a href="reportes.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+    </nav>
+
+    <script>
+        // ------------------------------------------------------------
+        // DATOS DE EJEMPLO (estructura completa por lote)
+        // ------------------------------------------------------------
+        const lotesData = [{
+            id: 1,
+            nombre: 'Lote 1',
+            periodo: '01/09 — 07/09',
+            precio: 15000,
+            disponibles: 300,
+            vendidas: 300,
+            pico: '05/09 — 8 entradas',
+            subtotal: 4500000,
+            transacciones: 120,
+            // Distribución de compras (para comportamiento)
+            distribucion: [
+                { rango: '1 entrada', transacciones: 40, porcentaje: 45 },
+                { rango: '2 entradas', transacciones: 30, porcentaje: 34 },
+                { rango: '4 entradas', transacciones: 14, porcentaje: 16 },
+                { rango: '8 o más', transacciones: 6, porcentaje: 5 }
+            ],
+            // Evolución diaria
+            evolucion: [
+                { fecha: '01/09', transacciones: 12, entradas: 80, monto: 1200000 },
+                { fecha: '03/09', transacciones: 18, entradas: 110, monto: 1650000 },
+                { fecha: '05/09', transacciones: 30, entradas: 110, monto: 1650000 }
+            ],
+            // Métodos de pago por lote
+            metodos: [
+                { nombre: 'Efectivo', transacciones: 8, monto: 480000, porcentaje: 18 },
+                { nombre: 'Transferencia', transacciones: 18, monto: 1080000, porcentaje: 30 },
+                { nombre: 'Débito', transacciones: 10, monto: 600000, porcentaje: 14 },
+                { nombre: 'Mixto', transacciones: 24, monto: 2340000, porcentaje: 38 }
+            ]
+        }, {
+            id: 2,
+            nombre: 'Lote 2',
+            periodo: '08/09 — 14/09',
+            precio: 25000,
+            disponibles: 300,
+            vendidas: 250,
+            pico: '10/09 — 4 entradas',
+            subtotal: 6250000,
+            transacciones: 112,
+            distribucion: [
+                { rango: '1 entrada', transacciones: 30, porcentaje: 38 },
+                { rango: '2 entradas', transacciones: 25, porcentaje: 32 },
+                { rango: '4 entradas', transacciones: 12, porcentaje: 15 },
+                { rango: '8 o más', transacciones: 5, porcentaje: 15 }
+            ],
+            evolucion: [
+                { fecha: '08/09', transacciones: 20, entradas: 60, monto: 1500000 },
+                { fecha: '10/09', transacciones: 40, entradas: 120, monto: 3000000 },
+                { fecha: '12/09', transacciones: 52, entradas: 130, monto: 3250000 }
+            ],
+            metodos: [
+                { nombre: 'Efectivo', transacciones: 12, monto: 720000, porcentaje: 16 },
+                { nombre: 'Transferencia', transacciones: 30, monto: 1800000, porcentaje: 28 },
+                { nombre: 'Débito', transacciones: 18, monto: 1080000, porcentaje: 15 },
+                { nombre: 'Crédito', transacciones: 8, monto: 480000, porcentaje: 10 },
+                { nombre: 'Mixto', transacciones: 44, monto: 2640000, porcentaje: 31 }
+            ]
+        }, {
+            id: 3,
+            nombre: 'Lote 3',
+            periodo: '15/09 — 21/09',
+            precio: 35000,
+            disponibles: 400,
+            vendidas: 200,
+            pico: '18/09 — 8 entradas',
+            subtotal: 7000000,
+            transacciones: 200,
+            distribucion: [
+                { rango: '1 entrada', transacciones: 50, porcentaje: 40 },
+                { rango: '2 entradas', transacciones: 40, porcentaje: 32 },
+                { rango: '4 entradas', transacciones: 20, porcentaje: 16 },
+                { rango: '8 o más', transacciones: 10, porcentaje: 12 }
+            ],
+            evolucion: [
+                { fecha: '15/09', transacciones: 25, entradas: 80, monto: 2800000 },
+                { fecha: '18/09', transacciones: 60, entradas: 180, monto: 6300000 },
+                { fecha: '20/09', transacciones: 115, entradas: 240, monto: 8400000 }
+            ],
+            metodos: [
+                { nombre: 'Efectivo', transacciones: 16, monto: 650000, porcentaje: 20 },
+                { nombre: 'Transferencia', transacciones: 42, monto: 1700000, porcentaje: 32 },
+                { nombre: 'Débito', transacciones: 26, monto: 1050000, porcentaje: 17 },
+                { nombre: 'Crédito', transacciones: 35, monto: 1400000, porcentaje: 14 },
+                { nombre: 'Mixto', transacciones: 81, monto: 3300000, porcentaje: 17 }
+            ]
+        }];
+
+        // Transacciones individuales (con referencia al lote)
+        const transaccionesData = [
+            { fecha: '01/09/2025', comprador: 'ana.lopez@gmail.com', cantidad: 2, metodo: 'Efectivo', monto: 30000, estado: 'Confirmada', lote: 1 },
+            { fecha: '03/09/2025', comprador: 'carlos.perez@hotmail.com', cantidad: 4, metodo: 'Mixto', monto: 60000, estado: 'Confirmada', lote: 1 },
+            { fecha: '05/09/2025', comprador: 'luisa.gomez@yahoo.com', cantidad: 1, metodo: 'Transferencia', monto: 15000, estado: 'Pendiente', lote: 1 },
+            { fecha: '07/09/2025', comprador: 'martin.suarez@outlook.com', cantidad: 8, metodo: 'Crédito', monto: 120000, estado: 'Confirmada', lote: 1 },
+            { fecha: '08/09/2025', comprador: 'sofia.ramirez@gmail.com', cantidad: 3, metodo: 'Débito', monto: 75000, estado: 'Confirmada', lote: 2 },
+            { fecha: '10/09/2025', comprador: 'juan.pablo@evently.com', cantidad: 2, metodo: 'Mixto', monto: 70000, estado: 'Anulada', lote: 2 },
+            { fecha: '12/09/2025', comprador: 'maria.fernandez@gmail.com', cantidad: 5, metodo: 'Transferencia', monto: 175000, estado: 'Confirmada', lote: 2 },
+            { fecha: '15/09/2025', comprador: 'pedro.garcia@yahoo.com', cantidad: 2, metodo: 'Efectivo', monto: 70000, estado: 'Confirmada', lote: 3 },
+            { fecha: '18/09/2025', comprador: 'laura.martinez@gmail.com', cantidad: 6, metodo: 'Mixto', monto: 210000, estado: 'Confirmada', lote: 3 },
+            { fecha: '20/09/2025', comprador: 'diego.rodriguez@hotmail.com', cantidad: 4, metodo: 'Crédito', monto: 140000, estado: 'Confirmada', lote: 3 },
+        ];
+
+        // ------------------------------------------------------------
+        // ESTADO DE FILTROS
+        // ------------------------------------------------------------
+        let state = {
+            lote: 'todos',
+            metodo: 'todos'
+        };
+
+        // ------------------------------------------------------------
+        // FUNCIONES AUXILIARES
+        // ------------------------------------------------------------
+        function getLotesFiltrados() {
+            if (state.lote === 'todos') return lotesData;
+            return lotesData.filter(l => l.id === parseInt(state.lote));
+        }
+
+        function getTransaccionesFiltradas() {
+            let lista = transaccionesData;
+            if (state.lote !== 'todos') {
+                lista = lista.filter(t => t.lote === parseInt(state.lote));
+            }
+            if (state.metodo !== 'todos') {
+                lista = lista.filter(t => t.metodo === state.metodo);
+            }
+            return lista;
+        }
+
+        function getMetodosFiltrados() {
+            // Si se selecciona un lote, devolvemos los métodos de ese lote; si no, sumamos globales
+            const lotes = getLotesFiltrados();
+            if (lotes.length === 0) return [];
+            if (lotes.length === 1) {
+                // Un solo lote: devolvemos sus métodos
+                return lotes[0].metodos.map(m => ({ ...m }));
+            } else {
+                // Varios lotes: sumamos transacciones y montos, recalculamos porcentajes
+                const mapa = {};
+                lotes.forEach(l => {
+                    l.metodos.forEach(m => {
+                        if (!mapa[m.nombre]) {
+                            mapa[m.nombre] = { nombre: m.nombre, transacciones: 0, monto: 0 };
+                        }
+                        mapa[m.nombre].transacciones += m.transacciones;
+                        mapa[m.nombre].monto += m.monto;
+                    });
+                });
+                const totalTrans = Object.values(mapa).reduce((sum, m) => sum + m.transacciones, 0);
+                const resultado = Object.values(mapa).map(m => ({
+                    ...m,
+                    porcentaje: totalTrans > 0 ? Math.round((m.transacciones / totalTrans) * 100) : 0
+                }));
+                return resultado;
+            }
+        }
+
+        function getDistribucionFiltrada() {
+            const lotes = getLotesFiltrados();
+            if (lotes.length === 0) return [];
+            // Sumar distribuciones de los lotes filtrados
+            const mapa = {};
+            lotes.forEach(l => {
+                l.distribucion.forEach(d => {
+                    if (!mapa[d.rango]) {
+                        mapa[d.rango] = { rango: d.rango, transacciones: 0 };
+                    }
+                    mapa[d.rango].transacciones += d.transacciones;
+                });
+            });
+            const total = Object.values(mapa).reduce((sum, d) => sum + d.transacciones, 0);
+            return Object.values(mapa).map(d => ({
+                ...d,
+                porcentaje: total > 0 ? Math.round((d.transacciones / total) * 100) : 0
+            }));
+        }
+
+        function getEvolucionFiltrada() {
+            const lotes = getLotesFiltrados();
+            if (lotes.length === 0) return [];
+            // Concatenar evoluciones
+            let evol = [];
+            lotes.forEach(l => {
+                l.evolucion.forEach(e => {
+                    evol.push({ ...e, lote: l.nombre });
+                });
+            });
+            // Ordenar por fecha (asumiendo formato DD/MM)
+            evol.sort((a, b) => {
+                const da = new Date('2025/' + a.fecha.replace('/', '/'));
+                const db = new Date('2025/' + b.fecha.replace('/', '/'));
+                return da - db;
+            });
+            return evol;
+        }
+
+        function getIndicadoresFiltrados() {
+            const lotes = getLotesFiltrados();
+            if (lotes.length === 0) return [];
+            let totalDisp = 0,
+                totalVend = 0,
+                totalSub = 0,
+                totalTrans = 0;
+            lotes.forEach(l => {
+                totalDisp += l.disponibles;
+                totalVend += l.vendidas;
+                totalSub += l.subtotal;
+                totalTrans += l.transacciones;
+            });
+            const aforoRestante = totalDisp - totalVend;
+            const pct = totalDisp > 0 ? Math.round((aforoRestante / totalDisp) * 100) : 0;
+            const loteAgotado = lotes.find(l => l.vendidas === l.disponibles);
+            const loteMasRentable = lotes.reduce((max, l) => l.subtotal > max.subtotal ? l : max, lotes[0]);
+            // Pico global (de evoluciones)
+            let pico = { fecha: '', lote: '', entradas: 0 };
+            lotes.forEach(l => {
+                l.evolucion.forEach(e => {
+                    if (e.entradas > pico.entradas) {
+                        pico = { fecha: e.fecha, lote: l.nombre, entradas: e.entradas };
+                    }
+                });
+            });
+            // Método más usado (global)
+            const metodos = getMetodosFiltrados();
+            const metodoMasUsado = metodos.reduce((max, m) => m.transacciones > max.transacciones ? m : max, metodos[0]);
+            const promedio = totalTrans > 0 ? (totalVend / totalTrans).toFixed(1) : 0;
+            const recaudacionPorEntrada = totalVend > 0 ? totalSub / totalVend : 0;
+
+            return [
+                { label: 'Entradas no vendidas', value: `${aforoRestante} — ${pct}% del aforo` },
+                { label: 'Lote agotado', value: loteAgotado ? `${loteAgotado.nombre} — vendido al 100%` : 'Ninguno' },
+                { label: 'Lote con mayor recaudación', value: `${loteMasRentable.nombre} — $${loteMasRentable.subtotal.toLocaleString()}` },
+                { label: 'Pico de ventas global', value: `${pico.fecha} — ${pico.lote} — ${pico.entradas} entradas` },
+                { label: 'Método de pago más usado', value: metodoMasUsado ? `${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%` : 'No disponible' },
+                { label: 'Promedio de entradas por compra', value: `${promedio} entradas por transacción` },
+                { label: 'Recaudación por entrada vendida', value: `$${recaudacionPorEntrada.toFixed(0)} por entrada` }
+            ];
+        }
+
+        // ------------------------------------------------------------
+        // FUNCIONES DE RENDERIZADO
+        // ------------------------------------------------------------
+        function renderResumen() {
+            const lotes = getLotesFiltrados();
+            let totalCap = 0,
+                totalVend = 0,
+                totalSub = 0;
+            lotes.forEach(l => {
+                totalCap += l.disponibles;
+                totalVend += l.vendidas;
+                totalSub += l.subtotal;
+            });
+            const restante = totalCap - totalVend;
+            const pct = totalCap > 0 ? Math.round((totalVend / totalCap) * 100) : 0;
+
+            const container = document.getElementById('kpiContainer');
+            container.innerHTML = `
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <span class="text-sm text-gray-500">Capacidad total</span>
+                    <p class="text-2xl font-bold">${totalCap.toLocaleString()}</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <span class="text-sm text-gray-500">Entradas vendidas</span>
+                    <p class="text-2xl font-bold">${totalVend.toLocaleString()} <span class="text-sm font-normal text-gray-400">/ ${totalCap.toLocaleString()}</span></p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <span class="text-sm text-gray-500">Aforo restante</span>
+                    <p class="text-2xl font-bold">${restante.toLocaleString()}</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <span class="text-sm text-gray-500">Recaudación total</span>
+                    <p class="text-2xl font-bold text-violet-600">$${(totalSub/1e6).toFixed(1)}M</p>
+                </div>
+            `;
+        }
+
+        function renderDesglose() {
+            const lotes = getLotesFiltrados();
+            const tbody = document.getElementById('tablaDesgloseBody');
+            const tfoot = document.getElementById('tablaDesgloseFoot');
+
+            if (lotes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-gray-500">No hay datos</td></tr>';
+                tfoot.innerHTML = '';
+                return;
+            }
+
+            let totalVend = 0,
+                totalSub = 0;
+            let html = '';
+            lotes.forEach(l => {
+                totalVend += l.vendidas;
+                totalSub += l.subtotal;
+                html += `
+                    <tr class="border-t">
+                        <td class="p-3 font-medium">${l.nombre}</td>
+                        <td class="p-3">${l.periodo}</td>
+                        <td class="p-3 text-right">$${l.precio.toLocaleString()}</td>
+                        <td class="p-3 text-right">${l.disponibles}</td>
+                        <td class="p-3 text-right text-green-600 font-semibold">${l.vendidas}</td>
+                        <td class="p-3 text-right">${l.pico}</td>
+                        <td class="p-3 text-right font-bold">$${l.subtotal.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+            tfoot.innerHTML = `
+                <tr>
+                    <td colspan="4" class="p-3 text-right font-semibold">Totales</td>
+                    <td class="p-3 text-right font-semibold">${totalVend}</td>
+                    <td></td>
+                    <td class="p-3 text-right text-violet-600 font-bold">$${totalSub.toLocaleString()}</td>
+                </tr>
+            `;
+        }
+
+        function renderTransacciones(subtabLote) {
+            // subtabLote puede ser 'todos', '1', '2', '3' -> si es 'todos' no filtra por lote en la subtab,
+            // pero el filtro global de lote ya aplica en getTransaccionesFiltradas.
+            // Para la subtab, aplicamos un filtro extra sobre los datos ya filtrados globalmente.
+            let data = getTransaccionesFiltradas();
+            if (subtabLote && subtabLote !== 'todos') {
+                data = data.filter(t => t.lote === parseInt(subtabLote));
+            }
+            const tbody = document.getElementById('tablaTransaccionesBody');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500">Sin transacciones</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(t => `
+                <tr class="border-t">
+                    <td class="p-3">${t.fecha}</td>
+                    <td class="p-3">${t.comprador}</td>
+                    <td class="p-3 text-right">${t.cantidad}</td>
+                    <td class="p-3">${t.metodo}</td>
+                    <td class="p-3 text-right font-semibold">$${t.monto.toLocaleString()}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${t.estado === 'Confirmada' ? 'bg-green-100 text-green-700' : t.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${t.estado}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderMetodos() {
+            const metodos = getMetodosFiltrados();
+            const tbody = document.getElementById('tablaMetodosBody');
+            if (metodos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">Sin datos</td></tr>';
+                return;
+            }
+            tbody.innerHTML = metodos.map(m => `
+                <tr class="border-t">
+                    <td class="p-3 font-medium">${m.nombre}</td>
+                    <td class="p-3 text-right">${m.transacciones}</td>
+                    <td class="p-3 text-right">$${m.monto.toLocaleString()}</td>
+                    <td class="p-3 text-right font-semibold">${m.porcentaje}%</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderComportamiento() {
+            // Distribución
+            const distribucion = getDistribucionFiltrada();
+            const tbodyDist = document.getElementById('tablaComportamientoBody');
+            if (distribucion.length === 0) {
+                tbodyDist.innerHTML = '<tr><td colspan="3" class="p-2 text-center text-gray-500">Sin datos</td></tr>';
+            } else {
+                tbodyDist.innerHTML = distribucion.map(d => `
+                    <tr class="border-t">
+                        <td class="p-2">${d.rango}</td>
+                        <td class="p-2 text-right">${d.transacciones}</td>
+                        <td class="p-2 text-right font-semibold">${d.porcentaje}%</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Evolución
+            const evolucion = getEvolucionFiltrada();
+            const tbodyEvo = document.getElementById('tablaEvolucionBody');
+            if (evolucion.length === 0) {
+                tbodyEvo.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-500">Sin datos</td></tr>';
+            } else {
+                tbodyEvo.innerHTML = evolucion.map(e => `
+                    <tr class="border-t">
+                        <td class="p-2">${e.fecha}</td>
+                        <td class="p-2 text-right">${e.transacciones}</td>
+                        <td class="p-2 text-right">${e.entradas}</td>
+                        <td class="p-2 text-right font-medium">$${e.monto.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function renderIndicadores() {
+            const indicadores = getIndicadoresFiltrados();
+            const grid = document.getElementById('indicadoresGrid');
+            if (indicadores.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-500">No hay datos</div>';
+                return;
+            }
+            grid.innerHTML = indicadores.map(ind => `
+                <div class="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition">
+                    <p class="text-sm text-gray-500">${ind.label}</p>
+                    <p class="text-lg font-bold text-gray-800 mt-1">${ind.value}</p>
+                </div>
+            `).join('');
+        }
+
+        // ------------------------------------------------------------
+        // ACTUALIZAR TODO
+        // ------------------------------------------------------------
+        function actualizarTodo(subtabLote = 'todos') {
+            renderResumen();
+            renderDesglose();
+            renderTransacciones(subtabLote);
+            renderMetodos();
+            renderComportamiento();
+            renderIndicadores();
+        }
+
+        // ------------------------------------------------------------
+        // MANEJADORES DE FILTROS
+        // ------------------------------------------------------------
+        function aplicarFiltros() {
+            state.lote = document.getElementById('loteFilter').value;
+            state.metodo = document.getElementById('metodoFilter').value;
+            // Resetear subtab de transacciones a "Todos"
+            const subtabs = document.querySelectorAll('#subTabs .subtab-btn');
+            subtabs.forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('inactive');
+            });
+            const first = document.querySelector('#subTabs .subtab-btn[data-subtab="todos"]');
+            if (first) {
+                first.classList.remove('inactive');
+                first.classList.add('active');
+            }
+            actualizarTodo('todos');
+        }
+
+        function filterTransacciones(lote, btn) {
+            // Actualizar UI de subtabs
+            document.querySelectorAll('#subTabs .subtab-btn').forEach(b => {
+                b.classList.remove('active');
+                b.classList.add('inactive');
+            });
+            btn.classList.remove('inactive');
+            btn.classList.add('active');
+            // Renderizar transacciones con el filtro de subtab
+            renderTransacciones(lote);
+        }
+
+        // ------------------------------------------------------------
+        // CAMBIO DE PESTAÑA
+        // ------------------------------------------------------------
+        function switchTab(e, tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // ------------------------------------------------------------
+        // INICIALIZAR
+        // ------------------------------------------------------------
+        window.onload = function() {
+            // Setear valores por defecto
+            document.getElementById('loteFilter').value = 'todos';
+            document.getElementById('metodoFilter').value = 'todos';
+            actualizarTodo('todos');
+        };
+    </script>
+</body>
+</html>

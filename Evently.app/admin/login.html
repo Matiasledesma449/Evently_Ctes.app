@@ -1,0 +1,55 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evently - Iniciar Sesión</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="assets/css/evently.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+    .bg-primary { background-color: #7c3aed; }
+    .hover\:bg-primary-dark:hover { background-color: #5b21b6; }
+    .text-primary { color: #7c3aed; }
+    .border-primary { border-color: #7c3aed; }
+    .focus\:ring-primary:focus { --tw-ring-color: #7c3aed; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-lg p-6">
+    <div class="flex justify-center mb-6">
+      <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNvG-ZlPyw_izRWpkU_V3X2zTXKR9uSy7MxiF3e0cVAAajKJq54VoxRJS_6kfQFJ3h3SgMyW9Dv2qITpwkhcQ7z0Gu4g69iXj7tkBrWazxw6O9n-Lhx2xx0SA4q8W5HJESoJlhw8e-cjN-XbC1RS-Ommh5tuwbJaLM4TaNC9IV5fAC_CjLveXjxeOjKCULK3A1dUnFopOevMKWLWCyXjbbzamVNWZdpvLSyJN-mQ2U5gEXn3nvXoR-33MSl3zD3vHi1w" alt="Evently" class="h-12">
+    </div>
+    <h1 class="text-2xl font-bold text-center text-gray-800">Bienvenido</h1>
+    <p class="text-center text-gray-500 text-sm mb-6">Ingresa a tu cuenta para gestionar eventos.</p>
+    <form onsubmit="event.preventDefault(); window.location.href='dashboard.html';" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Usuario</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+            <span class="material-symbols-outlined text-lg">mail</span>
+          </span>
+          <input type="email" required class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="ejemplo@correo.com">
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between items-center">
+          <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+          <a href="#" class="text-sm text-primary hover:underline">¿Olvidaste tu contraseña?</a>
+        </div>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+            <span class="material-symbols-outlined text-lg">lock</span>
+          </span>
+          <input type="password" required class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="••••••••">
+        </div>
+      </div>
+      <button type="submit" class="w-full bg-primary text-white font-semibold py-2 rounded-full hover:bg-primary-dark transition">Iniciar sesión</button>
+    </form>
+    <p class="text-center text-sm text-gray-500 mt-4">¿No tienes una cuenta? <a href="#" class="text-primary font-semibold hover:underline">Solicitar acceso</a></p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<script src="../assets/js/app.js"></script>
+<script>
+    // Verificar si el usuario está logueado (simulación)
+    const userLogged = sessionStorage.getItem('userLogged');
+    if (!userLogged) {
+        window.location.href = '../admin/login.html';
+    }
+</script>
