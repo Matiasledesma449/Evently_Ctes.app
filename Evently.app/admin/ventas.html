@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Ventas en Tiempo Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .venta-card { transition: box-shadow 0.2s; }
+        .venta-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .estado-confirmada { background: #dcfce7; color: #166534; }
+        .estado-pendiente { background: #fef9c3; color: #854d0e; }
+        .estado-anulada { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <!-- Verificar autenticación -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Administración</span>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
+                </a>
+                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">event</span> Eventos
+                </a>
+                <a href="ventas.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
+                    <span class="material-symbols-outlined">payments</span> Ventas
+                </a>
+                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">bar_chart</span> Reportes
+                </a>
+                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="login.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
+                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Ventas en Tiempo Real</h1>
+                <div class="flex items-center gap-3">
+                    <label class="text-sm text-gray-600">Evento:</label>
+                    <select id="selectorEvento" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        <option value="">Cargando eventos...</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Resumen de ventas -->
+            <div id="resumenVentas" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                    <p class="text-sm text-gray-500">Total recaudado</p>
+                    <p id="totalRecaudado" class="text-2xl font-bold text-violet-600">$0</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                    <p class="text-sm text-gray-500">Entradas vendidas</p>
+                    <p id="totalEntradas" class="text-2xl font-bold text-gray-800">0</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                    <p class="text-sm text-gray-500">Total transacciones</p>
+                    <p id="totalTransacciones" class="text-2xl font-bold text-gray-800">0</p>
+                </div>
+            </div>
+
+            <!-- Tabla de ventas -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3 text-left">Fecha</th>
+                                <th class="p-3 text-left">Comprador</th>
+                                <th class="p-3 text-left">Lote</th>
+                                <th class="p-3 text-right">Cantidad</th>
+                                <th class="p-3 text-right">Monto</th>
+                                <th class="p-3 text-left">Método</th>
+                                <th class="p-3 text-left">Estado</th>
+                                <th class="p-3 text-center">Código QR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaVentasBody" class="divide-y divide-gray-100">
+                            <tr>
+                                <td colspan="8" class="p-4 text-center text-gray-400">Selecciona un evento para ver las ventas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom nav -->
+    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+        <a href="dashboard.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
+        <a href="eventos.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">event</span><span class="text-[10px]">Eventos</span></a>
+        <a href="ventas.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
+        <a href="reportes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+    </nav>
+
+    <!-- Firebase -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        // Elementos
+        const selectorEvento = document.getElementById('selectorEvento');
+        const tablaBody = document.getElementById('tablaVentasBody');
+        const totalRecaudado = document.getElementById('totalRecaudado');
+        const totalEntradas = document.getElementById('totalEntradas');
+        const totalTransacciones = document.getElementById('totalTransacciones');
+
+        let eventos = [];
+        let ventasUnsubscribe = null;
+        let eventoSeleccionadoId = null;
+
+        // Cargar lista de eventos
+        async function cargarEventos() {
+            try {
+                const snapshot = await getDocs(collection(db, "eventos"));
+                eventos = [];
+                snapshot.forEach(doc => {
+                    eventos.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Llenar selector
+                selectorEvento.innerHTML = `
+                    <option value="">Selecciona un evento</option>
+                    ${eventos.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('')}
+                `;
+
+                // Seleccionar el primer evento por defecto
+                if (eventos.length > 0) {
+                    selectorEvento.value = eventos[0].id;
+                    eventoSeleccionadoId = eventos[0].id;
+                    escucharVentas(eventoSeleccionadoId);
+                } else {
+                    tablaBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay eventos creados</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error al cargar eventos:', error);
+            }
+        }
+
+        // Escuchar ventas en tiempo real
+        function escucharVentas(eventoId) {
+            // Cancelar la escucha anterior si existe
+            if (ventasUnsubscribe) {
+                ventasUnsubscribe();
+                ventasUnsubscribe = null;
+            }
+
+            if (!eventoId) {
+                tablaBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">Selecciona un evento para ver las ventas</td></tr>`;
+                actualizarResumen([]);
+                return;
+            }
+
+            // Crear consulta para las ventas del evento seleccionado
+            const q = query(
+                collection(db, "ventas"),
+                where("eventoId", "==", eventoId)
+            );
+
+            // Escuchar en tiempo real
+            ventasUnsubscribe = onSnapshot(q, (snapshot) => {
+                const ventas = [];
+                snapshot.forEach(doc => {
+                    ventas.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Ordenar por fecha (más reciente primero)
+                ventas.sort((a, b) => {
+                    if (a.fecha && b.fecha) {
+                        return b.fecha.seconds - a.fecha.seconds;
+                    }
+                    return 0;
+                });
+
+                renderizarVentas(ventas);
+                actualizarResumen(ventas);
+
+            }, (error) => {
+                console.error('Error al escuchar ventas:', error);
+                tablaBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-500">Error al cargar ventas</td></tr>`;
+            });
+        }
+
+        // Renderizar tabla de ventas
+        function renderizarVentas(ventas) {
+            if (ventas.length === 0) {
+                tablaBody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-400">No hay ventas para este evento</td></tr>`;
+                return;
+            }
+
+            tablaBody.innerHTML = ventas.map(v => {
+                const estadoClase = v.estado === 'confirmada' ? 'estado-confirmada' : 
+                                   v.estado === 'pendiente' ? 'estado-pendiente' : 'estado-anulada';
+                const fecha = v.fecha ? new Date(v.fecha.seconds * 1000).toLocaleString('es-AR') : 'N/A';
+                const qrCodigo = v.entradas && v.entradas.length > 0 ? v.entradas[0].codigo : 'N/A';
+
+                return `
+                    <tr class="venta-card">
+                        <td class="p-3 text-sm">${fecha}</td>
+                        <td class="p-3 text-sm">${v.correo || 'N/A'}</td>
+                        <td class="p-3 text-sm">${v.loteNombre || 'N/A'}</td>
+                        <td class="p-3 text-right text-sm">${v.cantidad || 0}</td>
+                        <td class="p-3 text-right text-sm font-semibold">$${v.monto_total ? v.monto_total.toLocaleString() : '0'}</td>
+                        <td class="p-3 text-sm">${v.metodo_pago || 'N/A'}</td>
+                        <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${estadoClase}">${v.estado || 'N/A'}</span></td>
+                        <td class="p-3 text-center">
+                            <span class="text-xs font-mono bg-gray-100 px-2 py-1 rounded">${qrCodigo}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Actualizar resumen
+        function actualizarResumen(ventas) {
+            let totalMonto = 0;
+            let totalEntradas = 0;
+
+            ventas.forEach(v => {
+                totalMonto += v.monto_total || 0;
+                totalEntradas += v.cantidad || 0;
+            });
+
+            document.getElementById('totalRecaudado').textContent = `$${totalMonto.toLocaleString()}`;
+            document.getElementById('totalEntradas').textContent = totalEntradas;
+            document.getElementById('totalTransacciones').textContent = ventas.length;
+        }
+
+        // Cambio de evento
+        selectorEvento.addEventListener('change', () => {
+            eventoSeleccionadoId = selectorEvento.value;
+            escucharVentas(eventoSeleccionadoId);
+        });
+
+        // Iniciar
+        cargarEventos();
+    </script>
+</body>
+</html>

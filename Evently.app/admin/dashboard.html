@@ -1,23 +1,36 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evently - Dashboard</title>
-    <!-- Tailwind desde CDN (no requiere ruta) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/evently.css">
-    <!-- Fuentes desde CDN -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-    <!-- Estilos personalizados (ruta absoluta desde raíz) -->
-    <link rel="stylesheet" href="/shared/evently.css">
-    <!-- Favicon (opcional) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .hover-card { transition: box-shadow 0.2s; }
+        .hover-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .kpi-value { font-size: 1.875rem; font-weight: 700; }
+    </style>
 </head>
 <body>
+
+    <!-- Verificar autenticación -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+
     <div class="flex min-h-screen">
-        <!-- Sidebar (escritorio) -->
+        <!-- Sidebar -->
         <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
             <div class="p-6">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
@@ -47,92 +60,11 @@
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Panel Principal</h1>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- KPIs -->
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Capacidad total</span>
-                        <span class="material-symbols-outlined text-violet-600">groups</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">1.000</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Entradas vendidas</span>
-                        <span class="material-symbols-outlined text-violet-600">confirmation_number</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">750 <span class="text-sm font-normal text-gray-400">/ 1.000</span></p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Aforo restante</span>
-                        <span class="material-symbols-outlined text-violet-600">event_seat</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">250</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Tasa de ocupación</span>
-                        <span class="material-symbols-outlined text-violet-600">pie_chart</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">75%</p>
-                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2"><div class="bg-violet-600 h-2 rounded-full" style="width:75%"></div></div>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Recaudación total</span>
-                        <span class="material-symbols-outlined text-violet-600">payments</span>
-                    </div>
-                    <p class="text-3xl font-bold text-violet-600 mt-2">$18.5M</p>
-                    <span class="text-xs text-gray-400">ventas confirmadas</span>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Total transacciones</span>
-                        <span class="material-symbols-outlined text-violet-600">receipt_long</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">360</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Prom. entradas/compra</span>
-                        <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">2,1</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Lote más vendido</span>
-                        <span class="material-symbols-outlined text-violet-600">sell</span>
-                    </div>
-                    <p class="text-xl font-bold text-gray-800 mt-2">Lote 1 <span class="text-sm font-normal text-gray-400">300 entradas</span></p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Lote más rentable</span>
-                        <span class="material-symbols-outlined text-violet-600">trending_up</span>
-                    </div>
-                    <p class="text-xl font-bold text-gray-800 mt-2">Lote 3 <span class="text-sm font-normal text-gray-400">$7.000.000</span></p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row items-center justify-between">
-                    <div>
-                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-violet-600">account_balance_wallet</span><span class="text-sm text-gray-500">Método más usado</span></div>
-                        <p class="text-2xl font-bold text-gray-800">Mixto</p>
-                    </div>
-                    <div class="flex items-center gap-4 mt-4 sm:mt-0">
-                        <div class="relative w-16 h-16">
-                            <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
-                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="4" />
-                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#7c3aed" stroke-width="4" stroke-dasharray="38 100" />
-                            </svg>
-                            <span class="absolute inset-0 flex items-center justify-center text-sm font-bold">38%</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-violet-600"></span> Mixto (38%)</div>
-                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-gray-300"></span> Otros (62%)</div>
-                        </div>
-                    </div>
-                </div>
+            
+            <!-- Contenedor de KPIs (se actualizarán con JavaScript) -->
+            <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Los KPIs se llenarán dinámicamente -->
+                <p class="col-span-full text-center text-gray-500">Cargando datos...</p>
             </div>
         </main>
     </div>
@@ -144,5 +76,236 @@
         <a href="reportes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
         <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
     </nav>
+
+    <!-- Firebase y lógica del dashboard -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onSnapshot, query, collection, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const kpiContainer = document.getElementById('kpiContainer');
+        let eventoId = null;
+
+        // 1. Escuchar eventos para obtener el primer evento (el que creaste)
+        function escucharEventos() {
+            const q = query(collection(db, "eventos"));
+            onSnapshot(q, (querySnapshot) => {
+                if (querySnapshot.empty) {
+                    kpiContainer.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <p class="text-gray-400">No hay eventos creados aún.</p>
+                            <p class="text-sm text-gray-300">Agrega eventos desde Firebase Console.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                // Tomar el primer evento (puedes cambiar la lógica si quieres)
+                const doc = querySnapshot.docs[0];
+                eventoId = doc.id;
+                const eventoData = doc.data();
+                console.log("📌 Evento cargado:", eventoData.nombre);
+                // 2. Escuchar ventas de este evento
+                escucharVentas(eventoId);
+                // 3. Actualizar KPIs con el evento
+                actualizarKPIs(eventoData, []);
+            }, (error) => {
+                console.error("Error al escuchar eventos:", error);
+            });
+        }
+
+        // 2. Escuchar ventas del evento específico
+        let unsubscribeVentas = null;
+        function escucharVentas(idEvento) {
+            if (unsubscribeVentas) {
+                unsubscribeVentas(); // cancelar escucha anterior
+            }
+            const q = query(collection(db, "ventas"), where("eventoId", "==", idEvento));
+            unsubscribeVentas = onSnapshot(q, (querySnapshot) => {
+                const ventas = [];
+                querySnapshot.forEach((doc) => {
+                    ventas.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("📊 Ventas actualizadas:", ventas.length);
+                // Volver a obtener el evento para tener los lotes actualizados
+                obtenerEventoYActualizar(idEvento, ventas);
+            }, (error) => {
+                console.error("Error al escuchar ventas:", error);
+            });
+        }
+
+        // 3. Obtener evento actualizado y actualizar KPIs
+        async function obtenerEventoYActualizar(idEvento, ventas) {
+            try {
+                const docRef = doc(db, "eventos", idEvento);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const eventoData = docSnap.data();
+                    actualizarKPIs(eventoData, ventas);
+                }
+            } catch (error) {
+                console.error("Error al obtener evento:", error);
+            }
+        }
+
+        // 4. Función principal que actualiza los KPIs
+        function actualizarKPIs(evento, ventas) {
+            // Calcular métricas del evento
+            const lotes = evento.lotes || [];
+            const capacidadTotal = lotes.reduce((sum, l) => sum + (l.disponibles || 0), 0);
+            const vendidasPorLote = lotes.reduce((sum, l) => sum + (l.vendidas || 0), 0);
+            // También podemos sumar cantidad de todas las ventas (más preciso)
+            const entradasVendidas = ventas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+            // Usar el máximo entre vendidasPorLote y entradasVendidas (por si hay discrepancias)
+            const totalVendidas = Math.max(vendidasPorLote, entradasVendidas);
+            const aforoRestante = capacidadTotal - totalVendidas;
+            const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalVendidas / capacidadTotal) * 100) : 0;
+            const totalRecaudado = ventas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            const totalTransacciones = ventas.length;
+            const promedioEntradas = totalTransacciones > 0 ? (totalVendidas / totalTransacciones).toFixed(1) : 0;
+
+            // Lote más vendido (según vendidas del lote)
+            let loteMasVendido = { nombre: '-', vendidas: 0 };
+            lotes.forEach(l => {
+                if ((l.vendidas || 0) > loteMasVendido.vendidas) {
+                    loteMasVendido = { nombre: l.nombre, vendidas: l.vendidas };
+                }
+            });
+
+            // Lote más rentable (precio * vendidas)
+            let loteMasRentable = { nombre: '-', subtotal: 0 };
+            lotes.forEach(l => {
+                const subtotal = (l.precio || 0) * (l.vendidas || 0);
+                if (subtotal > loteMasRentable.subtotal) {
+                    loteMasRentable = { nombre: l.nombre, subtotal };
+                }
+            });
+
+            // Método más usado (de las ventas)
+            const metodoCount = {};
+            ventas.forEach(v => {
+                const metodo = v.metodo_pago || 'Desconocido';
+                metodoCount[metodo] = (metodoCount[metodo] || 0) + 1;
+            });
+            let metodoMasUsado = { nombre: '-', porcentaje: 0 };
+            let maxCount = 0;
+            for (const [metodo, count] of Object.entries(metodoCount)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    metodoMasUsado = { nombre: metodo, porcentaje: Math.round((count / totalTransacciones) * 100) };
+                }
+            }
+
+            // Renderizar KPIs
+            kpiContainer.innerHTML = `
+                <!-- Capacidad total -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Capacidad total</span>
+                        <span class="material-symbols-outlined text-violet-600">groups</span>
+                    </div>
+                    <p class="kpi-value text-gray-800 mt-2">${capacidadTotal.toLocaleString()}</p>
+                </div>
+
+                <!-- Entradas vendidas -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Entradas vendidas</span>
+                        <span class="material-symbols-outlined text-violet-600">confirmation_number</span>
+                    </div>
+                    <p class="kpi-value text-gray-800 mt-2">${totalVendidas.toLocaleString()} <span class="text-sm font-normal text-gray-400">/ ${capacidadTotal.toLocaleString()}</span></p>
+                </div>
+
+                <!-- Aforo restante -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Aforo restante</span>
+                        <span class="material-symbols-outlined text-violet-600">event_seat</span>
+                    </div>
+                    <p class="kpi-value text-gray-800 mt-2">${aforoRestante.toLocaleString()}</p>
+                </div>
+
+                <!-- Tasa de ocupación -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Tasa de ocupación</span>
+                        <span class="material-symbols-outlined text-violet-600">pie_chart</span>
+                    </div>
+                    <p class="kpi-value text-gray-800 mt-2">${tasaOcupacion}%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div class="bg-violet-600 h-2 rounded-full" style="width: ${tasaOcupacion}%"></div>
+                    </div>
+                </div>
+
+                <!-- Recaudación total -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Recaudación total</span>
+                        <span class="material-symbols-outlined text-violet-600">payments</span>
+                    </div>
+                    <p class="text-3xl font-bold text-violet-600 mt-2">$${totalRecaudado.toLocaleString()}</p>
+                    <span class="text-xs text-gray-400">ventas confirmadas</span>
+                </div>
+
+                <!-- Total transacciones -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Total transacciones</span>
+                        <span class="material-symbols-outlined text-violet-600">receipt_long</span>
+                    </div>
+                    <p class="kpi-value text-gray-800 mt-2">${totalTransacciones}</p>
+                </div>
+
+                <!-- Promedio entradas/compra -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Prom. entradas/compra</span>
+                        <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
+                    </div>
+                    <p class="kpi-value text-gray-800 mt-2">${promedioEntradas}</p>
+                </div>
+
+                <!-- Lote más vendido -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Lote más vendido</span>
+                        <span class="material-symbols-outlined text-violet-600">sell</span>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800 mt-2">${loteMasVendido.nombre} <span class="text-sm font-normal text-gray-400">${loteMasVendido.vendidas} entradas</span></p>
+                </div>
+
+                <!-- Lote más rentable -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Lote más rentable</span>
+                        <span class="material-symbols-outlined text-violet-600">trending_up</span>
+                    </div>
+                    <p class="text-xl font-bold text-gray-800 mt-2">${loteMasRentable.nombre} <span class="text-sm font-normal text-gray-400">$${loteMasRentable.subtotal.toLocaleString()}</span></p>
+                </div>
+
+                <!-- Método más usado -->
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-violet-600">account_balance_wallet</span><span class="text-sm text-gray-500">Método más usado</span></div>
+                        <p class="text-2xl font-bold text-gray-800">${metodoMasUsado.nombre}</p>
+                    </div>
+                    <div class="flex items-center gap-4 mt-4 sm:mt-0">
+                        <div class="relative w-16 h-16">
+                            <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
+                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="4" />
+                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#7c3aed" stroke-width="4" stroke-dasharray="${metodoMasUsado.porcentaje} 100" />
+                            </svg>
+                            <span class="absolute inset-0 flex items-center justify-center text-sm font-bold">${metodoMasUsado.porcentaje}%</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-violet-600"></span> ${metodoMasUsado.nombre} (${metodoMasUsado.porcentaje}%)</div>
+                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-gray-300"></span> Otros (${100 - metodoMasUsado.porcentaje}%)</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Iniciar
+        escucharEventos();
+    </script>
 </body>
 </html>

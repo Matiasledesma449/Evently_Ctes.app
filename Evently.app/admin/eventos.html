@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evently - Eventos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/evently.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
     <style>
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
         .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
@@ -16,8 +16,20 @@
     </style>
 </head>
 <body>
+
+    <!-- Verificar autenticación -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+
     <div class="flex min-h-screen">
-        <!-- Sidebar (escritorio) -->
+        <!-- Sidebar -->
         <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
             <div class="p-6">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
@@ -50,50 +62,13 @@
                 <h1 class="text-2xl font-bold text-gray-800">Eventos</h1>
                 <div class="relative w-full sm:w-64">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-                    <input type="text" placeholder="Buscar evento..." class="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                    <input id="searchInput" type="text" placeholder="Buscar evento..." class="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                 </div>
             </div>
-            <div class="space-y-4">
-                <!-- Evento 1 -->
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-xl bg-violet-100 flex items-center justify-center"><span class="material-symbols-outlined text-violet-600 text-3xl">festival</span></div>
-                        <div>
-                            <h3 class="font-semibold text-gray-800">Bali Group Summer Fest 2024</h3>
-                            <p class="text-sm text-gray-500 flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_month</span> 15 Agosto 2024</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Activo</span>
-                    </div>
-                </div>
-                <!-- Evento 2 -->
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card flex flex-col md:flex-row md:items-center justify-between gap-4 opacity-75">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center"><span class="material-symbols-outlined text-gray-400 text-3xl">corporate_fare</span></div>
-                        <div>
-                            <h3 class="font-semibold text-gray-800">Gala Anual Corporativa</h3>
-                            <p class="text-sm text-gray-500 flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_month</span> 02 Mayo 2024</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">Finalizado</span>
-                        <button class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1"><span class="material-symbols-outlined text-sm">download</span> PDF</button>
-                    </div>
-                </div>
-                <!-- Evento 3 -->
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 rounded-xl bg-violet-100 flex items-center justify-center"><span class="material-symbols-outlined text-violet-600 text-3xl">theater_comedy</span></div>
-                        <div>
-                            <h3 class="font-semibold text-gray-800">Noche de Comedia: Stand Up</h3>
-                            <p class="text-sm text-gray-500 flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_month</span> 22 Septiembre 2024</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Activo</span>
-                    </div>
-                </div>
+
+            <div id="eventosContainer" class="space-y-4">
+                <!-- Los eventos se cargarán desde Firebase -->
+                <p class="text-center text-gray-400">Cargando eventos...</p>
             </div>
         </main>
     </div>
@@ -105,5 +80,79 @@
         <a href="reportes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
         <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
     </nav>
+
+    <!-- Firebase y lógica -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onSnapshot, query, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const container = document.getElementById('eventosContainer');
+        const searchInput = document.getElementById('searchInput');
+
+        // Escuchar eventos en tiempo real
+        function escucharEventos() {
+            const q = query(collection(db, "eventos"));
+            onSnapshot(q, (querySnapshot) => {
+                const eventos = [];
+                querySnapshot.forEach((doc) => {
+                    eventos.push({ id: doc.id, ...doc.data() });
+                });
+                renderEventos(eventos);
+            }, (error) => {
+                console.error("Error al escuchar eventos:", error);
+                container.innerHTML = `<p class="text-center text-red-500">Error al cargar eventos.</p>`;
+            });
+        }
+
+        function renderEventos(eventos) {
+            if (eventos.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <p class="text-gray-400">No hay eventos creados aún.</p>
+                        <p class="text-sm text-gray-300">Agrega eventos desde Firebase Console.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = eventos.map(evento => `
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-xl bg-violet-100 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-violet-600 text-3xl">festival</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">${evento.nombre || 'Sin nombre'}</h3>
+                            <p class="text-sm text-gray-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                            </p>
+                            <p class="text-sm text-gray-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Activo</span>
+                        <a href="../public/evento.html?id=${evento.id}" target="_blank" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">visibility</span> Ver
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            // Filtro de búsqueda
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const items = container.querySelectorAll('.bg-white');
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }
+
+        // Iniciar
+        escucharEventos();
+    </script>
 </body>
 </html>

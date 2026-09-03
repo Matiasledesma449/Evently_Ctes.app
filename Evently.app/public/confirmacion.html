@@ -1,153 +1,134 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evently - Confirmación</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Compra exitosa</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-    <!-- QRCode.js para generar QR -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
-        .success-card { animation: fadeUp 0.6s ease forwards; opacity: 0; transform: translateY(20px); }
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-        .qr-container { background: white; padding: 16px; border-radius: 12px; display: inline-block; }
+        .qr-container { display: flex; justify-content: center; align-items: center; }
+        #qrCode { padding: 16px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-violet-600 transition">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                    
-                </a>
-                <span class="text-xl font-bold text-violet-600">Evently</span>
+
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
             </div>
+            <a href="index.html" class="text-sm text-violet-600 hover:underline">Volver al inicio</a>
         </div>
     </header>
 
-    <!-- Contenido principal -->
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="loading" class="text-center py-12">
-            <span class="material-symbols-outlined text-4xl text-violet-600 animate-spin">autorenew</span>
-            <p class="text-gray-500 mt-2">Cargando compra...</p>
-        </div>
-
-        <div id="confirmacionContent" class="hidden success-card">
-            <!-- Banner de éxito -->
-            <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center mb-6">
-                <div class="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mx-auto">
-                    <span class="material-symbols-outlined text-white text-3xl">check_circle</span>
-                </div>
-                <h1 class="text-2xl font-bold text-green-700 mt-3">¡Compra confirmada!</h1>
-                <p class="text-green-600 text-sm">Tu entrada ha sido generada correctamente.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Columna izquierda: QR y detalles -->
-                <div>
-                    <div class="bg-white rounded-xl border border-gray-200 p-5 text-center">
-                        <h3 class="font-medium text-gray-700 mb-3">Escanea para ingresar</h3>
-                        <div id="qrCodeContainer" class="qr-container inline-block"></div>
-                        <p class="text-xs text-gray-400 mt-3">Presenta este QR en la entrada del evento</p>
-                        <button onclick="window.print()" class="mt-3 text-sm text-violet-600 hover:text-violet-800 transition flex items-center gap-1 justify-center">
-                            <span class="material-symbols-outlined text-sm">download</span> Descargar / Imprimir
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Columna derecha: Resumen de compra -->
-                <div>
-                    <div class="bg-white rounded-xl border border-gray-200 p-5">
-                        <h3 class="font-semibold text-gray-800 mb-4">Resumen de compra</h3>
-                        <div id="resumenCompra">
-                            <!-- Se llena con JS -->
-                        </div>
-                        <div class="border-t border-gray-200 pt-4 mt-4">
-                            <button onclick="enviarCorreo()" class="w-full bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium py-3 rounded-full transition flex items-center justify-center gap-2">
-                                <span class="material-symbols-outlined text-sm">email</span>
-                                Reenviar QR al correo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div id="confirmacionContainer" class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+            <p class="text-gray-400">Cargando datos de tu compra...</p>
         </div>
     </main>
 
-    <script>
-        // Leer ID de compra de la URL o sessionStorage
+    <!-- Importar Firebase -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script type="module">
         const params = new URLSearchParams(window.location.search);
-        let compraId = params.get('id');
+        const ventaId = params.get('id');
+        const container = document.getElementById('confirmacionContainer');
 
-        // Si no viene en URL, buscar en sessionStorage
-        let compraData = null;
-        try {
-            const stored = sessionStorage.getItem('compraActual');
-            if (stored) {
-                compraData = JSON.parse(stored);
-                if (!compraId) compraId = compraData.id;
-            }
-        } catch (e) {}
-
-        if (!compraData) {
-            // Si no hay datos, mostrar error
-            document.getElementById('loading').innerHTML = `
-                <span class="material-symbols-outlined text-4xl text-red-400">error</span>
-                <p class="text-gray-500 mt-2">No se encontró información de la compra.</p>
-                <a href="index.html" class="text-violet-600 hover:underline text-sm mt-2 inline-block">Volver al inicio</a>
-            `;
-            throw new Error('No hay datos de compra');
-        }
-
-        // Mostrar resumen
-        const resumenDiv = document.getElementById('resumenCompra');
-        resumenDiv.innerHTML = `
-            <div class="space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-gray-500">Evento</span><span class="font-medium">${compraData.eventoNombre}</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Lote</span><span>${compraData.loteNombre}</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Cantidad</span><span>${compraData.cantidad}</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Precio unitario</span><span>$${compraData.precioUnitario.toLocaleString()}</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Método de pago</span><span>${compraData.metodo}</span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Correo</span><span class="truncate">${compraData.email}</span></div>
-                <div class="flex justify-between border-t border-gray-200 pt-2 mt-2 font-bold text-violet-600">
-                    <span>Total</span>
-                    <span>$${compraData.total.toLocaleString()}</span>
+        if (!ventaId) {
+            container.innerHTML = `
+                <div class="py-12">
+                    <p class="text-red-500">No se encontró la compra.</p>
+                    <a href="index.html" class="text-violet-600 hover:underline">Volver al inicio</a>
                 </div>
-            </div>
-        `;
-
-        // Generar QR con el ID de compra (o con los datos)
-        const qrContainer = document.getElementById('qrCodeContainer');
-        // El QR contendrá un JSON con los datos relevantes para validar la entrada
-        const qrData = JSON.stringify({
-            compraId: compraData.id,
-            eventoId: compraData.eventoId,
-            email: compraData.email,
-            cantidad: compraData.cantidad
-        });
-        new QRCode(qrContainer, {
-            text: qrData,
-            width: 180,
-            height: 180,
-            colorDark: '#1a1c1c',
-            colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        // Ocultar loading y mostrar contenido
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('confirmacionContent').classList.remove('hidden');
-
-        // Función para reenviar correo (simulado)
-        function enviarCorreo() {
-            alert(`📧 Se ha reenviado el QR al correo: ${compraData.email}\n(ID de compra: ${compraData.id})`);
-            // Aquí iría la llamada real a tu backend para reenviar el correo con el QR
+            `;
+            throw new Error('Falta ID de venta');
         }
+
+        async function cargarVenta(id) {
+            try {
+                const docRef = doc(db, "ventas", id);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    container.innerHTML = `<p class="text-red-500">Compra no encontrada.</p>`;
+                    return;
+                }
+
+                const venta = { id: docSnap.id, ...docSnap.data() };
+
+                // Obtener el primer código QR de la compra
+                const codigoQR = venta.entradas && venta.entradas.length > 0 
+                    ? venta.entradas[0].codigo 
+                    : `ENT-${Date.now()}`;
+
+                // Renderizar la confirmación
+                container.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined text-4xl text-green-600">check_circle</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">¡Compra exitosa!</h2>
+                        <p class="text-gray-500 mt-1">Tu pago ha sido confirmado.</p>
+
+                        <div class="w-full max-w-sm bg-gray-50 rounded-xl p-6 mt-6 border border-gray-200">
+                            <div class="bg-white p-4 rounded-lg border border-gray-200 flex flex-col items-center">
+                                <span class="text-sm text-gray-500">Código QR de entrada</span>
+                                <div id="qrCode" class="qr-container mt-2"></div>
+                                <p class="text-xs text-gray-400 mt-2">Presenta este QR en la entrada</p>
+                            </div>
+                        </div>
+
+                        <div class="w-full max-w-sm bg-gray-50 rounded-xl p-4 mt-4 text-left border border-gray-200">
+                            <h4 class="font-semibold text-gray-800">Resumen</h4>
+                            <div class="mt-2 space-y-1 text-sm">
+                                <p><span class="text-gray-500">Evento:</span> ${venta.eventoNombre || 'N/A'}</p>
+                                <p><span class="text-gray-500">Lote:</span> ${venta.loteNombre || 'N/A'}</p>
+                                <p><span class="text-gray-500">Cantidad:</span> ${venta.cantidad || 0}</p>
+                                <p><span class="text-gray-500">Método de pago:</span> ${venta.metodo_pago || 'N/A'}</p>
+                                <p class="text-lg font-bold text-violet-600">Total: $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-3 mt-6">
+                            <button onclick="window.print()" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition">
+                                Descargar PDF
+                            </button>
+                            <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
+                                Volver al inicio
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                // Generar el QR después de que el DOM esté listo
+                setTimeout(() => {
+                    const qrContainer = document.getElementById('qrCode');
+                    if (qrContainer) {
+                        new QRCode(qrContainer, {
+                            text: codigoQR,
+                            width: 180,
+                            height: 180,
+                            colorDark: "#1a1c1c",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('Error al cargar la venta:', error);
+                container.innerHTML = `<p class="text-red-500">Error al cargar los datos de la compra.</p>`;
+            }
+        }
+
+        cargarVenta(ventaId);
     </script>
 </body>
 </html>

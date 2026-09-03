@@ -5,62 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evently - Reportes</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/evently.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f9f9f9;
-        }
-        .active-link {
-            background: #ede9fe;
-            color: #7c3aed;
-            border-left: 4px solid #7c3aed;
-        }
-        .tab-btn {
-            padding: 8px 16px;
-            border-bottom: 2px solid transparent;
-            font-weight: 500;
-            color: #6b7280;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .tab-btn.active {
-            color: #7c3aed;
-            border-bottom-color: #7c3aed;
-            font-weight: 600;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .subtab-btn {
-            padding: 4px 14px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .subtab-btn.active {
-            background: #7c3aed;
-            color: white;
-        }
-        .subtab-btn.inactive {
-            background: #ede9fe;
-            color: #4b5563;
-        }
-        .subtab-btn.inactive:hover {
-            background: #d8c9f9;
-        }
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .tab-btn { padding: 8px 16px; border-bottom: 2px solid transparent; font-weight: 500; color: #6b7280; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { color: #7c3aed; border-bottom-color: #7c3aed; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .hover-card { transition: box-shadow 0.2s; }
+        .hover-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
+
+    <!-- Verificar autenticación -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+
     <div class="flex min-h-screen">
-        <!-- Sidebar (escritorio) -->
+        <!-- Sidebar -->
         <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
             <div class="p-6">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
@@ -91,20 +64,17 @@
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
             <h1 class="text-2xl font-bold text-gray-800 mb-6">Reportes / Consultas</h1>
 
-            <!-- Filtros (sin Evento) -->
+            <!-- Filtros -->
             <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap gap-4 items-end">
                 <div class="w-40">
                     <label class="block text-xs font-medium text-gray-500 uppercase">Lote</label>
-                    <select class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" id="loteFilter">
+                    <select id="loteFilter" class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                         <option value="todos">Todos</option>
-                        <option value="1">Lote 1</option>
-                        <option value="2">Lote 2</option>
-                        <option value="3">Lote 3</option>
                     </select>
                 </div>
                 <div class="w-48">
                     <label class="block text-xs font-medium text-gray-500 uppercase">Método de pago</label>
-                    <select class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" id="metodoFilter">
+                    <select id="metodoFilter" class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                         <option value="todos">Todos</option>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Transferencia">Transferencia</option>
@@ -114,22 +84,22 @@
                     </select>
                 </div>
                 <div class="flex gap-2 ml-auto">
-                    <button class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
-                    <button class="px-4 py-2 bg-violet-600 text-white rounded-full text-sm font-medium hover:bg-violet-700 transition" onclick="aplicarFiltros()">Aplicar Filtros</button>
+                    <button id="btnExportarPDF" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
+                    <button id="btnAplicarFiltros" class="px-4 py-2 bg-violet-600 text-white rounded-full text-sm font-medium hover:bg-violet-700 transition">Aplicar Filtros</button>
                 </div>
             </div>
 
             <!-- Pestañas -->
-            <div class="flex flex-wrap gap-2 border-b border-gray-200 mb-4">
-                <button class="tab-btn active" onclick="switchTab(event, 'resumen')">Resumen general</button>
-                <button class="tab-btn" onclick="switchTab(event, 'desglose')">Desglose por Lote</button>
-                <button class="tab-btn" onclick="switchTab(event, 'transacciones')">Transacciones</button>
-                <button class="tab-btn" onclick="switchTab(event, 'metodos')">Métodos de pago</button>
-                <button class="tab-btn" onclick="switchTab(event, 'comportamiento')">Comportamiento de compra</button>
-                <button class="tab-btn" onclick="switchTab(event, 'indicadores')">Indicadores clave</button>
+            <div class="flex flex-wrap gap-2 border-b border-gray-200 mb-4" id="tabContainer">
+                <button class="tab-btn active" data-tab="resumen">Resumen general</button>
+                <button class="tab-btn" data-tab="desglose">Desglose por Lote</button>
+                <button class="tab-btn" data-tab="transacciones">Transacciones</button>
+                <button class="tab-btn" data-tab="metodos">Métodos de pago</button>
+                <button class="tab-btn" data-tab="comportamiento">Comportamiento de compra</button>
+                <button class="tab-btn" data-tab="indicadores">Indicadores clave</button>
             </div>
 
-            <!-- Contenido de pestañas (se llenan con JS) -->
+            <!-- Contenido de pestañas -->
             <div id="resumen" class="tab-content active">
                 <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
             </div>
@@ -156,7 +126,6 @@
 
             <div id="transacciones" class="tab-content">
                 <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="bg-gray-50 text-gray-600">
@@ -228,408 +197,474 @@
         <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
     </nav>
 
-    <script>
-        // ------------------------------------------------------------
-        // DATOS DE EJEMPLO (estructura completa por lote)
-        // ------------------------------------------------------------
-        const lotesData = [{
-            id: 1,
-            nombre: 'Lote 1',
-            periodo: '01/09 — 07/09',
-            precio: 15000,
-            disponibles: 300,
-            vendidas: 300,
-            pico: '05/09 — 8 entradas',
-            subtotal: 4500000,
-            transacciones: 120,
-            // Distribución de compras (para comportamiento)
-            distribucion: [
-                { rango: '1 entrada', transacciones: 40, porcentaje: 45 },
-                { rango: '2 entradas', transacciones: 30, porcentaje: 34 },
-                { rango: '4 entradas', transacciones: 14, porcentaje: 16 },
-                { rango: '8 o más', transacciones: 6, porcentaje: 5 }
-            ],
-            // Evolución diaria
-            evolucion: [
-                { fecha: '01/09', transacciones: 12, entradas: 80, monto: 1200000 },
-                { fecha: '03/09', transacciones: 18, entradas: 110, monto: 1650000 },
-                { fecha: '05/09', transacciones: 30, entradas: 110, monto: 1650000 }
-            ],
-            // Métodos de pago por lote
-            metodos: [
-                { nombre: 'Efectivo', transacciones: 8, monto: 480000, porcentaje: 18 },
-                { nombre: 'Transferencia', transacciones: 18, monto: 1080000, porcentaje: 30 },
-                { nombre: 'Débito', transacciones: 10, monto: 600000, porcentaje: 14 },
-                { nombre: 'Mixto', transacciones: 24, monto: 2340000, porcentaje: 38 }
-            ]
-        }, {
-            id: 2,
-            nombre: 'Lote 2',
-            periodo: '08/09 — 14/09',
-            precio: 25000,
-            disponibles: 300,
-            vendidas: 250,
-            pico: '10/09 — 4 entradas',
-            subtotal: 6250000,
-            transacciones: 112,
-            distribucion: [
-                { rango: '1 entrada', transacciones: 30, porcentaje: 38 },
-                { rango: '2 entradas', transacciones: 25, porcentaje: 32 },
-                { rango: '4 entradas', transacciones: 12, porcentaje: 15 },
-                { rango: '8 o más', transacciones: 5, porcentaje: 15 }
-            ],
-            evolucion: [
-                { fecha: '08/09', transacciones: 20, entradas: 60, monto: 1500000 },
-                { fecha: '10/09', transacciones: 40, entradas: 120, monto: 3000000 },
-                { fecha: '12/09', transacciones: 52, entradas: 130, monto: 3250000 }
-            ],
-            metodos: [
-                { nombre: 'Efectivo', transacciones: 12, monto: 720000, porcentaje: 16 },
-                { nombre: 'Transferencia', transacciones: 30, monto: 1800000, porcentaje: 28 },
-                { nombre: 'Débito', transacciones: 18, monto: 1080000, porcentaje: 15 },
-                { nombre: 'Crédito', transacciones: 8, monto: 480000, porcentaje: 10 },
-                { nombre: 'Mixto', transacciones: 44, monto: 2640000, porcentaje: 31 }
-            ]
-        }, {
-            id: 3,
-            nombre: 'Lote 3',
-            periodo: '15/09 — 21/09',
-            precio: 35000,
-            disponibles: 400,
-            vendidas: 200,
-            pico: '18/09 — 8 entradas',
-            subtotal: 7000000,
-            transacciones: 200,
-            distribucion: [
-                { rango: '1 entrada', transacciones: 50, porcentaje: 40 },
-                { rango: '2 entradas', transacciones: 40, porcentaje: 32 },
-                { rango: '4 entradas', transacciones: 20, porcentaje: 16 },
-                { rango: '8 o más', transacciones: 10, porcentaje: 12 }
-            ],
-            evolucion: [
-                { fecha: '15/09', transacciones: 25, entradas: 80, monto: 2800000 },
-                { fecha: '18/09', transacciones: 60, entradas: 180, monto: 6300000 },
-                { fecha: '20/09', transacciones: 115, entradas: 240, monto: 8400000 }
-            ],
-            metodos: [
-                { nombre: 'Efectivo', transacciones: 16, monto: 650000, porcentaje: 20 },
-                { nombre: 'Transferencia', transacciones: 42, monto: 1700000, porcentaje: 32 },
-                { nombre: 'Débito', transacciones: 26, monto: 1050000, porcentaje: 17 },
-                { nombre: 'Crédito', transacciones: 35, monto: 1400000, porcentaje: 14 },
-                { nombre: 'Mixto', transacciones: 81, monto: 3300000, porcentaje: 17 }
-            ]
-        }];
+    <!-- Firebase y lógica -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Transacciones individuales (con referencia al lote)
-        const transaccionesData = [
-            { fecha: '01/09/2025', comprador: 'ana.lopez@gmail.com', cantidad: 2, metodo: 'Efectivo', monto: 30000, estado: 'Confirmada', lote: 1 },
-            { fecha: '03/09/2025', comprador: 'carlos.perez@hotmail.com', cantidad: 4, metodo: 'Mixto', monto: 60000, estado: 'Confirmada', lote: 1 },
-            { fecha: '05/09/2025', comprador: 'luisa.gomez@yahoo.com', cantidad: 1, metodo: 'Transferencia', monto: 15000, estado: 'Pendiente', lote: 1 },
-            { fecha: '07/09/2025', comprador: 'martin.suarez@outlook.com', cantidad: 8, metodo: 'Crédito', monto: 120000, estado: 'Confirmada', lote: 1 },
-            { fecha: '08/09/2025', comprador: 'sofia.ramirez@gmail.com', cantidad: 3, metodo: 'Débito', monto: 75000, estado: 'Confirmada', lote: 2 },
-            { fecha: '10/09/2025', comprador: 'juan.pablo@evently.com', cantidad: 2, metodo: 'Mixto', monto: 70000, estado: 'Anulada', lote: 2 },
-            { fecha: '12/09/2025', comprador: 'maria.fernandez@gmail.com', cantidad: 5, metodo: 'Transferencia', monto: 175000, estado: 'Confirmada', lote: 2 },
-            { fecha: '15/09/2025', comprador: 'pedro.garcia@yahoo.com', cantidad: 2, metodo: 'Efectivo', monto: 70000, estado: 'Confirmada', lote: 3 },
-            { fecha: '18/09/2025', comprador: 'laura.martinez@gmail.com', cantidad: 6, metodo: 'Mixto', monto: 210000, estado: 'Confirmada', lote: 3 },
-            { fecha: '20/09/2025', comprador: 'diego.rodriguez@hotmail.com', cantidad: 4, metodo: 'Crédito', monto: 140000, estado: 'Confirmada', lote: 3 },
-        ];
+        // Estado
+        let eventos = [];
+        let ventas = [];
+        let lotesUnicos = [];
 
-        // ------------------------------------------------------------
-        // ESTADO DE FILTROS
-        // ------------------------------------------------------------
-        let state = {
-            lote: 'todos',
-            metodo: 'todos'
-        };
+        // Referencias DOM
+        const loteFilter = document.getElementById('loteFilter');
+        const metodoFilter = document.getElementById('metodoFilter');
 
-        // ------------------------------------------------------------
-        // FUNCIONES AUXILIARES
-        // ------------------------------------------------------------
-        function getLotesFiltrados() {
-            if (state.lote === 'todos') return lotesData;
-            return lotesData.filter(l => l.id === parseInt(state.lote));
+        // 1. Escuchar eventos y ventas
+        function escucharDatos() {
+            // Escuchar eventos
+            onSnapshot(collection(db, "eventos"), (snapshot) => {
+                eventos = [];
+                snapshot.forEach(doc => {
+                    eventos.push({ id: doc.id, ...doc.data() });
+                });
+                actualizarFiltroLotes();
+                aplicarFiltros();
+            });
+
+            // Escuchar ventas
+            onSnapshot(collection(db, "ventas"), (snapshot) => {
+                ventas = [];
+                snapshot.forEach(doc => {
+                    ventas.push({ id: doc.id, ...doc.data() });
+                });
+                aplicarFiltros();
+            });
         }
 
-        function getTransaccionesFiltradas() {
-            let lista = transaccionesData;
-            if (state.lote !== 'todos') {
-                lista = lista.filter(t => t.lote === parseInt(state.lote));
-            }
-            if (state.metodo !== 'todos') {
-                lista = lista.filter(t => t.metodo === state.metodo);
-            }
-            return lista;
-        }
-
-        function getMetodosFiltrados() {
-            // Si se selecciona un lote, devolvemos los métodos de ese lote; si no, sumamos globales
-            const lotes = getLotesFiltrados();
-            if (lotes.length === 0) return [];
-            if (lotes.length === 1) {
-                // Un solo lote: devolvemos sus métodos
-                return lotes[0].metodos.map(m => ({ ...m }));
-            } else {
-                // Varios lotes: sumamos transacciones y montos, recalculamos porcentajes
-                const mapa = {};
-                lotes.forEach(l => {
-                    l.metodos.forEach(m => {
-                        if (!mapa[m.nombre]) {
-                            mapa[m.nombre] = { nombre: m.nombre, transacciones: 0, monto: 0 };
-                        }
-                        mapa[m.nombre].transacciones += m.transacciones;
-                        mapa[m.nombre].monto += m.monto;
+        // 2. Actualizar filtro de lotes
+        function actualizarFiltroLotes() {
+            const lotesSet = new Set();
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => {
+                        if (l.nombre) lotesSet.add(l.nombre);
                     });
-                });
-                const totalTrans = Object.values(mapa).reduce((sum, m) => sum + m.transacciones, 0);
-                const resultado = Object.values(mapa).map(m => ({
-                    ...m,
-                    porcentaje: totalTrans > 0 ? Math.round((m.transacciones / totalTrans) * 100) : 0
-                }));
-                return resultado;
+                }
+            });
+            ventas.forEach(v => {
+                if (v.loteNombre) lotesSet.add(v.loteNombre);
+            });
+
+            lotesUnicos = Array.from(lotesSet).sort();
+            const currentVal = loteFilter.value;
+            loteFilter.innerHTML = `<option value="todos">Todos</option>`;
+            lotesUnicos.forEach(lote => {
+                const selected = lote === currentVal ? 'selected' : '';
+                loteFilter.innerHTML += `<option value="${lote}" ${selected}>${lote}</option>`;
+            });
+        }
+
+        // 3. Aplicar filtros (función principal)
+        function aplicarFiltros() {
+            const loteSeleccionado = loteFilter.value;
+            const metodoSeleccionado = metodoFilter.value;
+
+            let ventasFiltradas = [...ventas];
+
+            if (loteSeleccionado !== 'todos') {
+                ventasFiltradas = ventasFiltradas.filter(v => v.loteNombre === loteSeleccionado);
             }
+            if (metodoSeleccionado !== 'todos') {
+                ventasFiltradas = ventasFiltradas.filter(v => v.metodo_pago === metodoSeleccionado);
+            }
+
+            renderResumen(ventasFiltradas);
+            renderDesglose(ventasFiltradas);
+            renderTransacciones(ventasFiltradas);
+            renderMetodos(ventasFiltradas);
+            renderComportamiento(ventasFiltradas);
+            renderIndicadores(ventasFiltradas);
         }
 
-        function getDistribucionFiltrada() {
-            const lotes = getLotesFiltrados();
-            if (lotes.length === 0) return [];
-            // Sumar distribuciones de los lotes filtrados
-            const mapa = {};
-            lotes.forEach(l => {
-                l.distribucion.forEach(d => {
-                    if (!mapa[d.rango]) {
-                        mapa[d.rango] = { rango: d.rango, transacciones: 0 };
-                    }
-                    mapa[d.rango].transacciones += d.transacciones;
-                });
-            });
-            const total = Object.values(mapa).reduce((sum, d) => sum + d.transacciones, 0);
-            return Object.values(mapa).map(d => ({
-                ...d,
-                porcentaje: total > 0 ? Math.round((d.transacciones / total) * 100) : 0
-            }));
+        // 4. Funciones de renderizado (las mismas que antes, pero las omito por brevedad, 
+        //    están en el código completo que te daré al final)
+
+        // ... (todas las funciones renderX)
+
+        // 5. Cambio de pestaña
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
         }
 
-        function getEvolucionFiltrada() {
-            const lotes = getLotesFiltrados();
-            if (lotes.length === 0) return [];
-            // Concatenar evoluciones
-            let evol = [];
-            lotes.forEach(l => {
-                l.evolucion.forEach(e => {
-                    evol.push({ ...e, lote: l.nombre });
-                });
-            });
-            // Ordenar por fecha (asumiendo formato DD/MM)
-            evol.sort((a, b) => {
-                const da = new Date('2025/' + a.fecha.replace('/', '/'));
-                const db = new Date('2025/' + b.fecha.replace('/', '/'));
-                return da - db;
-            });
-            return evol;
+        // 6. Exportar PDF (placeholder)
+        function exportarPDF() {
+            alert('Funcionalidad de exportación a PDF en desarrollo.');
         }
 
-        function getIndicadoresFiltrados() {
-            const lotes = getLotesFiltrados();
-            if (lotes.length === 0) return [];
-            let totalDisp = 0,
-                totalVend = 0,
-                totalSub = 0,
-                totalTrans = 0;
-            lotes.forEach(l => {
-                totalDisp += l.disponibles;
-                totalVend += l.vendidas;
-                totalSub += l.subtotal;
-                totalTrans += l.transacciones;
-            });
-            const aforoRestante = totalDisp - totalVend;
-            const pct = totalDisp > 0 ? Math.round((aforoRestante / totalDisp) * 100) : 0;
-            const loteAgotado = lotes.find(l => l.vendidas === l.disponibles);
-            const loteMasRentable = lotes.reduce((max, l) => l.subtotal > max.subtotal ? l : max, lotes[0]);
-            // Pico global (de evoluciones)
-            let pico = { fecha: '', lote: '', entradas: 0 };
-            lotes.forEach(l => {
-                l.evolucion.forEach(e => {
-                    if (e.entradas > pico.entradas) {
-                        pico = { fecha: e.fecha, lote: l.nombre, entradas: e.entradas };
-                    }
-                });
-            });
-            // Método más usado (global)
-            const metodos = getMetodosFiltrados();
-            const metodoMasUsado = metodos.reduce((max, m) => m.transacciones > max.transacciones ? m : max, metodos[0]);
-            const promedio = totalTrans > 0 ? (totalVend / totalTrans).toFixed(1) : 0;
-            const recaudacionPorEntrada = totalVend > 0 ? totalSub / totalVend : 0;
+        // 7. Exponer funciones al ámbito global para los onclick
+        window.aplicarFiltros = aplicarFiltros;
+        window.switchTab = switchTab;
+        window.exportarPDF = exportarPDF;
 
-            return [
-                { label: 'Entradas no vendidas', value: `${aforoRestante} — ${pct}% del aforo` },
-                { label: 'Lote agotado', value: loteAgotado ? `${loteAgotado.nombre} — vendido al 100%` : 'Ninguno' },
-                { label: 'Lote con mayor recaudación', value: `${loteMasRentable.nombre} — $${loteMasRentable.subtotal.toLocaleString()}` },
-                { label: 'Pico de ventas global', value: `${pico.fecha} — ${pico.lote} — ${pico.entradas} entradas` },
-                { label: 'Método de pago más usado', value: metodoMasUsado ? `${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%` : 'No disponible' },
-                { label: 'Promedio de entradas por compra', value: `${promedio} entradas por transacción` },
-                { label: 'Recaudación por entrada vendida', value: `$${recaudacionPorEntrada.toFixed(0)} por entrada` }
-            ];
-        }
+        // 8. Configurar eventos de los botones (para evitar onclick en HTML)
+        document.getElementById('btnAplicarFiltros').addEventListener('click', aplicarFiltros);
+        document.getElementById('btnExportarPDF').addEventListener('click', exportarPDF);
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                switchTab(tabId);
+            });
+        });
+        loteFilter.addEventListener('change', aplicarFiltros);
+        metodoFilter.addEventListener('change', aplicarFiltros);
+
+        // 9. Iniciar
+        escucharDatos();
 
         // ------------------------------------------------------------
-        // FUNCIONES DE RENDERIZADO
+        // DEFINICIÓN DE TODAS LAS FUNCIONES DE RENDERIZADO (las mismas que antes)
         // ------------------------------------------------------------
-        function renderResumen() {
-            const lotes = getLotesFiltrados();
-            let totalCap = 0,
-                totalVend = 0,
-                totalSub = 0;
-            lotes.forEach(l => {
-                totalCap += l.disponibles;
-                totalVend += l.vendidas;
-                totalSub += l.subtotal;
+        function renderResumen(ventasFiltradas) {
+            const totalVentas = ventasFiltradas.length;
+            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+            
+            let capacidadTotal = 0;
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => {
+                        capacidadTotal += (l.disponibles || 0);
+                    });
+                }
             });
-            const restante = totalCap - totalVend;
-            const pct = totalCap > 0 ? Math.round((totalVend / totalCap) * 100) : 0;
+
+            const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
+            const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalEntradas / capacidadTotal) * 100) : 0;
 
             const container = document.getElementById('kpiContainer');
             container.innerHTML = `
-                <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <span class="text-sm text-gray-500">Capacidad total</span>
-                    <p class="text-2xl font-bold">${totalCap.toLocaleString()}</p>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Capacidad total</span>
+                        <span class="material-symbols-outlined text-violet-600">groups</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">${capacidadTotal.toLocaleString()}</p>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <span class="text-sm text-gray-500">Entradas vendidas</span>
-                    <p class="text-2xl font-bold">${totalVend.toLocaleString()} <span class="text-sm font-normal text-gray-400">/ ${totalCap.toLocaleString()}</span></p>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Entradas vendidas</span>
+                        <span class="material-symbols-outlined text-violet-600">confirmation_number</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">${totalEntradas.toLocaleString()} <span class="text-sm font-normal text-gray-400">/ ${capacidadTotal.toLocaleString()}</span></p>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <span class="text-sm text-gray-500">Aforo restante</span>
-                    <p class="text-2xl font-bold">${restante.toLocaleString()}</p>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Aforo restante</span>
+                        <span class="material-symbols-outlined text-violet-600">event_seat</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">${aforoRestante.toLocaleString()}</p>
                 </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5">
-                    <span class="text-sm text-gray-500">Recaudación total</span>
-                    <p class="text-2xl font-bold text-violet-600">$${(totalSub/1e6).toFixed(1)}M</p>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Tasa de ocupación</span>
+                        <span class="material-symbols-outlined text-violet-600">pie_chart</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">${tasaOcupacion}%</p>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div class="bg-violet-600 h-2 rounded-full" style="width: ${tasaOcupacion}%"></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Recaudación total</span>
+                        <span class="material-symbols-outlined text-violet-600">payments</span>
+                    </div>
+                    <p class="text-3xl font-bold text-violet-600 mt-2">$${totalRecaudado.toLocaleString()}</p>
+                    <span class="text-xs text-gray-400">${totalVentas} transacciones</span>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Total transacciones</span>
+                        <span class="material-symbols-outlined text-violet-600">receipt_long</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">${totalVentas}</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Prom. entradas/compra</span>
+                        <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
+                    </div>
+                    <p class="text-2xl font-bold text-gray-800 mt-2">${totalVentas > 0 ? (totalEntradas / totalVentas).toFixed(1) : 0}</p>
                 </div>
             `;
         }
 
-        function renderDesglose() {
-            const lotes = getLotesFiltrados();
+        function renderDesglose(ventasFiltradas) {
+            // Agrupar ventas por lote
+            const ventasPorLote = {};
+            ventasFiltradas.forEach(v => {
+                const key = v.loteNombre || 'Sin lote';
+                if (!ventasPorLote[key]) ventasPorLote[key] = [];
+                ventasPorLote[key].push(v);
+            });
+
+            const lotesInfo = {};
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => {
+                        lotesInfo[l.nombre] = {
+                            ...l,
+                            vendidas: l.vendidas || 0
+                        };
+                    });
+                }
+            });
+
             const tbody = document.getElementById('tablaDesgloseBody');
             const tfoot = document.getElementById('tablaDesgloseFoot');
 
-            if (lotes.length === 0) {
+            if (Object.keys(ventasPorLote).length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-gray-500">No hay datos</td></tr>';
                 tfoot.innerHTML = '';
                 return;
             }
 
-            let totalVend = 0,
-                totalSub = 0;
+            let totalVendidas = 0;
+            let totalSubtotal = 0;
             let html = '';
-            lotes.forEach(l => {
-                totalVend += l.vendidas;
-                totalSub += l.subtotal;
+
+            Object.keys(ventasPorLote).forEach(nombreLote => {
+                const ventas = ventasPorLote[nombreLote];
+                const info = lotesInfo[nombreLote] || {};
+                const precio = info.precio || 0;
+                const disponibles = info.disponibles || 0;
+                const vendidas = ventas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+                const subtotal = ventas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+                totalVendidas += vendidas;
+                totalSubtotal += subtotal;
+
+                const pico = ventas.reduce((max, v) => {
+                    const count = v.cantidad || 0;
+                    return count > max.count ? { count, fecha: v.fecha || 'N/A' } : max;
+                }, { count: 0, fecha: 'N/A' });
+
                 html += `
                     <tr class="border-t">
-                        <td class="p-3 font-medium">${l.nombre}</td>
-                        <td class="p-3">${l.periodo}</td>
-                        <td class="p-3 text-right">$${l.precio.toLocaleString()}</td>
-                        <td class="p-3 text-right">${l.disponibles}</td>
-                        <td class="p-3 text-right text-green-600 font-semibold">${l.vendidas}</td>
-                        <td class="p-3 text-right">${l.pico}</td>
-                        <td class="p-3 text-right font-bold">$${l.subtotal.toLocaleString()}</td>
+                        <td class="p-3 font-medium">${nombreLote}</td>
+                        <td class="p-3">${info.vigencia || 'N/A'}</td>
+                        <td class="p-3 text-right">$${precio.toLocaleString()}</td>
+                        <td class="p-3 text-right">${disponibles}</td>
+                        <td class="p-3 text-right text-green-600 font-semibold">${vendidas}</td>
+                        <td class="p-3 text-right">${pico.fecha} — ${pico.count} entradas</td>
+                        <td class="p-3 text-right font-bold">$${subtotal.toLocaleString()}</td>
                     </tr>
                 `;
             });
+
             tbody.innerHTML = html;
             tfoot.innerHTML = `
                 <tr>
                     <td colspan="4" class="p-3 text-right font-semibold">Totales</td>
-                    <td class="p-3 text-right font-semibold">${totalVend}</td>
+                    <td class="p-3 text-right font-semibold">${totalVendidas}</td>
                     <td></td>
-                    <td class="p-3 text-right text-violet-600 font-bold">$${totalSub.toLocaleString()}</td>
+                    <td class="p-3 text-right text-violet-600 font-bold">$${totalSubtotal.toLocaleString()}</td>
                 </tr>
             `;
         }
 
-        function renderTransacciones(subtabLote) {
-            // subtabLote puede ser 'todos', '1', '2', '3' -> si es 'todos' no filtra por lote en la subtab,
-            // pero el filtro global de lote ya aplica en getTransaccionesFiltradas.
-            // Para la subtab, aplicamos un filtro extra sobre los datos ya filtrados globalmente.
-            let data = getTransaccionesFiltradas();
-            if (subtabLote && subtabLote !== 'todos') {
-                data = data.filter(t => t.lote === parseInt(subtabLote));
-            }
+        function renderTransacciones(ventasFiltradas) {
             const tbody = document.getElementById('tablaTransaccionesBody');
-            if (data.length === 0) {
+            if (ventasFiltradas.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-500">Sin transacciones</td></tr>';
                 return;
             }
-            tbody.innerHTML = data.map(t => `
-                <tr class="border-t">
-                    <td class="p-3">${t.fecha}</td>
-                    <td class="p-3">${t.comprador}</td>
-                    <td class="p-3 text-right">${t.cantidad}</td>
-                    <td class="p-3">${t.metodo}</td>
-                    <td class="p-3 text-right font-semibold">$${t.monto.toLocaleString()}</td>
-                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${t.estado === 'Confirmada' ? 'bg-green-100 text-green-700' : t.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}">${t.estado}</span></td>
-                </tr>
-            `).join('');
+
+            tbody.innerHTML = ventasFiltradas.map(v => {
+                const estado = v.estado || 'Confirmada';
+                const badgeClass = estado === 'Confirmada' ? 'bg-green-100 text-green-700' :
+                                   estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-700' :
+                                   'bg-red-100 text-red-700';
+                return `
+                    <tr class="border-t">
+                        <td class="p-3">${v.fecha || 'N/A'}</td>
+                        <td class="p-3">${v.correo || v.comprador || 'N/A'}</td>
+                        <td class="p-3 text-right">${v.cantidad || 0}</td>
+                        <td class="p-3">${v.metodo_pago || 'N/A'}</td>
+                        <td class="p-3 text-right font-semibold">$${(v.monto_total || 0).toLocaleString()}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">${estado}</span></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        function renderMetodos() {
-            const metodos = getMetodosFiltrados();
+        function renderMetodos(ventasFiltradas) {
+            const metodos = {};
+            ventasFiltradas.forEach(v => {
+                const metodo = v.metodo_pago || 'Desconocido';
+                if (!metodos[metodo]) metodos[metodo] = { transacciones: 0, monto: 0 };
+                metodos[metodo].transacciones += 1;
+                metodos[metodo].monto += (v.monto_total || 0);
+            });
+
+            const totalTrans = ventasFiltradas.length;
             const tbody = document.getElementById('tablaMetodosBody');
-            if (metodos.length === 0) {
+
+            if (Object.keys(metodos).length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">Sin datos</td></tr>';
                 return;
             }
-            tbody.innerHTML = metodos.map(m => `
-                <tr class="border-t">
-                    <td class="p-3 font-medium">${m.nombre}</td>
-                    <td class="p-3 text-right">${m.transacciones}</td>
-                    <td class="p-3 text-right">$${m.monto.toLocaleString()}</td>
-                    <td class="p-3 text-right font-semibold">${m.porcentaje}%</td>
-                </tr>
-            `).join('');
+
+            tbody.innerHTML = Object.entries(metodos).map(([nombre, data]) => {
+                const pct = totalTrans > 0 ? Math.round((data.transacciones / totalTrans) * 100) : 0;
+                return `
+                    <tr class="border-t">
+                        <td class="p-3 font-medium">${nombre}</td>
+                        <td class="p-3 text-right">${data.transacciones}</td>
+                        <td class="p-3 text-right">$${data.monto.toLocaleString()}</td>
+                        <td class="p-3 text-right font-semibold">${pct}%</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        function renderComportamiento() {
-            // Distribución
-            const distribucion = getDistribucionFiltrada();
+        function renderComportamiento(ventasFiltradas) {
+            const distribucion = {};
+            ventasFiltradas.forEach(v => {
+                const cant = v.cantidad || 0;
+                let rango;
+                if (cant === 1) rango = '1 entrada';
+                else if (cant === 2) rango = '2 entradas';
+                else if (cant === 3) rango = '3 entradas';
+                else if (cant >= 4 && cant <= 6) rango = '4-6 entradas';
+                else if (cant >= 7) rango = '7+ entradas';
+                else rango = 'Sin datos';
+
+                if (!distribucion[rango]) distribucion[rango] = 0;
+                distribucion[rango] += 1;
+            });
+
+            const total = ventasFiltradas.length;
             const tbodyDist = document.getElementById('tablaComportamientoBody');
-            if (distribucion.length === 0) {
+            if (total === 0) {
                 tbodyDist.innerHTML = '<tr><td colspan="3" class="p-2 text-center text-gray-500">Sin datos</td></tr>';
             } else {
-                tbodyDist.innerHTML = distribucion.map(d => `
-                    <tr class="border-t">
-                        <td class="p-2">${d.rango}</td>
-                        <td class="p-2 text-right">${d.transacciones}</td>
-                        <td class="p-2 text-right font-semibold">${d.porcentaje}%</td>
-                    </tr>
-                `).join('');
+                tbodyDist.innerHTML = Object.entries(distribucion).map(([rango, count]) => {
+                    const pct = Math.round((count / total) * 100);
+                    return `
+                        <tr class="border-t">
+                            <td class="p-2">${rango}</td>
+                            <td class="p-2 text-right">${count}</td>
+                            <td class="p-2 text-right font-semibold">${pct}%</td>
+                        </tr>
+                    `;
+                }).join('');
             }
 
             // Evolución
-            const evolucion = getEvolucionFiltrada();
+            const evolucion = {};
+            ventasFiltradas.forEach(v => {
+                const fecha = v.fecha || 'N/A';
+                if (!evolucion[fecha]) evolucion[fecha] = { transacciones: 0, entradas: 0, monto: 0 };
+                evolucion[fecha].transacciones += 1;
+                evolucion[fecha].entradas += (v.cantidad || 0);
+                evolucion[fecha].monto += (v.monto_total || 0);
+            });
+
             const tbodyEvo = document.getElementById('tablaEvolucionBody');
-            if (evolucion.length === 0) {
+            const fechas = Object.keys(evolucion).sort();
+            if (fechas.length === 0) {
                 tbodyEvo.innerHTML = '<tr><td colspan="4" class="p-2 text-center text-gray-500">Sin datos</td></tr>';
             } else {
-                tbodyEvo.innerHTML = evolucion.map(e => `
-                    <tr class="border-t">
-                        <td class="p-2">${e.fecha}</td>
-                        <td class="p-2 text-right">${e.transacciones}</td>
-                        <td class="p-2 text-right">${e.entradas}</td>
-                        <td class="p-2 text-right font-medium">$${e.monto.toLocaleString()}</td>
-                    </tr>
-                `).join('');
+                tbodyEvo.innerHTML = fechas.map(fecha => {
+                    const data = evolucion[fecha];
+                    return `
+                        <tr class="border-t">
+                            <td class="p-2">${fecha}</td>
+                            <td class="p-2 text-right">${data.transacciones}</td>
+                            <td class="p-2 text-right">${data.entradas}</td>
+                            <td class="p-2 text-right font-medium">$${data.monto.toLocaleString()}</td>
+                        </tr>
+                    `;
+                }).join('');
             }
         }
 
-        function renderIndicadores() {
-            const indicadores = getIndicadoresFiltrados();
+        function renderIndicadores(ventasFiltradas) {
+            const totalVentas = ventasFiltradas.length;
+            const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            
+            let capacidadTotal = 0;
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => {
+                        capacidadTotal += (l.disponibles || 0);
+                    });
+                }
+            });
+            const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
+            const pctAforo = capacidadTotal > 0 ? Math.round((aforoRestante / capacidadTotal) * 100) : 0;
+
+            const vendidasPorLote = {};
+            ventasFiltradas.forEach(v => {
+                const lote = v.loteNombre || 'Sin lote';
+                vendidasPorLote[lote] = (vendidasPorLote[lote] || 0) + (v.cantidad || 0);
+            });
+            let loteAgotado = 'Ninguno';
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => {
+                        const vendidas = vendidasPorLote[l.nombre] || 0;
+                        if (vendidas >= l.disponibles) {
+                            loteAgotado = `${l.nombre} — vendido al 100%`;
+                        }
+                    });
+                }
+            });
+
+            const recaudacionPorLote = {};
+            ventasFiltradas.forEach(v => {
+                const lote = v.loteNombre || 'Sin lote';
+                recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + (v.monto_total || 0);
+            });
+            let loteMasRentable = { nombre: 'N/A', monto: 0 };
+            Object.entries(recaudacionPorLote).forEach(([nombre, monto]) => {
+                if (monto > loteMasRentable.monto) {
+                    loteMasRentable = { nombre, monto };
+                }
+            });
+
+            let pico = { fecha: 'N/A', entradas: 0 };
+            ventasFiltradas.forEach(v => {
+                const cant = v.cantidad || 0;
+                const fecha = v.fecha || 'N/A';
+                if (cant > pico.entradas) {
+                    pico = { fecha, entradas: cant };
+                }
+            });
+
+            const metodoCount = {};
+            ventasFiltradas.forEach(v => {
+                const metodo = v.metodo_pago || 'Desconocido';
+                metodoCount[metodo] = (metodoCount[metodo] || 0) + 1;
+            });
+            let metodoMasUsado = { nombre: 'N/A', porcentaje: 0 };
+            Object.entries(metodoCount).forEach(([nombre, count]) => {
+                const pct = totalVentas > 0 ? Math.round((count / totalVentas) * 100) : 0;
+                if (pct > metodoMasUsado.porcentaje) {
+                    metodoMasUsado = { nombre, porcentaje: pct };
+                }
+            });
+
+            const promedio = totalVentas > 0 ? (totalEntradas / totalVentas).toFixed(1) : 0;
+            const recaudacionPorEntrada = totalEntradas > 0 ? totalRecaudado / totalEntradas : 0;
+
+            const indicadores = [
+                { label: 'Entradas no vendidas', value: `${aforoRestante} — ${pctAforo}% del aforo` },
+                { label: 'Lote agotado', value: loteAgotado },
+                { label: 'Lote con mayor recaudación', value: `${loteMasRentable.nombre} — $${loteMasRentable.monto.toLocaleString()}` },
+                { label: 'Pico de ventas global', value: `${pico.fecha} — ${pico.entradas} entradas` },
+                { label: 'Método de pago más usado', value: `${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%` },
+                { label: 'Promedio de entradas por compra', value: `${promedio} entradas por transacción` },
+                { label: 'Recaudación por entrada vendida', value: `$${recaudacionPorEntrada.toFixed(0)} por entrada` }
+            ];
+
             const grid = document.getElementById('indicadoresGrid');
-            if (indicadores.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-gray-500">No hay datos</div>';
-                return;
-            }
             grid.innerHTML = indicadores.map(ind => `
                 <div class="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition">
                     <p class="text-sm text-gray-500">${ind.label}</p>
@@ -637,70 +672,6 @@
                 </div>
             `).join('');
         }
-
-        // ------------------------------------------------------------
-        // ACTUALIZAR TODO
-        // ------------------------------------------------------------
-        function actualizarTodo(subtabLote = 'todos') {
-            renderResumen();
-            renderDesglose();
-            renderTransacciones(subtabLote);
-            renderMetodos();
-            renderComportamiento();
-            renderIndicadores();
-        }
-
-        // ------------------------------------------------------------
-        // MANEJADORES DE FILTROS
-        // ------------------------------------------------------------
-        function aplicarFiltros() {
-            state.lote = document.getElementById('loteFilter').value;
-            state.metodo = document.getElementById('metodoFilter').value;
-            // Resetear subtab de transacciones a "Todos"
-            const subtabs = document.querySelectorAll('#subTabs .subtab-btn');
-            subtabs.forEach(btn => {
-                btn.classList.remove('active');
-                btn.classList.add('inactive');
-            });
-            const first = document.querySelector('#subTabs .subtab-btn[data-subtab="todos"]');
-            if (first) {
-                first.classList.remove('inactive');
-                first.classList.add('active');
-            }
-            actualizarTodo('todos');
-        }
-
-        function filterTransacciones(lote, btn) {
-            // Actualizar UI de subtabs
-            document.querySelectorAll('#subTabs .subtab-btn').forEach(b => {
-                b.classList.remove('active');
-                b.classList.add('inactive');
-            });
-            btn.classList.remove('inactive');
-            btn.classList.add('active');
-            // Renderizar transacciones con el filtro de subtab
-            renderTransacciones(lote);
-        }
-
-        // ------------------------------------------------------------
-        // CAMBIO DE PESTAÑA
-        // ------------------------------------------------------------
-        function switchTab(e, tabId) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-        }
-
-        // ------------------------------------------------------------
-        // INICIALIZAR
-        // ------------------------------------------------------------
-        window.onload = function() {
-            // Setear valores por defecto
-            document.getElementById('loteFilter').value = 'todos';
-            document.getElementById('metodoFilter').value = 'todos';
-            actualizarTodo('todos');
-        };
     </script>
 </body>
 </html>

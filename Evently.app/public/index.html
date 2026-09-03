@@ -1,131 +1,106 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Evently - Eventos</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
-        .card-hover { transition: transform 0.2s, box-shadow 0.2s; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-        .active-link { color: #7c3aed; font-weight: 600; }
+        .card { transition: box-shadow 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+    <!-- Header público -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
-                
+                <span class="text-sm text-gray-400 hidden sm:inline">| Compra tus entradas</span>
             </div>
-            
+            <a href="../admin/login.html" class="text-sm text-violet-600 hover:underline">Admin</a>
         </div>
     </header>
 
     <!-- Contenido principal -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Eventos disponibles</h1>
-                <p class="text-gray-500 text-sm mt-1">Encuentra tu evento y compra tus entradas</p>
-            </div>
-            <div class="relative w-full md:w-64">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
-                <input type="text" id="searchInput" placeholder="Buscar eventos..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none text-sm">
-            </div>
-        </div>
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Próximos eventos</h1>
+        <p class="text-gray-500 mb-6">Elige tu evento y consigue tus entradas</p>
 
-        <!-- Grid de eventos -->
-        <div id="eventosGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Se llena con JS -->
-        </div>
-
-        <!-- Mensaje cuando no hay eventos -->
-        <div id="noEventos" class="hidden text-center py-12">
-            <span class="material-symbols-outlined text-6xl text-gray-300">event_busy</span>
-            <p class="text-gray-500 mt-4">No se encontraron eventos disponibles.</p>
+        <div id="eventosContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Aquí se cargarán los eventos desde Firebase -->
+            <p class="col-span-full text-center text-gray-400">Cargando eventos...</p>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500">
-            <span>© 2024 Evently - Plataforma de Ticketing</span>
-            <div class="flex gap-4 mt-2 sm:mt-0">
-                <a href="#" class="hover:text-violet-600 transition">Términos</a>
-                <a href="#" class="hover:text-violet-600 transition">Privacidad</a>
-            </div>
-        </div>
+    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
+        © 2024 Evently by Bali Group
     </footer>
 
-    <script src="assets/js/data.js"></script>
-    <script>
-        // Renderizar eventos
-        function renderEventos(eventos) {
-            const grid = document.getElementById('eventosGrid');
-            const noEventos = document.getElementById('noEventos');
+    <!-- Importar Firebase (módulo) -->
+    <script type="module" src="/shared/firebase-init.js"></script>
 
-            if (!eventos || eventos.length === 0) {
-                grid.innerHTML = '';
-                noEventos.classList.remove('hidden');
-                return;
-            }
-            noEventos.classList.add('hidden');
+    <!-- Lógica para cargar eventos -->
+    <script type="module">
+        // Firebase ya está disponible en window (por el script anterior)
 
-            grid.innerHTML = eventos.map(e => {
-                const precioMin = Math.min(...e.lotes.map(l => l.precio));
-                const totalDisponibles = e.lotes.reduce((sum, l) => sum + l.disponibles, 0);
-                return `
-                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden card-hover">
-                        <div class="h-48 overflow-hidden">
-                            <img src="${e.imagen}" alt="${e.nombre}" class="w-full h-full object-cover">
+        const container = document.getElementById('eventosContainer');
+
+        async function cargarEventos() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "eventos"));
+                const eventos = [];
+                querySnapshot.forEach((doc) => {
+                    eventos.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (eventos.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center py-12">
+                            <p class="text-gray-400">No hay eventos disponibles por ahora.</p>
+                            <p class="text-sm text-gray-300">Agrega eventos desde Firebase Console.</p>
                         </div>
-                        <div class="p-5">
-                            <h3 class="font-semibold text-lg text-gray-800 line-clamp-2">${e.nombre}</h3>
-                            <div class="flex items-center gap-2 text-sm text-gray-500 mt-2">
-                                <span class="material-symbols-outlined text-sm">calendar_today</span>
-                                ${e.fecha}
-                            </div>
-                            <div class="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                                <span class="material-symbols-outlined text-sm">location_on</span>
-                                ${e.lugar}
-                            </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                                <div>
-                                    <span class="text-xs text-gray-400">Desde</span>
-                                    <p class="font-bold text-violet-600">$${precioMin.toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <span class="text-xs text-gray-400">Disponibles</span>
-                                    <p class="font-semibold text-gray-700 text-sm">${totalDisponibles}</p>
-                                </div>
-                                <a href="evento.html?id=${e.id}" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-full transition">
-                                    Ver entradas
+                    `;
+                    return;
+                }
+
+                // Renderizar eventos
+                container.innerHTML = eventos.map(evento => `
+                    <div class="bg-white rounded-xl border border-gray-200 card overflow-hidden">
+                        <img src="${evento.imagen || 'https://via.placeholder.com/400x200/ede9fe/7c3aed?text=Evento'}" alt="${evento.nombre}" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h3 class="text-xl font-bold text-gray-800">${evento.nombre}</h3>
+                            <p class="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                                <span class="material-symbols-outlined text-sm">calendar_month</span> ${evento.fecha}
+                            </p>
+                            <p class="text-sm text-gray-500 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">location_on</span> ${evento.lugar}
+                            </p>
+                            <div class="mt-3 flex justify-between items-center">
+                                <span class="text-sm font-semibold text-violet-600">
+                                    Desde ${evento.lotes && evento.lotes.length > 0 ? `$${evento.lotes[0].precio}` : 'Consultar'}
+                                </span>
+                                <a href="evento.html?id=${evento.id}" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition">
+                                    Ver detalles
                                 </a>
                             </div>
                         </div>
                     </div>
-                `;
-            }).join('');
+                `).join('');
+
+            } catch (error) {
+                console.error('Error al cargar eventos:', error);
+                container.innerHTML = `<p class="col-span-full text-center text-red-500">Error al cargar eventos. Intenta nuevamente.</p>`;
+            }
         }
 
-        // Buscador
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const term = this.value.toLowerCase().trim();
-            const filtrados = getEventos().filter(e => 
-                e.nombre.toLowerCase().includes(term) || 
-                e.lugar.toLowerCase().includes(term)
-            );
-            renderEventos(filtrados);
-        });
-
-        // Inicializar
-        renderEventos(getEventos());
+        // Cargar eventos al inicio
+        cargarEventos();
     </script>
 </body>
 </html>

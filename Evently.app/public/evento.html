@@ -1,288 +1,306 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Evently - Detalle</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Detalle evento</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
-        .lote-option { transition: all 0.2s; cursor: pointer; }
-        .lote-option:hover { border-color: #7c3aed; background: #f5f3ff; }
-        .lote-option.selected { border-color: #7c3aed; background: #ede9fe; }
-        .quantity-btn { width: 36px; height: 36px; border-radius: 9999px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
-        .quantity-btn:hover { background: #f3f4f6; }
-        .quantity-btn:active { transform: scale(0.95); }
+        .card { transition: box-shadow 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .lote-selected { border-color: #7c3aed; background: #f5f3ff; }
     </style>
 </head>
 <body>
+
     <!-- Header -->
-    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <a href="index.html" class="flex items-center gap-2 text-gray-600 hover:text-violet-600 transition">
-                    <span class="material-symbols-outlined">arrow_back</span>
-                    
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="text-violet-600 hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">arrow_back</span> Volver
                 </a>
-                <span class="text-xl font-bold text-violet-600">Evently</span>
+                <span class="text-2xl font-bold text-violet-600 ml-4">Evently</span>
             </div>
-            
         </div>
     </header>
 
-    <!-- Contenido principal -->
-    <main id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Cargando... -->
-        <div id="loading" class="text-center py-12">
-            <span class="material-symbols-outlined text-4xl text-violet-600 animate-pulse">autorenew</span>
-            <p class="text-gray-500 mt-2">Cargando evento...</p>
+    <!-- Contenido -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div id="eventoContainer">
+            <p class="text-center text-gray-400">Cargando evento...</p>
         </div>
 
-        <!-- Contenido del evento (oculto inicialmente) -->
-        <div id="eventoContent" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Columna izquierda: Información del evento -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Imagen y título -->
-                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                        <img id="eventoImagen" src="" alt="" class="w-full h-64 object-cover">
-                        <div class="p-5">
-                            <h1 id="eventoNombre" class="text-2xl font-bold text-gray-800"></h1>
-                            <div class="flex flex-wrap gap-3 mt-2 text-sm text-gray-500">
-                                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_today</span> <span id="eventoFecha"></span></span>
-                                <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">location_on</span> <span id="eventoLugar"></span></span>
-                            </div>
-                            <p id="eventoDescripcion" class="text-gray-600 text-sm mt-4 leading-relaxed"></p>
-                        </div>
-                    </div>
+        <!-- Formulario de compra (se muestra solo cuando el evento está cargado) -->
+        <div id="formularioCompra" class="hidden mt-8 bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Comprar entradas</h3>
 
-                    <!-- Lotes disponibles -->
-                    <div class="bg-white rounded-xl border border-gray-200 p-5">
-                        <h2 class="font-semibold text-gray-800 mb-4">Lotes disponibles</h2>
-                        <div id="lotesContainer" class="space-y-3">
-                            <!-- Se llena con JS -->
-                        </div>
-                    </div>
+            <!-- Selección de lote -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Selecciona un lote</label>
+                <div id="lotesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Se llena con JS -->
                 </div>
+            </div>
 
-                <!-- Columna derecha: Compra -->
-                <div class="lg:col-span-1">
-                    <div class="bg-white rounded-xl border border-gray-200 p-5 sticky top-24">
-                        <h3 class="font-semibold text-gray-800 mb-4">Comprar entradas</h3>
-
-                        <!-- Lote seleccionado -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Lote seleccionado</label>
-                            <div id="loteSeleccionado" class="text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2">Selecciona un lote</div>
-                        </div>
-
-                        <!-- Cantidad -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                            <div class="flex items-center gap-3">
-                                <button class="quantity-btn" id="qtyMinus" onclick="cambiarCantidad(-1)">−</button>
-                                <span id="qtyDisplay" class="text-lg font-semibold w-8 text-center">1</span>
-                                <button class="quantity-btn" id="qtyPlus" onclick="cambiarCantidad(1)">+</button>
-                            </div>
-                            <p id="stockMsg" class="text-xs text-gray-400 mt-1"></p>
-                        </div>
-
-                        <!-- Correo -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                            <input type="email" id="emailInput" placeholder="tucorreo@ejemplo.com" class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none text-sm">
-                        </div>
-
-                        <!-- Método de pago -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Método de pago</label>
-                            <select id="metodoPago" class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none text-sm">
-                                <option value="">Selecciona un método</option>
-                            </select>
-                        </div>
-
-                        <!-- Total -->
-                        <div class="border-t border-gray-200 pt-4 mt-4">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Total</span>
-                                <span id="totalDisplay" class="text-xl font-bold text-violet-600">$0</span>
-                            </div>
-                        </div>
-
-                        <!-- Botón comprar -->
-                        <button id="btnComprar" onclick="procesarCompra()" class="w-full mt-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                            Comprar ahora
-                        </button>
-                        <p class="text-xs text-center text-gray-400 mt-2">Aceptamos todos los métodos de pago</p>
-                    </div>
+            <!-- Cantidad -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad de entradas</label>
+                <div class="flex items-center border border-gray-300 rounded-lg w-32">
+                    <button id="btnMenos" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg">-</button>
+                    <input id="cantidadInput" type="number" value="1" min="1" max="10" class="w-full text-center border-none focus:ring-0 outline-none" />
+                    <button id="btnMas" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-r-lg">+</button>
                 </div>
+            </div>
+
+            <!-- Correo -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
+                <input id="emailInput" type="email" placeholder="tu@email.com" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required />
+            </div>
+
+            <!-- Método de pago -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Método de pago</label>
+                <select id="metodoPago" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Débito">Débito</option>
+                    <option value="Crédito">Crédito</option>
+                    <option value="Mixto">Mixto</option>
+                </select>
+            </div>
+
+            <!-- Total -->
+            <div class="border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
+                <span class="text-lg font-bold text-gray-800">Total: <span id="totalMostrado">$0</span></span>
+                <button id="btnComprar" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-full font-semibold transition shadow-md">
+                    Comprar ahora
+                </button>
             </div>
         </div>
     </main>
 
-    <script src="assets/js/data.js"></script>
-    <script>
-        // Estado de la compra
-        let estado = {
-            evento: null,
-            loteSeleccionado: null,
-            cantidad: 1,
-            email: '',
-            metodoPago: ''
-        };
+    <!-- Firebase -->
+    <script type="module" src="../shared/firebase-init.js"></script>
 
-        // Leer ID de la URL
+    <!-- Lógica -->
+    <script type="module">
+        // Obtener ID del evento de la URL
         const params = new URLSearchParams(window.location.search);
         const eventoId = params.get('id');
 
-        // Si no hay ID, redirigir al listado
         if (!eventoId) {
-            window.location.href = 'index.html';
-        }
-
-        // Cargar evento
-        const evento = getEventoById(eventoId);
-        if (!evento) {
-            document.getElementById('loading').innerHTML = `
-                <span class="material-symbols-outlined text-4xl text-red-400">error</span>
-                <p class="text-gray-500 mt-2">Evento no encontrado</p>
-                <a href="index.html" class="text-violet-600 hover:underline text-sm mt-2 inline-block">Volver al listado</a>
+            document.getElementById('eventoContainer').innerHTML = `
+                <div class="text-center py-12">
+                    <p class="text-red-500">No se especificó ningún evento.</p>
+                    <a href="index.html" class="text-violet-600 hover:underline">Volver al listado</a>
+                </div>
             `;
-            throw new Error('Evento no encontrado');
+            throw new Error('Falta ID de evento');
         }
 
-        estado.evento = evento;
+        const container = document.getElementById('eventoContainer');
+        const formCompra = document.getElementById('formularioCompra');
 
-        // Mostrar información del evento
-        document.getElementById('eventoImagen').src = evento.imagen;
-        document.getElementById('eventoImagen').alt = evento.nombre;
-        document.getElementById('eventoNombre').textContent = evento.nombre;
-        document.getElementById('eventoFecha').textContent = evento.fecha;
-        document.getElementById('eventoLugar').textContent = evento.lugar;
-        document.getElementById('eventoDescripcion').textContent = evento.descripcion;
+        let eventoActual = null;
+        let loteSeleccionado = null;
 
-        // Renderizar lotes
-        const lotesContainer = document.getElementById('lotesContainer');
-        evento.lotes.forEach((lote, index) => {
-            const div = document.createElement('div');
-            div.className = `lote-option border border-gray-200 rounded-xl p-3 ${index === 0 ? 'selected' : ''}`;
-            if (index === 0) estado.loteSeleccionado = lote;
-            div.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-medium text-gray-800">${lote.nombre}</p>
-                        <p class="text-xs text-gray-400">${lote.vigencia} • ${lote.disponibles - lote.vendidas} disponibles</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-violet-600">$${lote.precio.toLocaleString()}</p>
-                        <p class="text-xs text-gray-400">por entrada</p>
+        // Cargar evento desde Firebase
+        async function cargarEvento(id) {
+            try {
+                const docRef = doc(db, "eventos", id);
+                const docSnap = await getDoc(docRef);
+
+                if (!docSnap.exists()) {
+                    container.innerHTML = `<p class="text-center text-red-500">Evento no encontrado.</p>`;
+                    return;
+                }
+
+                eventoActual = { id: docSnap.id, ...docSnap.data() };
+                renderEvento(eventoActual);
+                renderLotes(eventoActual.lotes || []);
+                formCompra.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error al cargar evento:', error);
+                container.innerHTML = `<p class="text-center text-red-500">Error al cargar el evento.</p>`;
+            }
+        }
+
+        // Mostrar datos del evento
+        function renderEvento(evento) {
+            container.innerHTML = `
+                <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <img src="${evento.imagen || 'https://via.placeholder.com/800x300/ede9fe/7c3aed?text=Evento'}" alt="${evento.nombre}" class="w-full h-64 object-cover">
+                    <div class="p-6">
+                        <h1 class="text-3xl font-bold text-gray-800">${evento.nombre}</h1>
+                        <p class="text-gray-500 flex items-center gap-2 mt-2">
+                            <span class="material-symbols-outlined">calendar_month</span> ${evento.fecha}
+                        </p>
+                        <p class="text-gray-500 flex items-center gap-2">
+                            <span class="material-symbols-outlined">location_on</span> ${evento.lugar}
+                        </p>
+                        <p class="text-gray-600 mt-4">${evento.descripcion || '¡No te lo pierdas!'}</p>
                     </div>
                 </div>
             `;
-            div.addEventListener('click', function() {
-                document.querySelectorAll('.lote-option').forEach(el => el.classList.remove('selected'));
-                this.classList.add('selected');
-                estado.loteSeleccionado = lote;
-                actualizarResumen();
+        }
+
+        // Mostrar lotes
+       function renderLotes(lotes) {
+    const containerLotes = document.getElementById('lotesContainer');
+    if (!lotes || lotes.length === 0) {
+        containerLotes.innerHTML = `<p class="text-gray-500">No hay lotes disponibles.</p>`;
+        return;
+    }
+
+    containerLotes.innerHTML = lotes.map((lote, index) => {
+        const vendidas = lote.vendidas || 0;
+        const disponibles = (lote.disponibles || 0) - vendidas;
+        const disponibleTexto = disponibles > 0 ? `${disponibles} disponibles` : 'Agotado';
+        const selectedClass = index === 0 ? 'lote-selected border-2 border-violet-600' : 'border border-gray-200';
+        
+        // 🔥 Manejo seguro del precio
+        const precioNumerico = Number(lote.precio) || 0;
+        const precioFormateado = precioNumerico > 0 ? `$${precioNumerico.toLocaleString()}` : '$0';
+
+        return `
+            <div class="lote-card p-4 rounded-xl cursor-pointer transition ${selectedClass}" data-index="${index}">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-semibold text-gray-800">${lote.nombre || 'Sin nombre'}</h4>
+                        <p class="text-sm text-gray-500">${lote.vigencia || ''}</p>
+                    </div>
+                    <span class="text-lg font-bold text-violet-600">${precioFormateado}</span>
+                </div>
+                <p class="text-sm ${disponibles > 0 ? 'text-green-600' : 'text-red-500'} mt-2">${disponibleTexto}</p>
+                ${disponibles === 0 ? '<p class="text-xs text-red-400">Agotado</p>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    // Seleccionar el primer lote por defecto
+    const cards = containerLotes.querySelectorAll('.lote-card');
+    if (cards.length > 0) {
+        cards.forEach((card, i) => {
+            card.addEventListener('click', () => {
+                cards.forEach(c => {
+                    c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
+                    c.classList.add('border', 'border-gray-200');
+                });
+                card.classList.add('lote-selected', 'border-2', 'border-violet-600');
+                loteSeleccionado = i;
+                actualizarTotal();
             });
-            lotesContainer.appendChild(div);
         });
-
-        // Métodos de pago
-        const metodoSelect = document.getElementById('metodoPago');
-        evento.metodosPago.forEach(m => {
-            const option = document.createElement('option');
-            option.value = m;
-            option.textContent = m;
-            metodoSelect.appendChild(option);
-        });
-
-        // Actualizar resumen
-        function actualizarResumen() {
-            const lote = estado.loteSeleccionado;
-            const cantidad = estado.cantidad;
-            if (lote) {
-                document.getElementById('loteSeleccionado').textContent = `${lote.nombre} - $${lote.precio.toLocaleString()} c/u`;
-                const total = lote.precio * cantidad;
-                document.getElementById('totalDisplay').textContent = `$${total.toLocaleString()}`;
-                const disponibles = lote.disponibles - lote.vendidas;
-                document.getElementById('stockMsg').textContent = `${disponibles} entradas disponibles`;
-                // Habilitar botón si hay stock
-                document.getElementById('btnComprar').disabled = (disponibles < cantidad);
-            } else {
-                document.getElementById('loteSeleccionado').textContent = 'Selecciona un lote';
-                document.getElementById('totalDisplay').textContent = '$0';
-                document.getElementById('btnComprar').disabled = true;
+        // Seleccionar el primero
+        cards[0].click();
+    }
+}
+        // Actualizar total
+        function actualizarTotal() {
+            if (eventoActual && loteSeleccionado !== null) {
+                const lote = eventoActual.lotes[loteSeleccionado];
+                const cantidad = parseInt(document.getElementById('cantidadInput').value) || 1;
+                const precio = Number(lote.precio) || 0;
+                const total = precio * cantidad;
+                document.getElementById('totalMostrado').textContent = `$${total.toLocaleString()}`;
             }
-            // Validar email y método
-            const email = document.getElementById('emailInput').value.trim();
-            const metodo = document.getElementById('metodoPago').value;
-            estado.email = email;
-            estado.metodoPago = metodo;
-            // El botón se habilita si todo está completo y hay stock
-            const stockOk = estado.loteSeleccionado && (estado.loteSeleccionado.disponibles - estado.loteSeleccionado.vendidas) >= estado.cantidad;
-            document.getElementById('btnComprar').disabled = !(stockOk && email && metodo);
         }
 
-        // Cambiar cantidad
-        function cambiarCantidad(delta) {
-            const newQty = estado.cantidad + delta;
-            if (newQty < 1) return;
-            if (estado.loteSeleccionado) {
-                const max = estado.loteSeleccionado.disponibles - estado.loteSeleccionado.vendidas;
-                if (newQty > max) return;
+        // Manejar cantidad
+        document.getElementById('btnMenos').addEventListener('click', () => {
+            const input = document.getElementById('cantidadInput');
+            let val = parseInt(input.value) || 1;
+            if (val > 1) {
+                input.value = val - 1;
+                actualizarTotal();
             }
-            estado.cantidad = newQty;
-            document.getElementById('qtyDisplay').textContent = newQty;
-            actualizarResumen();
-        }
+        });
+        document.getElementById('btnMas').addEventListener('click', () => {
+            const input = document.getElementById('cantidadInput');
+            let val = parseInt(input.value) || 1;
+            const max = 10; // o podríamos usar la disponibilidad
+            if (val < max) {
+                input.value = val + 1;
+                actualizarTotal();
+            }
+        });
+        document.getElementById('cantidadInput').addEventListener('change', actualizarTotal);
 
-        // Eventos de cambio
-        document.getElementById('emailInput').addEventListener('input', actualizarResumen);
-        document.getElementById('metodoPago').addEventListener('change', actualizarResumen);
-
-        // Procesar compra
-        function procesarCompra() {
-            const lote = estado.loteSeleccionado;
-            const cantidad = estado.cantidad;
-            const email = estado.email;
-            const metodo = estado.metodoPago;
-            const total = lote.precio * cantidad;
-
-            if (!lote || !email || !metodo) {
-                alert('Completa todos los campos.');
+        // Comprar
+        document.getElementById('btnComprar').addEventListener('click', async () => {
+            if (!eventoActual || loteSeleccionado === null) {
+                alert('Selecciona un lote primero');
                 return;
             }
 
-            // Simular compra (aquí iría la integración con Mercado Pago)
-            // Generar un ID de compra aleatorio
-            const compraId = 'CMP-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            const email = document.getElementById('emailInput').value.trim();
+            if (!email) {
+                alert('Ingresa tu correo electrónico');
+                return;
+            }
 
-            // Guardar datos de la compra en sessionStorage para la confirmación
-            const compraData = {
-                id: compraId,
-                eventoId: evento.id,
-                eventoNombre: evento.nombre,
-                loteNombre: lote.nombre,
-                cantidad: cantidad,
-                precioUnitario: lote.precio,
-                total: total,
-                email: email,
-                metodo: metodo,
-                fecha: new Date().toLocaleString()
-            };
-            sessionStorage.setItem('compraActual', JSON.stringify(compraData));
+            const cantidad = parseInt(document.getElementById('cantidadInput').value) || 1;
+            const lote = eventoActual.lotes[loteSeleccionado];
+            const metodoPago = document.getElementById('metodoPago').value;
+            const montoTotal = lote.precio * cantidad;
 
-            // Redirigir a confirmación
-            window.location.href = `confirmacion.html?id=${compraId}`;
-        }
+            // Verificar disponibilidad
+            const disponibles = lote.disponibles - (lote.vendidas || 0);
+            if (cantidad > disponibles) {
+                alert(`Solo quedan ${disponibles} entradas disponibles en este lote.`);
+                return;
+            }
 
-        // Inicializar
-        actualizarResumen();
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('eventoContent').classList.remove('hidden');
+            try {
+                // Generar códigos QR para cada entrada
+                const entradas = [];
+                for (let i = 0; i < cantidad; i++) {
+                    const codigo = `ENT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                    entradas.push({ codigo, usado: false });
+                }
+
+                // Guardar venta en Firestore
+                const ventaData = {
+                    eventoId: eventoActual.id,
+                    eventoNombre: eventoActual.nombre,
+                    loteNombre: lote.nombre,
+                    cantidad: cantidad,
+                    correo: email,
+                    metodo_pago: metodoPago,
+                    monto_total: montoTotal,
+                    estado: 'confirmada', // luego se actualizará con el pago
+                    fecha: new Date(),
+                    entradas: entradas
+                };
+
+                const docRef = await addDoc(collection(db, "ventas"), ventaData);
+
+                // Actualizar vendidas en el evento
+                const lotesActualizados = eventoActual.lotes.map((l, i) => {
+                    if (i === loteSeleccionado) {
+                        return { ...l, vendidas: (l.vendidas || 0) + cantidad };
+                    }
+                    return l;
+                });
+                await updateDoc(doc(db, "eventos", eventoActual.id), { lotes: lotesActualizados });
+
+                // Redirigir a confirmación con el ID de la venta
+                window.location.href = `confirmacion.html?id=${docRef.id}`;
+
+            } catch (error) {
+                console.error('Error al procesar la compra:', error);
+                alert('Hubo un error al procesar tu compra. Intenta nuevamente.');
+            }
+        });
+
+        // Iniciar
+        cargarEvento(eventoId);
     </script>
 </body>
 </html>
