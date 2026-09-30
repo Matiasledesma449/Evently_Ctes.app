@@ -3,24 +3,35 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Detalle evento</title>
+    <title>Evently - Comprar entradas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
-        .card { transition: box-shadow 0.2s; }
-        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .lote-selected { border-color: #7c3aed; background: #f5f3ff; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .card-input:focus { border-color: #7c3aed; outline: none; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
+        .metodo-option { cursor: pointer; transition: all 0.2s; }
+        .metodo-option:hover { border-color: #7c3aed; background: #f5f3ff; }
+        .metodo-option.selected { border-color: #7c3aed; background: #f5f3ff; }
+        .billetera-option { cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .billetera-option:hover { border-color: #7c3aed; background: #f5f3ff; }
+        .billetera-option.selected { border-color: #7c3aed; background: #f5f3ff; }
+        .tarjeta-option { cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .tarjeta-option:hover { border-color: #7c3aed; background: #f5f3ff; }
+        .tarjeta-option.selected { border-color: #7c3aed; background: #f5f3ff; }
+        .recargo-badge { font-size: 0.7rem; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 9999px; }
+        .cuota-info { font-size: 0.8rem; color: #6b7280; }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
     <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <a href="index.html" class="text-violet-600 hover:underline flex items-center gap-1">
+                <a href="index.html" class="text-violet-600 hover:underline flex items-center gap-1 text-sm">
                     <span class="material-symbols-outlined text-sm">arrow_back</span> Volver
                 </a>
                 <span class="text-2xl font-bold text-violet-600 ml-4">Evently</span>
@@ -28,121 +39,320 @@
         </div>
     </header>
 
-    <!-- Contenido -->
     <main class="max-w-4xl mx-auto px-4 py-8">
         <div id="eventoContainer">
             <p class="text-center text-gray-400">Cargando evento...</p>
         </div>
 
-        <!-- Formulario de compra (se muestra solo cuando el evento está cargado) -->
-        <div id="formularioCompra" class="hidden mt-8 bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Comprar entradas</h3>
-
-            <!-- Selección de lote -->
+        <!-- PASO 1: Selección de lotes y cantidad -->
+        <div id="step1" class="step active mt-8 bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Selecciona tus entradas</h3>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Selecciona un lote</label>
-                <div id="lotesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- Se llena con JS -->
-                </div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Elige un lote</label>
+                <div id="lotesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
-
-            <!-- Cantidad -->
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad de entradas</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
                 <div class="flex items-center border border-gray-300 rounded-lg w-32">
                     <button id="btnMenos" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg">-</button>
                     <input id="cantidadInput" type="number" value="1" min="1" max="10" class="w-full text-center border-none focus:ring-0 outline-none" />
                     <button id="btnMas" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-r-lg">+</button>
                 </div>
             </div>
+            <button id="btnContinuarPaso1" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-full transition shadow-md">
+                Continuar con el pago
+            </button>
+        </div>
 
-            <!-- Correo -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
-                <input id="emailInput" type="email" placeholder="tu@email.com" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required />
+        <!-- PASO 2: Selección de método de pago y datos -->
+        <div id="step2" class="step mt-8 bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Método de pago</h3>
+
+            <!-- Opciones de pago -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="metodosContainer">
+                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center selected" data-metodo="Efectivo">
+                    <span class="material-symbols-outlined text-2xl">payments</span>
+                    <p class="text-sm font-medium">Efectivo</p>
+                </div>
+                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center" data-metodo="Transferencia">
+                    <span class="material-symbols-outlined text-2xl">account_balance</span>
+                    <p class="text-sm font-medium">Transferencia</p>
+                </div>
+                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center" data-metodo="Credito">
+                    <span class="material-symbols-outlined text-2xl">credit_card</span>
+                    <p class="text-sm font-medium">Crédito</p>
+                </div>
+                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center" data-metodo="Debito">
+                    <span class="material-symbols-outlined text-2xl">credit_card</span>
+                    <p class="text-sm font-medium">Débito</p>
+                </div>
             </div>
 
-            <!-- Método de pago -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Método de pago</label>
-                <select id="metodoPago" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Débito">Débito</option>
-                    <option value="Crédito">Crédito</option>
-                    <option value="Mixto">Mixto</option>
-                </select>
+            <!-- Formularios dinámicos -->
+            <div id="formularioPago">
+                <!-- 1. EFECTIVO -->
+                <div id="pagoEfectivo" class="pago-detalle">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
+                        <p class="text-sm text-yellow-800"><strong>Pago en efectivo</strong></p>
+                        <p class="text-sm text-gray-700 mt-1">Puedes pagar en la boletería del evento el día del evento. Presenta tu DNI y el código de reserva.</p>
+                        <p class="text-sm text-gray-700 mt-1">📍 <strong>Punto de pago:</strong> Boletería del evento</p>
+                        <p class="text-sm text-gray-700">⏰ <strong>Horario:</strong> 2 horas antes del inicio</p>
+                    </div>
+                </div>
+
+                <!-- 2. TRANSFERENCIA (con billeteras virtuales) -->
+                <div id="pagoTransferencia" class="pago-detalle" style="display:none;">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                        <p class="text-sm text-blue-800 font-semibold">Selecciona tu billetera virtual</p>
+                        <p class="text-xs text-gray-600 mt-1">Al hacer clic en una billetera, serás redirigido a la aplicación para completar el pago.</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                            <!-- Mercado Pago -->
+                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="mercadopago">
+                                <span class="material-symbols-outlined text-3xl text-blue-500">payments</span>
+                                <p class="text-xs font-medium mt-1">Mercado Pago</p>
+                            </div>
+                            <!-- Ualá -->
+                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="uala">
+                                <span class="material-symbols-outlined text-3xl text-purple-600">account_balance_wallet</span>
+                                <p class="text-xs font-medium mt-1">Ualá</p>
+                            </div>
+                            <!-- Brubank -->
+                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="brubank">
+                                <span class="material-symbols-outlined text-3xl text-orange-500">savings</span>
+                                <p class="text-xs font-medium mt-1">Brubank</p>
+                            </div>
+                            <!-- Tarjeta Naranja -->
+                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="tarjetanaranja">
+                                <span class="material-symbols-outlined text-3xl text-orange-600">credit_card</span>
+                                <p class="text-xs font-medium mt-1">Tarjeta Naranja</p>
+                            </div>
+                        </div>
+                        <div id="mensajeBilletera" class="mt-3 text-sm text-gray-700 hidden">
+                            <span class="font-semibold">Billetera seleccionada:</span> <span id="billeteraSeleccionadaNombre">-</span>
+                            <br>
+                            <span class="text-xs text-gray-500">Monto a pagar: <span id="montoBilletera" class="font-bold text-violet-600">$0</span></span>
+                            <br>
+                            <button id="btnPagarConBilletera" class="mt-2 bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition">
+                                Pagar con esta billetera
+                            </button>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500">
+                            * Al hacer clic en "Pagar con esta billetera" se simulará el pago. En producción, se integraría con la API correspondiente.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. CRÉDITO -->
+                <div id="pagoCredito" class="pago-detalle" style="display:none;">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-3">Elige tu tarjeta de crédito</h4>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center selected" data-tarjeta="visa">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Visa</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="mastercard">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Mastercard</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="amex">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Amex</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="cabal">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Cabal</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="naranja">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Naranja</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Número de tarjeta</label>
+                                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="19" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Fecha exp.</label>
+                                    <input type="text" id="cardExp" placeholder="MM/AA" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="5" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">CVV</label>
+                                    <input type="text" id="cardCvv" placeholder="123" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="4" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nombre del titular</label>
+                                <input type="text" id="cardName" placeholder="Como aparece en la tarjeta" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Cuotas</label>
+                                <select id="cardCuotas" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                                    <option value="1">1 cuota (sin interés)</option>
+                                    <option value="3">3 cuotas (10% de recargo)</option>
+                                    <option value="6">6 cuotas (20% de recargo)</option>
+                                    <option value="12">12 cuotas (35% de recargo)</option>
+                                </select>
+                                <div id="infoRecargo" class="mt-1 text-sm text-gray-500">
+                                    💰 <span id="recargoMostrado">Sin recargo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. DÉBITO -->
+                <div id="pagoDebito" class="pago-detalle" style="display:none;">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-3">Elige tu tarjeta de débito</h4>
+                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center selected" data-tarjeta="visa">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Visa</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="mastercard">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Mastercard</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="maestro">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Maestro</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="cabal">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Cabal</p>
+                            </div>
+                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="naranja">
+                                <span class="text-2xl">💳</span>
+                                <p class="text-xs">Naranja</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Número de tarjeta</label>
+                                <input type="text" id="debitCardNumber" placeholder="1234 5678 9012 3456" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="19" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Fecha exp.</label>
+                                    <input type="text" id="debitCardExp" placeholder="MM/AA" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="5" />
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">CVV</label>
+                                    <input type="text" id="debitCardCvv" placeholder="123" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="4" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nombre del titular</label>
+                                <input type="text" id="debitCardName" placeholder="Como aparece en la tarjeta" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" />
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2">
+                                💳 Sin recargo por pago con débito.
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Total -->
-            <div class="border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
-                <span class="text-lg font-bold text-gray-800">Total: <span id="totalMostrado">$0</span></span>
-                <button id="btnComprar" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-full font-semibold transition shadow-md">
-                    Comprar ahora
+            <!-- Resumen -->
+            <div class="border-t border-gray-200 pt-4 mt-6 flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <span class="text-sm text-gray-500">Total a pagar:</span>
+                    <span id="totalMostrado" class="text-2xl font-bold text-violet-600 ml-2">$0</span>
+                    <span id="recargoTotal" class="text-sm text-gray-500 ml-2 hidden">(incluye recargo)</span>
+                </div>
+                <button id="btnPagarAhora" class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 rounded-full font-semibold transition shadow-md">
+                    Pagar ahora
                 </button>
             </div>
+
+            <button id="btnVolverPaso1" class="mt-4 text-sm text-violet-600 hover:underline">← Volver a seleccionar entradas</button>
+        </div>
+
+        <div id="loadingContainer" class="hidden mt-8 text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-violet-600 border-t-transparent"></div>
+            <p class="text-gray-500 mt-2">Procesando tu compra...</p>
         </div>
     </main>
 
-    <!-- Firebase -->
+    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
+        © 2024 Evently by Bali Group
+    </footer>
+
     <script type="module" src="../shared/firebase-init.js"></script>
 
-    <!-- Lógica -->
     <script type="module">
-        // Obtener ID del evento de la URL
-        const params = new URLSearchParams(window.location.search);
-        const eventoId = params.get('id');
+        import { doc, getDoc, addDoc, collection, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        if (!eventoId) {
-            document.getElementById('eventoContainer').innerHTML = `
-                <div class="text-center py-12">
-                    <p class="text-red-500">No se especificó ningún evento.</p>
-                    <a href="index.html" class="text-violet-600 hover:underline">Volver al listado</a>
-                </div>
-            `;
-            throw new Error('Falta ID de evento');
-        }
-
+        // Elementos
         const container = document.getElementById('eventoContainer');
-        const formCompra = document.getElementById('formularioCompra');
+        const lotesContainer = document.getElementById('lotesContainer');
+        const cantidadInput = document.getElementById('cantidadInput');
+        const btnMenos = document.getElementById('btnMenos');
+        const btnMas = document.getElementById('btnMas');
+        const btnContinuarPaso1 = document.getElementById('btnContinuarPaso1');
+        const btnVolverPaso1 = document.getElementById('btnVolverPaso1');
+        const btnPagarAhora = document.getElementById('btnPagarAhora');
+        const totalMostrado = document.getElementById('totalMostrado');
+        const recargoTotal = document.getElementById('recargoTotal');
+        const recargoMostrado = document.getElementById('recargoMostrado');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const loadingContainer = document.getElementById('loadingContainer');
+        const mensajeBilletera = document.getElementById('mensajeBilletera');
+        const billeteraSeleccionadaNombre = document.getElementById('billeteraSeleccionadaNombre');
+        const montoBilletera = document.getElementById('montoBilletera');
+        const btnPagarConBilletera = document.getElementById('btnPagarConBilletera');
 
         let eventoActual = null;
         let loteSeleccionado = null;
+        let metodoSeleccionado = 'Efectivo';
+        let billeteraSeleccionada = null;
+        let tarjetaSeleccionada = 'visa';
+        let recargoPorcentaje = 0;
+        let montoBase = 0;
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventoId = urlParams.get('id');
 
-        // Cargar evento desde Firebase
+        if (!eventoId) {
+            container.innerHTML = `<p class="text-red-500">Evento no encontrado.</p>`;
+            throw new Error('Falta ID de evento');
+        }
+
+        // Cargar evento
         async function cargarEvento(id) {
             try {
                 const docRef = doc(db, "eventos", id);
                 const docSnap = await getDoc(docRef);
-
                 if (!docSnap.exists()) {
-                    container.innerHTML = `<p class="text-center text-red-500">Evento no encontrado.</p>`;
+                    container.innerHTML = `<p class="text-red-500">Evento no encontrado.</p>`;
                     return;
                 }
-
                 eventoActual = { id: docSnap.id, ...docSnap.data() };
                 renderEvento(eventoActual);
                 renderLotes(eventoActual.lotes || []);
-                formCompra.classList.remove('hidden');
-
+                actualizarTotal();
             } catch (error) {
                 console.error('Error al cargar evento:', error);
-                container.innerHTML = `<p class="text-center text-red-500">Error al cargar el evento.</p>`;
+                container.innerHTML = `<p class="text-red-500">Error al cargar el evento. Verifica tu conexión.</p>`;
             }
         }
 
-        // Mostrar datos del evento
         function renderEvento(evento) {
+            // Usar picsum.photos para imagen de respaldo (funciona bien)
+            const imagenUrl = './imag/Imagen de evento 1.jpg';
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <img src="${evento.imagen || 'https://via.placeholder.com/800x300/ede9fe/7c3aed?text=Evento'}" alt="${evento.nombre}" class="w-full h-64 object-cover">
+                    <img src="${imagenUrl}" alt="${evento.nombre}" class="w-full h-64 object-cover" onerror="this.src='https://picsum.photos/800/300?random=1'">
                     <div class="p-6">
-                        <h1 class="text-3xl font-bold text-gray-800">${evento.nombre}</h1>
+                        <h1 class="text-3xl font-bold text-gray-800">${evento.nombre || 'Evento sin nombre'}</h1>
                         <p class="text-gray-500 flex items-center gap-2 mt-2">
-                            <span class="material-symbols-outlined">calendar_month</span> ${evento.fecha}
+                            <span class="material-symbols-outlined">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
                         </p>
                         <p class="text-gray-500 flex items-center gap-2">
-                            <span class="material-symbols-outlined">location_on</span> ${evento.lugar}
+                            <span class="material-symbols-outlined">location_on</span> ${evento.lugar || 'Lugar no definido'}
                         </p>
                         <p class="text-gray-600 mt-4">${evento.descripcion || '¡No te lo pierdas!'}</p>
                     </div>
@@ -150,157 +360,253 @@
             `;
         }
 
-        // Mostrar lotes
-       function renderLotes(lotes) {
-    const containerLotes = document.getElementById('lotesContainer');
-    if (!lotes || lotes.length === 0) {
-        containerLotes.innerHTML = `<p class="text-gray-500">No hay lotes disponibles.</p>`;
-        return;
-    }
-
-    containerLotes.innerHTML = lotes.map((lote, index) => {
-        const vendidas = lote.vendidas || 0;
-        const disponibles = (lote.disponibles || 0) - vendidas;
-        const disponibleTexto = disponibles > 0 ? `${disponibles} disponibles` : 'Agotado';
-        const selectedClass = index === 0 ? 'lote-selected border-2 border-violet-600' : 'border border-gray-200';
-        
-        // 🔥 Manejo seguro del precio
-        const precioNumerico = Number(lote.precio) || 0;
-        const precioFormateado = precioNumerico > 0 ? `$${precioNumerico.toLocaleString()}` : '$0';
-
-        return `
-            <div class="lote-card p-4 rounded-xl cursor-pointer transition ${selectedClass}" data-index="${index}">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h4 class="font-semibold text-gray-800">${lote.nombre || 'Sin nombre'}</h4>
-                        <p class="text-sm text-gray-500">${lote.vigencia || ''}</p>
+        function renderLotes(lotes) {
+            if (!lotes || lotes.length === 0) {
+                lotesContainer.innerHTML = `<p class="text-gray-500">No hay lotes disponibles para este evento.</p>`;
+                return;
+            }
+            lotesContainer.innerHTML = lotes.map((lote, index) => {
+                const vendidas = Number(lote.vendidas) || 0;
+                const disponibles = Number(lote.disponibles) || 0;
+                const disponiblesRestantes = Math.max(0, disponibles - vendidas);
+                const disponibleTexto = disponiblesRestantes > 0 ? `${disponiblesRestantes} disponibles` : 'Agotado';
+                const selectedClass = index === 0 ? 'lote-selected border-2 border-violet-600' : 'border border-gray-200';
+                const precioNum = Number(lote.precio) || 0;
+                return `
+                    <div class="lote-card p-4 rounded-xl cursor-pointer transition ${selectedClass}" data-index="${index}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-semibold text-gray-800">${lote.nombre || 'Sin nombre'}</h4>
+                                <p class="text-sm text-gray-500">${lote.vigencia || ''}</p>
+                            </div>
+                            <span class="text-lg font-bold text-violet-600">$${precioNum.toLocaleString()}</span>
+                        </div>
+                        <p class="text-sm ${disponiblesRestantes > 0 ? 'text-green-600' : 'text-red-500'} mt-2">${disponibleTexto}</p>
+                        ${disponiblesRestantes === 0 ? '<p class="text-xs text-red-400">Agotado</p>' : ''}
                     </div>
-                    <span class="text-lg font-bold text-violet-600">${precioFormateado}</span>
-                </div>
-                <p class="text-sm ${disponibles > 0 ? 'text-green-600' : 'text-red-500'} mt-2">${disponibleTexto}</p>
-                ${disponibles === 0 ? '<p class="text-xs text-red-400">Agotado</p>' : ''}
-            </div>
-        `;
-    }).join('');
+                `;
+            }).join('');
 
-    // Seleccionar el primer lote por defecto
-    const cards = containerLotes.querySelectorAll('.lote-card');
-    if (cards.length > 0) {
-        cards.forEach((card, i) => {
-            card.addEventListener('click', () => {
-                cards.forEach(c => {
-                    c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
-                    c.classList.add('border', 'border-gray-200');
+            const cards = lotesContainer.querySelectorAll('.lote-card');
+            if (cards.length > 0) {
+                cards.forEach((card, i) => {
+                    card.addEventListener('click', () => {
+                        cards.forEach(c => {
+                            c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
+                            c.classList.add('border', 'border-gray-200');
+                        });
+                        card.classList.add('lote-selected', 'border-2', 'border-violet-600');
+                        loteSeleccionado = i;
+                        actualizarTotal();
+                    });
                 });
-                card.classList.add('lote-selected', 'border-2', 'border-violet-600');
-                loteSeleccionado = i;
-                actualizarTotal();
-            });
-        });
-        // Seleccionar el primero
-        cards[0].click();
-    }
-}
-        // Actualizar total
-        function actualizarTotal() {
-            if (eventoActual && loteSeleccionado !== null) {
-                const lote = eventoActual.lotes[loteSeleccionado];
-                const cantidad = parseInt(document.getElementById('cantidadInput').value) || 1;
-                const precio = Number(lote.precio) || 0;
-                const total = precio * cantidad;
-                document.getElementById('totalMostrado').textContent = `$${total.toLocaleString()}`;
+                // Seleccionar el primero por defecto
+                cards[0].click();
             }
         }
 
-        // Manejar cantidad
-        document.getElementById('btnMenos').addEventListener('click', () => {
-            const input = document.getElementById('cantidadInput');
-            let val = parseInt(input.value) || 1;
-            if (val > 1) {
-                input.value = val - 1;
-                actualizarTotal();
-            }
-        });
-        document.getElementById('btnMas').addEventListener('click', () => {
-            const input = document.getElementById('cantidadInput');
-            let val = parseInt(input.value) || 1;
-            const max = 10; // o podríamos usar la disponibilidad
-            if (val < max) {
-                input.value = val + 1;
-                actualizarTotal();
-            }
-        });
-        document.getElementById('cantidadInput').addEventListener('change', actualizarTotal);
+        function actualizarTotal() {
+            if (eventoActual && loteSeleccionado !== null) {
+                const lote = eventoActual.lotes[loteSeleccionado];
+                const cantidad = parseInt(cantidadInput.value) || 1;
+                const precio = Number(lote.precio) || 0;
+                montoBase = precio * cantidad;
+                let recargo = 0;
+                let total = montoBase;
 
-        // Comprar
-        document.getElementById('btnComprar').addEventListener('click', async () => {
-            if (!eventoActual || loteSeleccionado === null) {
-                alert('Selecciona un lote primero');
-                return;
-            }
-
-            const email = document.getElementById('emailInput').value.trim();
-            if (!email) {
-                alert('Ingresa tu correo electrónico');
-                return;
-            }
-
-            const cantidad = parseInt(document.getElementById('cantidadInput').value) || 1;
-            const lote = eventoActual.lotes[loteSeleccionado];
-            const metodoPago = document.getElementById('metodoPago').value;
-            const montoTotal = lote.precio * cantidad;
-
-            // Verificar disponibilidad
-            const disponibles = lote.disponibles - (lote.vendidas || 0);
-            if (cantidad > disponibles) {
-                alert(`Solo quedan ${disponibles} entradas disponibles en este lote.`);
-                return;
-            }
-
-            try {
-                // Generar códigos QR para cada entrada
-                const entradas = [];
-                for (let i = 0; i < cantidad; i++) {
-                    const codigo = `ENT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                    entradas.push({ codigo, usado: false });
+                if (metodoSeleccionado === 'Credito') {
+                    const cuotas = parseInt(document.getElementById('cardCuotas').value);
+                    if (cuotas === 3) recargo = 0.10;
+                    else if (cuotas === 6) recargo = 0.20;
+                    else if (cuotas === 12) recargo = 0.35;
+                    total = montoBase * (1 + recargo);
+                    recargoPorcentaje = recargo * 100;
+                    recargoTotal.classList.remove('hidden');
+                    recargoTotal.textContent = `(incluye ${recargoPorcentaje.toFixed(0)}% de recargo)`;
+                    const cuotaInfo = cuotas === 1 ? 'sin interés' : `${cuotas} cuotas de $${(total / cuotas).toFixed(2)}`;
+                    recargoMostrado.textContent = cuotas === 1 ? 'Sin recargo' : `${recargoPorcentaje.toFixed(0)}% de recargo (${cuotaInfo})`;
+                } else {
+                    recargoTotal.classList.add('hidden');
+                    recargoMostrado.textContent = 'Sin recargo';
+                    recargoPorcentaje = 0;
                 }
 
-                // Guardar venta en Firestore
-                const ventaData = {
-                    eventoId: eventoActual.id,
-                    eventoNombre: eventoActual.nombre,
-                    loteNombre: lote.nombre,
-                    cantidad: cantidad,
-                    correo: email,
-                    metodo_pago: metodoPago,
-                    monto_total: montoTotal,
-                    estado: 'confirmada', // luego se actualizará con el pago
-                    fecha: new Date(),
-                    entradas: entradas
-                };
+                totalMostrado.textContent = `$${total.toLocaleString()}`;
+                montoBilletera.textContent = `$${total.toLocaleString()}`;
+            }
+        }
 
+        // Eventos de cantidad
+        btnMenos.addEventListener('click', () => {
+            let val = parseInt(cantidadInput.value) || 1;
+            if (val > 1) { cantidadInput.value = val - 1; actualizarTotal(); }
+        });
+        btnMas.addEventListener('click', () => {
+            let val = parseInt(cantidadInput.value) || 1;
+            const max = 10;
+            if (val < max) { cantidadInput.value = val + 1; actualizarTotal(); }
+        });
+        cantidadInput.addEventListener('change', actualizarTotal);
+        document.getElementById('cardCuotas').addEventListener('change', actualizarTotal);
+
+        // Métodos de pago
+        document.querySelectorAll('.metodo-option').forEach(el => {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.metodo-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                metodoSeleccionado = this.dataset.metodo;
+                document.querySelectorAll('.pago-detalle').forEach(div => div.style.display = 'none');
+                const targetId = `pago${metodoSeleccionado}`;
+                const target = document.getElementById(targetId);
+                if (target) target.style.display = 'block';
+                actualizarTotal();
+            });
+        });
+
+        // Billeteras
+        document.querySelectorAll('.billetera-option').forEach(el => {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.billetera-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                billeteraSeleccionada = this.dataset.billetera;
+                const nombre = this.querySelector('p').textContent;
+                billeteraSeleccionadaNombre.textContent = nombre;
+                mensajeBilletera.classList.remove('hidden');
+                actualizarTotal();
+            });
+        });
+
+        // Tarjetas
+        document.querySelectorAll('.tarjeta-option').forEach(el => {
+            el.addEventListener('click', function() {
+                const parent = this.closest('.pago-detalle');
+                parent.querySelectorAll('.tarjeta-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                tarjetaSeleccionada = this.dataset.tarjeta;
+            });
+        });
+
+        // Botón de pago con billetera
+        btnPagarConBilletera.addEventListener('click', () => {
+            if (!billeteraSeleccionada) {
+                alert('Selecciona una billetera virtual primero.');
+                return;
+            }
+            const total = montoBase * (1 + recargoPorcentaje / 100);
+            alert(`🔗 Redirigiendo a ${billeteraSeleccionadaNombre.textContent} para pagar $${total.toFixed(2)}.`);
+            // Simulación de pago exitoso -> procesar
+            procesarPago('Transferencia');
+        });
+
+         btnContinuarPaso1.addEventListener('click', () => {
+            if (loteSeleccionado === null) {
+                alert('Selecciona un lote.');
+                return;
+            }
+            step1.classList.remove('active');
+            step2.classList.add('active');
+            actualizarTotal();
+        });
+
+        btnVolverPaso1.addEventListener('click', () => {
+            step2.classList.remove('active');
+            step1.classList.add('active');
+        });
+
+        // Función común para procesar el pago
+        async function procesarPago(metodo) {
+           const email = 'sin-correo@evently.com'; // o el valor que quieras usar por defecto 
+            const cantidad = parseInt(cantidadInput.value) || 1;
+            const lote = eventoActual.lotes[loteSeleccionado];
+            const total = montoBase * (1 + recargoPorcentaje / 100);
+
+            if (metodo === 'Credito' || metodo === 'Debito') {
+                const cardNumber = document.getElementById(metodo === 'Credito' ? 'cardNumber' : 'debitCardNumber').value.trim();
+                const cardExp = document.getElementById(metodo === 'Credito' ? 'cardExp' : 'debitCardExp').value.trim();
+                const cardCvv = document.getElementById(metodo === 'Credito' ? 'cardCvv' : 'debitCardCvv').value.trim();
+                const cardName = document.getElementById(metodo === 'Credito' ? 'cardName' : 'debitCardName').value.trim();
+                if (!cardNumber || !cardExp || !cardCvv || !cardName) {
+                    alert('Completa todos los datos de la tarjeta.');
+                    return;
+                }
+                if (cardNumber.replace(/\s/g, '').length < 16) {
+                    alert('Número de tarjeta inválido.');
+                    return;
+                }
+                if (!cardExp.match(/^\d{2}\/\d{2}$/)) {
+                    alert('Fecha de expiración inválida (MM/AA).');
+                    return;
+                }
+                if (cardCvv.length < 3) {
+                    alert('CVV inválido.');
+                    return;
+                }
+            }
+
+            if (metodo === 'Transferencia' && !billeteraSeleccionada) {
+                alert('Selecciona una billetera virtual para transferencia.');
+                return;
+            }
+
+            let estado = 'confirmada';
+            if (metodo === 'Efectivo' || metodo === 'Transferencia') {
+                estado = 'pendiente';
+            }
+
+            const entradas = [];
+            for (let i = 0; i < cantidad; i++) {
+                const codigo = `ENT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                entradas.push({ codigo, usado: false });
+            }
+
+            const ventaData = {
+                eventoId: eventoActual.id,
+                eventoNombre: eventoActual.nombre,
+                loteNombre: lote.nombre,
+                cantidad: cantidad,
+                correo: email,
+                metodo_pago: metodo,
+                billetera: billeteraSeleccionada || '',
+                tarjeta: tarjetaSeleccionada || '',
+                cuotas: metodo === 'Credito' ? parseInt(document.getElementById('cardCuotas').value) : 1,
+                monto_total: Math.round(total * 100) / 100,
+                recargo: recargoPorcentaje,
+                estado: estado,
+                fecha: serverTimestamp(),
+                entradas: entradas
+            };
+
+            btnPagarAhora.disabled = true;
+            btnPagarAhora.textContent = 'Procesando...';
+            loadingContainer.classList.remove('hidden');
+
+            try {
                 const docRef = await addDoc(collection(db, "ventas"), ventaData);
-
-                // Actualizar vendidas en el evento
                 const lotesActualizados = eventoActual.lotes.map((l, i) => {
                     if (i === loteSeleccionado) {
-                        return { ...l, vendidas: (l.vendidas || 0) + cantidad };
+                        return { ...l, vendidas: (Number(l.vendidas) || 0) + cantidad };
                     }
                     return l;
                 });
                 await updateDoc(doc(db, "eventos", eventoActual.id), { lotes: lotesActualizados });
-
-                // Redirigir a confirmación con el ID de la venta
                 window.location.href = `confirmacion.html?id=${docRef.id}`;
-
             } catch (error) {
                 console.error('Error al procesar la compra:', error);
                 alert('Hubo un error al procesar tu compra. Intenta nuevamente.');
+                btnPagarAhora.disabled = false;
+                btnPagarAhora.textContent = 'Pagar ahora';
+                loadingContainer.classList.add('hidden');
             }
+        }
+
+        // Botón final "Pagar ahora"
+        btnPagarAhora.addEventListener('click', () => {
+            procesarPago(metodoSeleccionado);
         });
 
         // Iniciar
         cargarEvento(eventoId);
+        document.getElementById('pagoEfectivo').style.display = 'block';
     </script>
 </body>
 </html>

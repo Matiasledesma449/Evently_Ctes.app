@@ -1,6 +1,5 @@
 // shared/firebase-init.js
 
-// Importar Firebase (desde CDN)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getFirestore, 
@@ -11,15 +10,18 @@ import {
     getDoc, 
     updateDoc, 
     query, 
-    where 
+    where,
+    onSnapshot,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
     getAuth, 
     signInWithEmailAndPassword, 
-    onAuthStateChanged 
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Tu configuración de Firebase (la que me diste)
 const firebaseConfig = {
     apiKey: "AIzaSyDD3Kw5RHSoJLD1314xAwSWG4QUQTdHWPA",
     authDomain: "evently-b612b.firebaseapp.com",
@@ -29,12 +31,10 @@ const firebaseConfig = {
     appId: "1:433464825628:web:1b4848f5ea155379fbccd9"
 };
 
-// Inicializar
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Exportar todo para que esté disponible globalmente
 window.db = db;
 window.auth = auth;
 window.collection = collection;
@@ -45,7 +45,24 @@ window.getDoc = getDoc;
 window.updateDoc = updateDoc;
 window.query = query;
 window.where = where;
+window.onSnapshot = onSnapshot;
+window.serverTimestamp = serverTimestamp;
 window.signInWithEmailAndPassword = signInWithEmailAndPassword;
 window.onAuthStateChanged = onAuthStateChanged;
+window.sendPasswordResetEmail = sendPasswordResetEmail;
+window.signOut = signOut;
 
 console.log("🔥 Firebase inicializado correctamente");
+
+// ✅ Prevenir navegación hacia atrás después de cerrar sesión
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        // Página restaurada desde bfcache (botón atrás)
+        if (!auth.currentUser) {
+            window.location.replace('login.html');
+        }
+    }
+});
+
+// ✅ Avisar a otros scripts que Firebase está listo
+window.dispatchEvent(new Event('firebase-ready'));

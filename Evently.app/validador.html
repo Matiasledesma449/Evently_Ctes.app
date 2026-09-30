@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Evently - Validador QR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        #video-container { width: 100%; max-width: 450px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: #000; position: relative; }
+        video { width: 100%; display: block; transform: scaleX(-1); } /* Espejo para selfie, pero en frontal se ve natural */
+        .result-box { padding: 16px; border-radius: 12px; text-align: center; margin-top: 16px; transition: all 0.3s; }
+        .success { background: #dcfce7; color: #166534; border: 2px solid #16a34a; }
+        .error { background: #fee2e2; color: #991b1b; border: 2px solid #dc2626; }
+        .info { background: #f3f4f6; color: #1f2937; border: 2px solid #d1d5db; }
+        .btn-retry { display: inline-block; margin-top: 16px; padding: 10px 24px; background: #7c3aed; color: white; border-radius: 9999px; font-weight: 600; cursor: pointer; border: none; transition: background 0.2s; width: 100%; }
+        .btn-retry:hover { background: #5b21b6; }
+        .flash-btn { position: absolute; bottom: 16px; right: 16px; background: rgba(255,255,255,0.8); border: none; border-radius: 9999px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 10; backdrop-filter: blur(4px); }
+        .flash-btn:hover { background: white; transform: scale(1.05); }
+        #mensajeLuz { font-size: 0.875rem; margin-top: 8px; background: #fff3cd; color: #856404; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffeeba; transition: all 0.3s; }
+        #mensajeLuz.hidden { display: none; }
+        .badge { display: inline-block; background: #e5e7eb; color: #374151; font-size: 0.7rem; padding: 2px 8px; border-radius: 9999px; margin-top: 4px; }
+        #loading { display: none; font-size: 0.9rem; color: #6b7280; }
+    </style>
+</head>
+<body>
+
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 relative">
+        <div class="text-center mb-4">
+            <h1 class="text-2xl font-bold text-violet-600">Evently <span class="text-gray-800">Validador</span></h1>
+            <p class="text-sm text-gray-500">Escanea el QR de la entrada</p>
+        </div>
+
+        <div id="video-container" class="relative">
+            <video id="video" playsinline></video>
+            <!-- Botón linterna -->
+            <button id="btnLinterna" class="flash-btn" title="Encender linterna">
+                <span class="material-symbols-outlined">flashlight_off</span>
+            </button>
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <!-- Mensaje de poca luz -->
+        <div id="mensajeLuz" class="hidden">
+            <span class="material-symbols-outlined text-sm align-middle">warning</span>
+            ⚠️ Poca luz. Enciende una linterna o acércate a una fuente de luz.
+        </div>
+
+        <div id="resultado" class="result-box info">
+            <span class="material-symbols-outlined text-3xl">qr_code_scanner</span><br>
+            Apunta la cámara al código QR
+        </div>
+
+        <button id="btnReiniciar" class="btn-retry hidden" onclick="reiniciarEscaneo()">
+            Escanear otra entrada
+        </button>
+
+        <!-- Indicador de carga (cuando se valida en Firebase) -->
+        <div id="loading" class="text-center text-gray-500 mt-2">
+            <span class="material-symbols-outlined animate-spin">progress_activity</span> Validando...
+        </div>
+    </div>
+
+    <!-- ============ FIREBASE ============ -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Elementos DOM
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const resultado = document.getElementById('resultado');
+        const btnReiniciar = document.getElementById('btnReiniciar');
+        const mensajeLuz = document.getElementById('mensajeLuz');
+        const btnLinterna = document.getElementById('btnLinterna');
+        const loadingDiv = document.getElementById('loading');
+
+        let scanning = true;
+        let stream = null;
+        let wakeLock = null;
+
+        // ============ FUNCIONES ============
+
+        // Mantener pantalla activa (Wake Lock)
+        async function mantenerPantallaActiva() {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('🔒 Pantalla mantenida activa');
+            } catch (e) {
+                console.warn('Wake Lock no disponible', e);
+            }
+        }
+
+        // Iniciar cámara
+        async function iniciarCamara() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                video.srcObject = stream;
+                video.setAttribute('playsinline', true);
+                await video.play();
+
+                // Wake Lock
+                mantenerPantallaActiva();
+
+                // Escaneo continuo
+                requestAnimationFrame(escanearCuadro);
+                // Verificar brillo
+                requestAnimationFrame(verificarBrillo);
+            } catch (err) {
+                resultado.className = 'result-box error';
+                resultado.innerHTML = '❌ Error al acceder a la cámara. Permite el acceso.';
+                console.error(err);
+            }
+        }
+
+        // Escaneo de QR
+        function escanearCuadro() {
+            if (!scanning) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert'
+                });
+                if (code && code.data) {
+                    scanning = false;
+                    procesarQR(code.data);
+                    return;
+                }
+            }
+            requestAnimationFrame(escanearCuadro);
+        }
+
+        // Verificar brillo
+        function verificarBrillo() {
+            if (!scanning) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                let total = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    total += data[i] + data[i+1] + data[i+2];
+                }
+                const avg = total / (data.length / 4 * 3);
+                if (avg < 50) {
+                    mensajeLuz.classList.remove('hidden');
+                } else {
+                    mensajeLuz.classList.add('hidden');
+                }
+            }
+            requestAnimationFrame(verificarBrillo);
+        }
+
+        // ============ VALIDACIÓN REAL CON FIRESTORE ============
+        async function procesarQR(qrData) {
+            // Mostrar loading
+            loadingDiv.style.display = 'block';
+            resultado.className = 'result-box info';
+            resultado.innerHTML = '⏳ Validando entrada...';
+
+            try {
+                // 1. Buscar el código en todas las ventas (colección "ventas")
+                const ventasRef = collection(db, 'ventas');
+                const q = query(ventasRef, where('entradas', 'array-contains', { codigo: qrData, usado: false }));
+                const querySnapshot = await getDocs(q);
+
+                let ventaEncontrada = null;
+                let entradaEncontrada = null;
+                let docId = null;
+
+                // Recorrer resultados (puede haber más de una, pero tomamos la primera)
+                for (const docSnap of querySnapshot.docs) {
+                    const data = docSnap.data();
+                    const entradas = data.entradas || [];
+                    const index = entradas.findIndex(e => e.codigo === qrData && e.usado === false);
+                    if (index !== -1) {
+                        ventaEncontrada = data;
+                        entradaEncontrada = entradas[index];
+                        docId = docSnap.id;
+                        break;
+                    }
+                }
+
+                if (!ventaEncontrada || !entradaEncontrada) {
+                    // No encontrado o ya usado
+                    resultado.className = 'result-box error';
+                    resultado.innerHTML = `
+                        <span class="material-symbols-outlined text-3xl">error</span><br>
+                        <span class="font-bold text-lg">❌ Entrada inválida o ya utilizada</span><br>
+                        <span class="text-sm">${qrData}</span>
+                    `;
+                    btnReiniciar.classList.remove('hidden');
+                    loadingDiv.style.display = 'none';
+                    return;
+                }
+
+                // 2. Marcar como usado en Firestore
+                const docRef = doc(db, 'ventas', docId);
+                const entradasActualizadas = ventaEncontrada.entradas.map(e => {
+                    if (e.codigo === qrData) {
+                        return { ...e, usado: true };
+                    }
+                    return e;
+                });
+
+                await updateDoc(docRef, { entradas: entradasActualizadas });
+
+                // 3. Éxito
+                resultado.className = 'result-box success';
+                resultado.innerHTML = `
+                    <span class="material-symbols-outlined text-3xl">check_circle</span><br>
+                    <span class="font-bold text-lg">✅ Entrada válida</span><br>
+                    <span class="text-sm">${qrData}</span><br>
+                    <span class="badge">Evento: ${ventaEncontrada.eventoNombre || 'N/A'}</span>
+                    <span class="badge">Lote: ${ventaEncontrada.loteNombre || 'N/A'}</span>
+                `;
+                btnReiniciar.classList.remove('hidden');
+
+                // (Opcional) Detener la cámara para ahorrar batería
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }
+
+            } catch (error) {
+                console.error('Error al validar:', error);
+                resultado.className = 'result-box error';
+                resultado.innerHTML = '❌ Error al conectar con el servidor. Intenta de nuevo.';
+                btnReiniciar.classList.remove('hidden');
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        // ============ REINICIAR ESCANEO ============
+        function reiniciarEscaneo() {
+            scanning = true;
+            btnReiniciar.classList.add('hidden');
+            resultado.className = 'result-box info';
+            resultado.innerHTML = `
+                <span class="material-symbols-outlined text-3xl">qr_code_scanner</span><br>
+                Apunta la cámara al código QR
+            `;
+            mensajeLuz.classList.add('hidden');
+            // Si la cámara se detuvo, reiniciar
+            if (!video.srcObject) {
+                iniciarCamara();
+            } else {
+                requestAnimationFrame(escanearCuadro);
+                requestAnimationFrame(verificarBrillo);
+            }
+        }
+
+        // ============ LINTERNA (TORCH) ============
+        let linternaEncendida = false;
+        btnLinterna.addEventListener('click', async () => {
+            const track = stream?.getVideoTracks()[0];
+            if (!track) {
+                alert('La cámara aún no está activa.');
+                return;
+            }
+            try {
+                linternaEncendida = !linternaEncendida;
+                await track.applyConstraints({ advanced: [{ torch: linternaEncendida }] });
+                btnLinterna.innerHTML = linternaEncendida ?
+                    '<span class="material-symbols-outlined">flashlight_on</span>' :
+                    '<span class="material-symbols-outlined">flashlight_off</span>';
+            } catch (e) {
+                alert('Tu dispositivo no soporta la linterna desde el navegador.');
+                linternaEncendida = false;
+            }
+        });
+
+        // ============ INICIALIZAR ============
+        window.onload = () => {
+            // Cargar jsQR (si no está cargado desde CDN, pero lo tenemos en el <head>)
+            if (typeof jsQR === 'undefined') {
+                // Cargar dinámicamente
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+                script.onload = () => iniciarCamara();
+                document.head.appendChild(script);
+            } else {
+                iniciarCamara();
+            }
+
+            // Liberar Wake Lock al salir
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden' && wakeLock) {
+                    wakeLock.release();
+                    wakeLock = null;
+                }
+            });
+        };
+
+        // Exponer reiniciarEscaneo al ámbito global para el botón onclick
+        window.reiniciarEscaneo = reiniciarEscaneo;
+    </script>
+
+    <!-- jsQR (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+</body>
+</html>

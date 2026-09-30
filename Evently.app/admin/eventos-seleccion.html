@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Mis Eventos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .hover-card { transition: box-shadow 0.2s, transform 0.2s; }
+        .hover-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .active-badge { background: #dcfce7; color: #166534; }
+        .inactive-badge { background: #fee2e2; color: #991b1b; }
+        .org-card {
+            cursor: pointer;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .org-card:hover { border-color: #a78bfa; }
+    </style>
+</head>
+<body>
+
+    <!-- Verificar autenticación -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Administración</span>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a href="eventos-seleccion.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
+                    <span class="material-symbols-outlined">apps</span> <span id="textoMenuPrincipal">Mis Eventos</span>
+                </a>
+                <a id="linkPanelPrincipal" href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
+                </a>
+                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">add_circle</span> Solicitar Evento
+                </a>
+                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">bar_chart</span> Reportes
+                </a>
+                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+                <a class="link-soporte hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html">
+                    <span class="material-symbols-outlined icono-soporte">support_agent</span>
+                    <span class="texto-soporte">Soporte</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
+                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+
+            <!-- Botón volver -->
+            <div id="btnVolverOrg" class="hidden mb-4">
+                <button onclick="volverAOrganizaciones()" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">arrow_back</span> Volver a organizaciones
+                </button>
+            </div>
+
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h1 id="tituloPagina" class="text-2xl font-bold text-gray-800">Mis Eventos</h1>
+                    <p id="subtituloPagina" class="text-sm text-gray-500"></p>
+                </div>
+                <div id="filtrosContainer" class="flex flex-wrap gap-2">
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                        <input id="searchInput" type="text" placeholder="Buscar evento..." class="w-48 sm:w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                    </div>
+                    <select id="estadoFilter" class="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                        <option value="todos">Todos</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Contenedor dinámico -->
+            <div id="contenidoContainer">
+                <p class="text-center text-gray-400 py-12">Cargando...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom nav (móvil) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+        <a href="eventos-seleccion.html" class="flex flex-col items-center text-violet-600">
+            <span class="material-symbols-outlined">apps</span>
+            <span class="text-[10px]">Eventos</span>
+        </a>
+        <a id="linkPanelPrincipalMobile" href="#" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="text-[10px]">Panel</span>
+        </a>
+        <a href="eventos.html" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">add_circle</span>
+            <span class="text-[10px]">Solicitar</span>
+        </a>
+        <a href="reportes.html" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <span class="text-[10px]">Reportes</span>
+        </a>
+        <a href="escaner.html" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">qr_code_scanner</span>
+            <span class="text-[10px]">Escáner</span>
+        </a>
+        <a class="link-soporte-mobile hidden flex flex-col items-center text-gray-500" href="soporte.html">
+            <span class="material-symbols-outlined icono-soporte-mobile">support_agent</span>
+            <span class="text-[10px] texto-soporte-mobile">Soporte</span>
+        </a>
+        <a href="#" id="btnCerrarSesionMobile" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="text-[10px]">Salir</span>
+        </a>
+    </nav>
+
+    <!-- Firebase y lógica -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onSnapshot, collection, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const contenidoContainer = document.getElementById('contenidoContainer');
+        const searchInput = document.getElementById('searchInput');
+        const estadoFilter = document.getElementById('estadoFilter');
+        const filtrosContainer = document.getElementById('filtrosContainer');
+        const tituloPagina = document.getElementById('tituloPagina');
+        const subtituloPagina = document.getElementById('subtituloPagina');
+        const btnVolverOrg = document.getElementById('btnVolverOrg');
+        const textoMenuPrincipal = document.getElementById('textoMenuPrincipal');
+
+        // Estado
+        let miUsuario = null;
+        let soySuperAdmin = false;
+        let organizaciones = [];
+        let eventos = [];
+        let orgSeleccionada = null;
+
+        // ✅ Restaurar filtro de estado guardado (si existe)
+        (function restaurarFiltroEstado() {
+            const filtroGuardado = localStorage.getItem('eventoEstadoFilter');
+            if (filtroGuardado) {
+                estadoFilter.value = filtroGuardado;
+            }
+        })();
+
+        // Cerrar sesión
+        async function cerrarSesion() {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        }
+        document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
+        document.getElementById('btnCerrarSesionMobile').addEventListener('click', cerrarSesion);
+
+        // =====================================================
+        // INICIAR
+        // =====================================================
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+
+            const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+            if (userDoc.exists()) {
+                miUsuario = userDoc.data();
+                soySuperAdmin = miUsuario.rol === 'superadmin';
+            }
+
+            if (soySuperAdmin) {
+                textoMenuPrincipal.textContent = 'Organizaciones';
+                tituloPagina.textContent = 'Organizaciones';
+                subtituloPagina.textContent = 'Seleccioná una organización para ver sus eventos';
+                filtrosContainer.classList.add('hidden');
+                cargarOrganizaciones();
+
+                const orgGuardadaId = localStorage.getItem('orgSeleccionadaId');
+                if (orgGuardadaId) {
+                    window._orgPendienteRestaurar = orgGuardadaId;
+                }
+            } else {
+                textoMenuPrincipal.textContent = 'Mis Eventos';
+                tituloPagina.textContent = 'Mis Eventos';
+                subtituloPagina.textContent = 'Todos tus eventos';
+                filtrosContainer.classList.remove('hidden');
+                cargarEventos();
+            }
+        });
+
+        // =====================================================
+        // SUPERADMIN: ORGANIZACIONES
+        // =====================================================
+        function cargarOrganizaciones() {
+            onSnapshot(collection(db, "usuarios"), (snapshot) => {
+                organizaciones = [];
+                snapshot.forEach(d => {
+                    const u = d.data();
+                    if (u.rol === 'organizacion') {
+                        organizaciones.push({ id: d.id, ...u });
+                    }
+                });
+                organizaciones.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+                if (eventos.length === 0) {
+                    onSnapshot(collection(db, "eventos"), (snapEv) => {
+                        eventos = [];
+                        snapEv.forEach(d => eventos.push({ id: d.id, ...d.data() }));
+                        renderizarVista();
+
+                        if (window._orgPendienteRestaurar) {
+                            const orgId = window._orgPendienteRestaurar;
+                            window._orgPendienteRestaurar = null;
+                            const org = organizaciones.find(o => o.id === orgId);
+                            if (org) {
+                                orgSeleccionada = org;
+                                filtrosContainer.classList.remove('hidden');
+                                btnVolverOrg.classList.remove('hidden');
+                                renderizarVista();
+                            }
+                        }
+                    });
+                } else {
+                    renderizarVista();
+
+                    if (window._orgPendienteRestaurar) {
+                        const orgId = window._orgPendienteRestaurar;
+                        window._orgPendienteRestaurar = null;
+                        const org = organizaciones.find(o => o.id === orgId);
+                        if (org) {
+                            orgSeleccionada = org;
+                            filtrosContainer.classList.remove('hidden');
+                            btnVolverOrg.classList.remove('hidden');
+                            renderizarVista();
+                        }
+                    }
+                }
+            });
+        }
+
+        // =====================================================
+        // CLIENTE: EVENTOS
+        // =====================================================
+        function cargarEventos() {
+            onSnapshot(collection(db, "eventos"), (snapshot) => {
+                eventos = [];
+                snapshot.forEach(doc => {
+                    eventos.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (!soySuperAdmin && miUsuario) {
+                    eventos = eventos.filter(ev => 
+                        (ev.organizacionId && ev.organizacionId === miUsuario.organizacionId) ||
+                        (ev.creadoPor && ev.creadoPor === auth.currentUser?.uid) ||
+                        (ev.correo && ev.correo === miUsuario.email)
+                    );
+                }
+
+                renderizarVista();
+            });
+        }
+
+        // =====================================================
+        // RENDERIZAR
+        // =====================================================
+        function renderizarVista() {
+            if (soySuperAdmin) {
+                if (orgSeleccionada) {
+                    renderizarEventosDeOrg(orgSeleccionada);
+                } else {
+                    renderizarOrganizaciones();
+                }
+            } else {
+                renderizarEventosCliente();
+            }
+        }
+
+        // ✅ Vista: Organizaciones
+        function renderizarOrganizaciones() {
+            filtrosContainer.classList.add('hidden');
+            btnVolverOrg.classList.add('hidden');
+            tituloPagina.textContent = 'Organizaciones';
+            subtituloPagina.textContent = `${organizaciones.length} organizaciones registradas`;
+
+            if (organizaciones.length === 0) {
+                contenidoContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300">corporate_fare</span>
+                        <p class="text-gray-400 mt-3">No hay organizaciones registradas.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contenidoContainer.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${organizaciones.map(org => {
+                        const eventosOrg = eventos.filter(ev => 
+                            (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
+                            (ev.creadoPor && ev.creadoPor === org.id) ||
+                            (ev.correo && ev.correo === org.email)
+                        );
+                        const activos = eventosOrg.filter(ev => esActivo(ev)).length;
+                        const inactivos = eventosOrg.length - activos;
+                        const inicial = (org.nombre || 'O').charAt(0).toUpperCase();
+
+                        return `
+                            <div class="org-card hover-card" onclick="seleccionarOrganizacion('${org.id}')">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                        <span class="font-bold text-violet-700 text-lg">${inicial}</span>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <h3 class="font-semibold text-gray-800 truncate">${org.nombre || 'Sin nombre'}</h3>
+                                        <p class="text-xs text-gray-500 truncate">${org.email || ''}</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
+                                    <div>
+                                        <p class="text-[10px] text-gray-500 uppercase">Activos</p>
+                                        <p class="text-lg font-bold text-green-600">${activos}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-gray-500 uppercase">Inactivos</p>
+                                        <p class="text-lg font-bold text-gray-400">${inactivos}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] text-gray-500 uppercase">Total</p>
+                                        <p class="text-lg font-bold text-gray-800">${eventosOrg.length}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-violet-600 text-sm font-medium flex items-center justify-between">
+                                    <span>Ver eventos</span>
+                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // ✅ Seleccionar organización (NO resetea el filtro)
+        window.seleccionarOrganizacion = function(orgId) {
+            const org = organizaciones.find(o => o.id === orgId);
+            if (!org) return;
+            orgSeleccionada = org;
+            localStorage.setItem('orgSeleccionadaId', orgId);
+            filtrosContainer.classList.remove('hidden');
+            btnVolverOrg.classList.remove('hidden');
+            renderizarVista();
+        };
+
+        // ✅ Volver a organizaciones (SÍ resetea el filtro)
+        window.volverAOrganizaciones = function() {
+            orgSeleccionada = null;
+            localStorage.removeItem('orgSeleccionadaId');
+            searchInput.value = '';
+            estadoFilter.value = 'todos';
+            localStorage.removeItem('eventoEstadoFilter');
+            renderizarVista();
+        };
+
+        // ✅ Vista: Eventos de una organización
+        function renderizarEventosDeOrg(org) {
+            tituloPagina.textContent = org.nombre || 'Organización';
+            subtituloPagina.textContent = org.email || '';
+
+            let eventosFiltrados = eventos.filter(ev => 
+                (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
+                (ev.creadoPor && ev.creadoPor === org.id) ||
+                (ev.correo && ev.correo === org.email)
+            );
+
+            eventosFiltrados = aplicarFiltrosBusqueda(eventosFiltrados);
+            renderizarListaEventos(eventosFiltrados, `Esta organización no tiene eventos.`);
+        }
+
+        // ✅ Vista: Eventos del cliente
+        function renderizarEventosCliente() {
+            tituloPagina.textContent = 'Mis Eventos';
+            subtituloPagina.textContent = `${eventos.length} eventos en total`;
+
+            let filtrados = aplicarFiltrosBusqueda(eventos);
+            renderizarListaEventos(filtrados, `No tenés eventos creados todavía.`);
+        }
+
+        // ✅ Aplicar filtros
+        function aplicarFiltrosBusqueda(lista) {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const estado = estadoFilter.value;
+
+            let filtrados = [...lista];
+
+            if (estado === 'activo') {
+                filtrados = filtrados.filter(ev => esActivo(ev));
+            } else if (estado === 'inactivo') {
+                filtrados = filtrados.filter(ev => !esActivo(ev));
+            }
+
+            if (searchTerm) {
+                filtrados = filtrados.filter(ev => ev.nombre && ev.nombre.toLowerCase().includes(searchTerm));
+            }
+
+            return filtrados;
+        }
+
+        // ✅ Renderizar grilla
+        function renderizarListaEventos(lista, mensajeVacio) {
+            if (lista.length === 0) {
+                contenidoContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300">event_busy</span>
+                        <p class="text-gray-400 mt-3">${mensajeVacio}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            contenidoContainer.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${lista.map(evento => {
+                        const activo = esActivo(evento);
+                        const badgeClass = activo ? 'active-badge' : 'inactive-badge';
+                        const estadoTexto = activo ? 'Activo' : 'Inactivo';
+                        const imagen = evento.imagen || '/public/imag/Imagen de evento 1.jpg';
+
+                        return `
+                            <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden">
+                                <img src="${imagen}" alt="${evento.nombre}" class="w-full h-40 object-cover">
+                                <div class="p-4">
+                                    <div class="flex justify-between items-start">
+                                        <h3 class="text-lg font-bold text-gray-800 truncate">${evento.nombre || 'Sin nombre'}</h3>
+                                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeClass}">${estadoTexto}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                                        <span class="material-symbols-outlined text-sm">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                                    </p>
+                                    <p class="text-sm text-gray-500 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                                    </p>
+                                    <div class="mt-3 flex justify-end">
+                                        <a href="dashboard.html?id=${evento.id}" onclick="localStorage.setItem('eventoId', '${evento.id}')" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition">
+                                            Entrar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // ✅ Determinar si un evento está activo
+        function esActivo(evento) {
+            if (evento.activo !== undefined) return evento.activo;
+            if (evento.fecha) {
+                const hoy = new Date();
+                const partes = evento.fecha.split(' ');
+                if (partes.length === 3) {
+                    const meses = { 'Enero':0, 'Febrero':1, 'Marzo':2, 'Abril':3, 'Mayo':4, 'Junio':5, 'Julio':6, 'Agosto':7, 'Septiembre':8, 'Octubre':9, 'Noviembre':10, 'Diciembre':11 };
+                    const dia = parseInt(partes[0]);
+                    const mes = meses[partes[1]];
+                    const anio = parseInt(partes[2]);
+                    if (!isNaN(dia) && mes !== undefined && !isNaN(anio)) {
+                        const fechaEvento = new Date(anio, mes, dia);
+                        return fechaEvento >= hoy;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // ✅ Escuchar cambios en filtros (GUARDAR en localStorage)
+        searchInput.addEventListener('input', renderizarVista);
+        estadoFilter.addEventListener('change', function() {
+            localStorage.setItem('eventoEstadoFilter', this.value);
+            renderizarVista();
+        });
+    </script>
+
+    <!-- Script para actualizar el enlace "Panel Principal" con el ID guardado -->
+    <script>
+        (function() {
+            const eventoId = localStorage.getItem('eventoId');
+            if (eventoId) {
+                const linkDesktop = document.getElementById('linkPanelPrincipal');
+                const linkMobile = document.getElementById('linkPanelPrincipalMobile');
+                const href = `dashboard.html?id=${eventoId}`;
+                if (linkDesktop) linkDesktop.href = href;
+                if (linkMobile) linkMobile.href = href;
+            }
+        })();
+    </script>
+
+    <!-- Script de roles centralizado -->
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html> 

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Soporte</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; overflow: hidden; height: 100vh; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .burbuja-yo { background: #7c3aed; color: white; border-radius: 16px 16px 4px 16px; }
+        .burbuja-admin { background: #f3f4f6; color: #1f2937; border-radius: 16px 16px 16px 4px; }
+        .chat-scroll { overflow-y: auto; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 10px; }
+        .chat-scroll::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+        .mensaje-grupo:hover .btn-editar-msg { display: flex !important; }
+        .msg-editado { font-size: 10px; opacity: 0.7; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <!-- Verificar autenticación -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+            if (userDoc.exists() && userDoc.data().rol === 'superadmin') {
+                window.location.href = 'mensajes.html';
+            }
+        });
+    </script>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Administración</span>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a href="eventos-seleccion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">apps</span> Mis Eventos
+                </a>
+                <a id="linkPanelPrincipal" href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
+                </a>
+                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">add_circle</span> Solicitar Evento
+                </a>
+                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">bar_chart</span> Reportes
+                </a>
+                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+                <a class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium" href="soporte.html">
+                    <span class="material-symbols-outlined">support_agent</span>
+                    <span>Soporte</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
+                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            <div class="p-4 border-b border-gray-200 bg-white flex-shrink-0">
+                <h1 class="text-xl font-bold text-gray-800">Soporte</h1>
+                <p class="text-sm text-gray-500">Describí tu problema y te responderemos a la brevedad.</p>
+            </div>
+
+            <!-- Historial -->
+            <div id="historialContainer" class="flex-1 chat-scroll p-4 space-y-3 flex flex-col bg-gray-50">
+                <p class="text-center text-gray-400 py-8">Cargando historial...</p>
+            </div>
+
+            <!-- Input -->
+            <div class="border-t border-gray-200 p-4 bg-white flex-shrink-0">
+                <div class="flex gap-2">
+                    <input id="mensajeInput" type="text" placeholder="Escribe tu mensaje..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                    <button id="btnEnviar" class="bg-violet-600 hover:bg-violet-700 text-white w-12 h-12 rounded-full flex items-center justify-center transition">
+                        <span class="material-symbols-outlined">send</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom nav (móvil) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+        <a href="eventos-seleccion.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
+        <a href="eventos.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
+        <a href="reportes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+        <a href="soporte.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">support_agent</span><span class="text-[10px]">Soporte</span></a>
+        <a href="#" id="btnCerrarSesionMobile" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
+    </nav>
+
+    <!-- Firebase y lógica -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { collection, query, where, getDocs, addDoc, serverTimestamp, onSnapshot, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        const btnEnviar = document.getElementById('btnEnviar');
+        const mensajeInput = document.getElementById('mensajeInput');
+        const historialContainer = document.getElementById('historialContainer');
+        
+        let uidCliente = null;
+        let nombreCliente = 'Cliente';
+        let conversacionId = null;
+        let unsubscribeConversacion = null;
+        let unsubscribeMensajes = null;
+        
+        // --- Cerrar sesión ---
+        async function cerrarSesion() {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        }
+        document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
+        document.getElementById('btnCerrarSesionMobile').addEventListener('click', cerrarSesion);
+        
+        // --- Iniciar ---
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+            uidCliente = user.uid;
+            
+            const userDoc = await getDoc(doc(db, 'usuarios', uidCliente));
+            if (userDoc.exists()) nombreCliente = userDoc.data().nombre || 'Cliente';
+            
+            escucharConversacion();
+        });
+        
+        // --- Escuchar conversación en tiempo real ---
+        function escucharConversacion() {
+            if (unsubscribeConversacion) unsubscribeConversacion();
+            
+            const qConv = query(
+                collection(db, 'conversaciones'),
+                where('participantes', 'array-contains', uidCliente)
+            );
+            
+            unsubscribeConversacion = onSnapshot(qConv, (snapshot) => {
+                if (snapshot.empty) {
+                    if (!conversacionId) {
+                        historialContainer.innerHTML = '<p class="text-center text-gray-400 py-8">Todavía no enviaste consultas. Escribí tu problema abajo y hacé clic en "Enviar".</p>';
+                    }
+                    return;
+                }
+                
+                const conv = snapshot.docs[0];
+                const nuevoId = conv.id;
+                
+                if (nuevoId !== conversacionId) {
+                    conversacionId = nuevoId;
+                    escucharMensajes();
+                }
+            });
+        }
+        
+        async function getSuperadminUid() {
+            const q = query(collection(db, 'usuarios'), where('rol', '==', 'superadmin'));
+            const snap = await getDocs(q);
+            if (!snap.empty) return snap.docs[0].id;
+            return '4SrXPyclHIhjF3BMnlNxAaWSygz2';
+        }
+        
+        // --- Escuchar mensajes ---
+        function escucharMensajes() {
+            if (!conversacionId) return;
+            if (unsubscribeMensajes) unsubscribeMensajes();
+            
+            const q = query(collection(db, 'mensajes'), where('conversacionId', '==', conversacionId));
+            
+            unsubscribeMensajes = onSnapshot(q, (snapshot) => {
+                const mensajes = [];
+                snapshot.forEach(docSnap => mensajes.push({ id: docSnap.id, ...docSnap.data() }));
+                mensajes.sort((a, b) => (a.fecha?.seconds || 0) - (b.fecha?.seconds || 0));
+                
+                historialContainer.innerHTML = '';
+                if (mensajes.length === 0) {
+                    historialContainer.innerHTML = '<p class="text-center text-gray-400 py-8">No hay mensajes previos.</p>';
+                    return;
+                }
+                
+                mensajes.forEach(msg => {
+                    const esMio = msg.de === uidCliente;
+                    const cssClass = esMio ? 'burbuja-yo self-end' : 'burbuja-admin self-start';
+                    const hora = msg.fecha ? new Date(msg.fecha.seconds * 1000).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '';
+                    const editado = msg.editado ? '<span class="msg-editado">(editado)</span>' : '';
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `flex ${esMio ? 'justify-end' : 'justify-start'} mensaje-grupo`;
+                    wrapper.dataset.msgid = msg.id;
+                    
+                    const textoEscapado = msg.texto.replace(/"/g, '&quot;');
+                    
+                    wrapper.innerHTML = `
+                        <div class="flex items-end gap-1 ${esMio ? 'flex-row' : 'flex-row-reverse'}">
+                            ${esMio ? `
+                                <button class="btn-editar-msg hidden bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 rounded-full w-7 h-7 items-center justify-center transition" data-msgid="${msg.id}" data-texto="${textoEscapado}" title="Editar mensaje">
+                                    <span class="material-symbols-outlined text-sm">edit</span>
+                                </button>
+                            ` : ''}
+                            <div class="${cssClass} px-4 py-2 max-w-xs shadow-sm">
+                                <p class="text-sm">${msg.texto}</p>
+                                <p class="text-[10px] ${esMio ? 'text-violet-200' : 'text-gray-400'} mt-1 text-right">${hora} ${editado}</p>
+                            </div>
+                        </div>
+                    `;
+                    historialContainer.appendChild(wrapper);
+                });
+                
+                // Eventos editar mensaje
+                document.querySelectorAll('.btn-editar-msg').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editarMensaje(btn.dataset.msgid, btn.dataset.texto);
+                    });
+                });
+                
+                // Marcar como leídos los del admin
+                mensajes.forEach(async (msg) => {
+                    if (msg.de !== uidCliente && !msg.leido) {
+                        try { await updateDoc(doc(db, 'mensajes', msg.id), { leido: true }); } catch (e) {}
+                    }
+                });
+                
+                historialContainer.scrollTop = historialContainer.scrollHeight;
+            });
+        }
+        
+        // --- Editar mensaje ---
+        async function editarMensaje(msgId, textoOriginal) {
+            const nuevoTexto = prompt('Editar mensaje:', textoOriginal);
+            if (nuevoTexto === null) return;
+            const limpio = nuevoTexto.trim();
+            if (!limpio) {
+                alert('El mensaje no puede estar vacío.');
+                return;
+            }
+            if (limpio === textoOriginal) return;
+            
+            try {
+                await updateDoc(doc(db, 'mensajes', msgId), {
+                    texto: limpio,
+                    editado: true,
+                    fechaEdicion: serverTimestamp()
+                });
+            } catch (error) {
+                console.error('Error al editar mensaje:', error);
+                alert('No se pudo editar el mensaje.');
+            }
+        }
+        
+        // --- Enviar mensaje ---
+        btnEnviar.addEventListener('click', async () => {
+            const texto = mensajeInput.value.trim();
+            if (!texto) return;
+            
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>';
+            
+            try {
+                let uidSuperadmin = await getSuperadminUid();
+                
+                if (!conversacionId) {
+                    const docRef = await addDoc(collection(db, 'conversaciones'), {
+                        participantes: [uidCliente, uidSuperadmin],
+                        nombres: {
+                            [uidCliente]: nombreCliente,
+                            [uidSuperadmin]: 'Soporte Evently'
+                        },
+                        ultimoMensaje: texto,
+                        ultimaFecha: serverTimestamp()
+                    });
+                    conversacionId = docRef.id;
+                    escucharMensajes();
+                } else {
+                    await updateDoc(doc(db, 'conversaciones', conversacionId), {
+                        ultimoMensaje: texto,
+                        ultimaFecha: serverTimestamp()
+                    });
+                }
+                
+                await addDoc(collection(db, 'mensajes'), {
+                    conversacionId: conversacionId,
+                    de: uidCliente,
+                    texto: texto,
+                    fecha: serverTimestamp(),
+                    leido: false,
+                    editado: false
+                });
+                
+                mensajeInput.value = '';
+            } catch (error) {
+                console.error('Error al enviar mensaje', error);
+                alert('Hubo un error al enviar el mensaje.');
+            } finally {
+                btnEnviar.disabled = false;
+                btnEnviar.innerHTML = '<span class="material-symbols-outlined">send</span>';
+            }
+        });
+        
+        mensajeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') btnEnviar.click();
+        });
+    </script>
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>

@@ -18,6 +18,7 @@
         .hover-card { transition: box-shadow 0.2s; }
         .hover-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -39,18 +40,26 @@
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
                 <span class="block text-xs text-gray-500">Administración</span>
             </div>
+            
             <nav class="flex-1 px-4 space-y-1">
+                <a href="eventos-seleccion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                     <span class="material-symbols-outlined">apps</span> Mis Eventos
+                </a>
                 <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
                     <span class="material-symbols-outlined">dashboard</span> Panel Principal
                 </a>
                 <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">event</span> Eventos
+                     <span class="material-symbols-outlined">add_circle</span> Solicitar Evento
                 </a>
                 <a href="reportes.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
                     <span class="material-symbols-outlined">bar_chart</span> Reportes
                 </a>
                 <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
                     <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+                <a class="link-soporte hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html">
+                    <span class="material-symbols-outlined icono-soporte">support_agent</span>
+                    <span class="texto-soporte">Soporte</span>
                 </a>
             </nav>
             <div class="p-4 border-t border-gray-200">
@@ -85,7 +94,6 @@
                 </div>
                 <div class="flex gap-2 ml-auto">
                     <button id="btnExportarPDF" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
-                    <button id="btnAplicarFiltros" class="px-4 py-2 bg-violet-600 text-white rounded-full text-sm font-medium hover:bg-violet-700 transition">Aplicar Filtros</button>
                 </div>
             </div>
 
@@ -191,10 +199,35 @@
 
     <!-- Bottom nav (móvil) -->
     <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
-        <a href="dashboard.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a href="eventos.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">event</span><span class="text-[10px]">Eventos</span></a>
-        <a href="reportes.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+        <a href="eventos-seleccion.html" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">apps</span>
+            <span class="text-[10px]">Eventos</span>
+        </a>
+        <a id="linkPanelPrincipalMobile" href="#" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span class="text-[10px]">Panel</span>
+        </a>
+        <a href="eventos.html" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">add_circle</span>
+            <span class="text-[10px]">Solicitar</span>
+        </a>
+        <a href="reportes.html" class="flex flex-col items-center text-violet-600">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <span class="text-[10px]">Reportes</span>
+        </a>
+        <a href="escaner.html" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">qr_code_scanner</span>
+            <span class="text-[10px]">Escáner</span>
+        </a>
+        <!-- ✅ Enlace soporte/mensajes móvil -->
+        <a class="link-soporte-mobile hidden flex flex-col items-center text-gray-500" href="soporte.html">
+            <span class="material-symbols-outlined icono-soporte-mobile">support_agent</span>
+            <span class="text-[10px] texto-soporte-mobile">Soporte</span>
+        </a>
+        <a href="#" id="btnCerrarSesionMobile" class="flex flex-col items-center text-gray-500">
+            <span class="material-symbols-outlined">logout</span>
+            <span class="text-[10px]">Salir</span>
+        </a>
     </nav>
 
     <!-- Firebase y lógica -->
@@ -213,7 +246,6 @@
 
         // 1. Escuchar eventos y ventas
         function escucharDatos() {
-            // Escuchar eventos
             onSnapshot(collection(db, "eventos"), (snapshot) => {
                 eventos = [];
                 snapshot.forEach(doc => {
@@ -223,7 +255,6 @@
                 aplicarFiltros();
             });
 
-            // Escuchar ventas
             onSnapshot(collection(db, "ventas"), (snapshot) => {
                 ventas = [];
                 snapshot.forEach(doc => {
@@ -278,11 +309,6 @@
             renderIndicadores(ventasFiltradas);
         }
 
-        // 4. Funciones de renderizado (las mismas que antes, pero las omito por brevedad, 
-        //    están en el código completo que te daré al final)
-
-        // ... (todas las funciones renderX)
-
         // 5. Cambio de pestaña
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -291,18 +317,316 @@
             document.getElementById(tabId).classList.add('active');
         }
 
-        // 6. Exportar PDF (placeholder)
+        // --- Exportar PDF ---
         function exportarPDF() {
-            alert('Funcionalidad de exportación a PDF en desarrollo.');
+            const loteSeleccionado = loteFilter.value;
+            const metodoSeleccionado = metodoFilter.value;
+
+            let ventasFiltradas = [...ventas];
+            if (loteSeleccionado !== 'todos') {
+                ventasFiltradas = ventasFiltradas.filter(v => v.loteNombre === loteSeleccionado);
+            }
+            if (metodoSeleccionado !== 'todos') {
+                ventasFiltradas = ventasFiltradas.filter(v => v.metodo_pago === metodoSeleccionado);
+            }
+
+            const totalVentas = ventasFiltradas.length;
+            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+
+            let capacidadTotal = 0;
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => { capacidadTotal += (l.disponibles || 0); });
+                }
+            });
+
+            const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
+            const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalEntradas / capacidadTotal) * 100) : 0;
+            const pctAforo = capacidadTotal > 0 ? Math.round((aforoRestante / capacidadTotal) * 100) : 0;
+            const promedio = totalVentas > 0 ? (totalEntradas / totalVentas).toFixed(1) : 0;
+            const recaudacionPorEntrada = totalEntradas > 0 ? totalRecaudado / totalEntradas : 0;
+
+            const ventasPorLote = {};
+            ventasFiltradas.forEach(v => {
+                const key = v.loteNombre || 'Sin lote';
+                if (!ventasPorLote[key]) ventasPorLote[key] = [];
+                ventasPorLote[key].push(v);
+            });
+
+            const lotesInfo = {};
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => { lotesInfo[l.nombre] = { ...l, vendidas: l.vendidas || 0 }; });
+                }
+            });
+
+            const metodos = {};
+            ventasFiltradas.forEach(v => {
+                const metodo = v.metodo_pago || 'Desconocido';
+                if (!metodos[metodo]) metodos[metodo] = { transacciones: 0, monto: 0 };
+                metodos[metodo].transacciones += 1;
+                metodos[metodo].monto += (v.monto_total || 0);
+            });
+
+            const vendidasPorLote = {};
+            ventasFiltradas.forEach(v => {
+                const lote = v.loteNombre || 'Sin lote';
+                vendidasPorLote[lote] = (vendidasPorLote[lote] || 0) + (v.cantidad || 0);
+            });
+            let loteAgotado = 'Ninguno';
+            eventos.forEach(ev => {
+                if (ev.lotes && Array.isArray(ev.lotes)) {
+                    ev.lotes.forEach(l => {
+                        if ((vendidasPorLote[l.nombre] || 0) >= l.disponibles) loteAgotado = `${l.nombre} — vendido al 100%`;
+                    });
+                }
+            });
+
+            const recaudacionPorLote = {};
+            ventasFiltradas.forEach(v => {
+                const lote = v.loteNombre || 'Sin lote';
+                recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + (v.monto_total || 0);
+            });
+            let loteMasRentable = { nombre: 'N/A', monto: 0 };
+            Object.entries(recaudacionPorLote).forEach(([nombre, monto]) => {
+                if (monto > loteMasRentable.monto) loteMasRentable = { nombre, monto };
+            });
+
+            let pico = { fecha: 'N/A', entradas: 0 };
+            ventasFiltradas.forEach(v => {
+                if ((v.cantidad || 0) > pico.entradas) pico = { fecha: v.fecha || 'N/A', entradas: v.cantidad };
+            });
+
+            const metodoCount = {};
+            ventasFiltradas.forEach(v => {
+                const m = v.metodo_pago || 'Desconocido';
+                metodoCount[m] = (metodoCount[m] || 0) + 1;
+            });
+            let metodoMasUsado = { nombre: 'N/A', porcentaje: 0 };
+            Object.entries(metodoCount).forEach(([nombre, count]) => {
+                const pct = totalVentas > 0 ? Math.round((count / totalVentas) * 100) : 0;
+                if (pct > metodoMasUsado.porcentaje) metodoMasUsado = { nombre, porcentaje: pct };
+            });
+
+            const fechaActual = new Date().toLocaleString('es-AR', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            let filtrosTexto = 'Todos los lotes y métodos';
+            if (loteSeleccionado !== 'todos' || metodoSeleccionado !== 'todos') {
+                const partes = [];
+                if (loteSeleccionado !== 'todos') partes.push(`Lote: ${loteSeleccionado}`);
+                if (metodoSeleccionado !== 'todos') partes.push(`Método: ${metodoSeleccionado}`);
+                filtrosTexto = partes.join(' | ');
+            }
+
+            const pdfContent = document.getElementById('pdf-content');
+
+            pdfContent.innerHTML = `
+                <div style="font-family: Arial, sans-serif; color: #1f2937; padding: 30px; background: white; width: 800px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 48px; height: 48px; background: #7c3aed; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px;">E</div>
+                            <div>
+                                <h1 style="margin: 0; font-size: 24px; color: #7c3aed;">Evently</h1>
+                                <p style="margin: 2px 0 0 0; font-size: 12px; color: #6b7280;">Reporte de Ventas</p>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0; font-size: 11px; color: #6b7280;"><strong>Generado:</strong> ${fechaActual}</p>
+                            <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;"><strong>Filtros:</strong> ${filtrosTexto}</p>
+                        </div>
+                    </div>
+
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">1. Resumen general</h2>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+                        <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Capacidad total</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${capacidadTotal.toLocaleString()}</p>
+                        </div>
+                        <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Entradas vendidas</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${totalEntradas.toLocaleString()}</p>
+                        </div>
+                        <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Aforo restante</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${aforoRestante.toLocaleString()}</p>
+                        </div>
+                        <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Tasa de ocupación</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${tasaOcupacion}%</p>
+                        </div>
+                        <div style="background: #ede9fe; padding: 14px; border-radius: 8px; grid-column: span 2;">
+                            <p style="margin: 0; font-size: 10px; color: #5b21b6; text-transform: uppercase;">Recaudación total</p>
+                            <p style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; color: #5b21b6;">$${totalRecaudado.toLocaleString()}</p>
+                            <p style="margin: 2px 0 0 0; font-size: 10px; color: #6b7280;">${totalVentas} transacciones</p>
+                        </div>
+                        <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Total transacciones</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${totalVentas}</p>
+                        </div>
+                        <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Prom. entradas/compra</p>
+                            <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${promedio}</p>
+                        </div>
+                    </div>
+
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">2. Desglose por Lote</h2>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background: #ede9fe;">
+                                <th style="padding: 8px; text-align: left; color: #5b21b6;">Lote</th>
+                                <th style="padding: 8px; text-align: left; color: #5b21b6;">Período</th>
+                                <th style="padding: 8px; text-align: right; color: #5b21b6;">Precio</th>
+                                <th style="padding: 8px; text-align: right; color: #5b21b6;">Disponibles</th>
+                                <th style="padding: 8px; text-align: right; color: #5b21b6;">Vendidas</th>
+                                <th style="padding: 8px; text-align: right; color: #5b21b6;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(ventasPorLote).length === 0 ? '<tr><td colspan="6" style="padding:16px;text-align:center;color:#9ca3af;">Sin datos</td></tr>' :
+                            Object.keys(ventasPorLote).map((nombreLote, i) => {
+                                const ventas = ventasPorLote[nombreLote];
+                                const info = lotesInfo[nombreLote] || {};
+                                const vendidas = ventas.reduce((s, v) => s + (v.cantidad || 0), 0);
+                                const subtotal = ventas.reduce((s, v) => s + (v.monto_total || 0), 0);
+                                return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${nombreLote}</td>
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${info.vigencia || 'N/A'}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">$${Number(info.precio||0).toLocaleString()}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${info.disponibles || 0}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;color:#16a34a;font-weight:600;">${vendidas}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:700;">$${subtotal.toLocaleString()}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#f5f3ff;font-weight:700;">
+                                <td colspan="4" style="padding:10px;text-align:right;color:#5b21b6;border-top:2px solid #7c3aed;">TOTALES</td>
+                                <td style="padding:10px;text-align:right;color:#5b21b6;border-top:2px solid #7c3aed;">${totalEntradas}</td>
+                                <td style="padding:10px;text-align:right;color:#5b21b6;border-top:2px solid #7c3aed;">$${totalRecaudado.toLocaleString()}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">3. Detalle de transacciones</h2>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background:#ede9fe;">
+                                <th style="padding:8px;text-align:left;color:#5b21b6;">Fecha</th>
+                                <th style="padding:8px;text-align:left;color:#5b21b6;">Comprador</th>
+                                <th style="padding:8px;text-align:left;color:#5b21b6;">Lote</th>
+                                <th style="padding:8px;text-align:right;color:#5b21b6;">Cant.</th>
+                                <th style="padding:8px;text-align:left;color:#5b21b6;">Método</th>
+                                <th style="padding:8px;text-align:right;color:#5b21b6;">Monto</th>
+                                <th style="padding:8px;text-align:left;color:#5b21b6;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${ventasFiltradas.length === 0 ? '<tr><td colspan="7" style="padding:16px;text-align:center;color:#9ca3af;">Sin transacciones</td></tr>' :
+                            ventasFiltradas.map((v, i) => `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.fecha || 'N/A'}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.correo || v.comprador || 'N/A'}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.loteNombre || 'N/A'}</td>
+                                <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${v.cantidad || 0}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.metodo_pago || 'N/A'}</td>
+                                <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">$${(v.monto_total||0).toLocaleString()}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">
+                                    <span style="padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;
+                                        background:${v.estado === 'confirmada' ? '#dcfce7' : v.estado === 'pendiente' ? '#fef9c3' : '#fee2e2'};
+                                        color:${v.estado === 'confirmada' ? '#166534' : v.estado === 'pendiente' ? '#854d0e' : '#991b1b'};">
+                                        ${v.estado || 'N/A'}
+                                    </span>
+                                </td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">4. Métodos de pago</h2>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
+                        <thead>
+                            <tr style="background:#ede9fe;">
+                                <th style="padding:8px;text-align:left;color:#5b21b6;">Método</th>
+                                <th style="padding:8px;text-align:right;color:#5b21b6;">Transacciones</th>
+                                <th style="padding:8px;text-align:right;color:#5b21b6;">Monto</th>
+                                <th style="padding:8px;text-align:right;color:#5b21b6;">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.keys(metodos).length === 0 ? '<tr><td colspan="4" style="padding:16px;text-align:center;color:#9ca3af;">Sin datos</td></tr>' :
+                            Object.entries(metodos).map(([nombre, data], i) => {
+                                const pct = totalVentas > 0 ? Math.round((data.transacciones / totalVentas) * 100) : 0;
+                                return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${nombre}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${data.transacciones}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">$${data.monto.toLocaleString()}</td>
+                                    <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">${pct}%</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">5. Indicadores clave</h2>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px;">
+                        <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
+                            <p style="margin:0;font-size:10px;color:#6b7280;">Entradas no vendidas</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${aforoRestante} — ${pctAforo}% del aforo</p>
+                        </div>
+                        <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
+                            <p style="margin:0;font-size:10px;color:#6b7280;">Lote agotado</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${loteAgotado}</p>
+                        </div>
+                        <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
+                            <p style="margin:0;font-size:10px;color:#6b7280;">Lote con mayor recaudación</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${loteMasRentable.nombre} — $${loteMasRentable.monto.toLocaleString()}</p>
+                        </div>
+                        <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
+                            <p style="margin:0;font-size:10px;color:#6b7280;">Pico de ventas</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${pico.fecha} — ${pico.entradas} entradas</p>
+                        </div>
+                        <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
+                            <p style="margin:0;font-size:10px;color:#6b7280;">Método más usado</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%</p>
+                        </div>
+                        <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
+                            <p style="margin:0;font-size:10px;color:#6b7280;">Recaudación por entrada</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">$${recaudacionPorEntrada.toFixed(0)}</p>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 24px; text-align: center;">
+                        <p style="margin: 0; font-size: 10px; color: #9ca3af;">Evently © 2024 — Documento generado automáticamente por el sistema de gestión de eventos.</p>
+                        <p style="margin: 4px 0 0 0; font-size: 9px; color: #d1d5db;">Este documento es de uso interno y confidencial. Bali Group.</p>
+                    </div>
+                </div>
+            `;
+
+            pdfContent.style.display = 'block';
+
+            const opt = {
+                margin: [0.4, 0.4, 0.4, 0.4],
+                filename: `Evently_Reporte_${new Date().toISOString().slice(0,10)}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(pdfContent).save().then(() => {
+                pdfContent.style.display = 'none';
+                pdfContent.innerHTML = '';
+            }).catch(err => {
+                console.error('Error al generar PDF:', err);
+                pdfContent.style.display = 'none';
+                pdfContent.innerHTML = '';
+                alert('Error al generar el PDF. Intenta nuevamente.');
+            });
         }
 
-        // 7. Exponer funciones al ámbito global para los onclick
         window.aplicarFiltros = aplicarFiltros;
         window.switchTab = switchTab;
         window.exportarPDF = exportarPDF;
 
-        // 8. Configurar eventos de los botones (para evitar onclick en HTML)
-        document.getElementById('btnAplicarFiltros').addEventListener('click', aplicarFiltros);
         document.getElementById('btnExportarPDF').addEventListener('click', exportarPDF);
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -313,11 +637,10 @@
         loteFilter.addEventListener('change', aplicarFiltros);
         metodoFilter.addEventListener('change', aplicarFiltros);
 
-        // 9. Iniciar
         escucharDatos();
 
         // ------------------------------------------------------------
-        // DEFINICIÓN DE TODAS LAS FUNCIONES DE RENDERIZADO (las mismas que antes)
+        // FUNCIONES DE RENDERIZADO
         // ------------------------------------------------------------
         function renderResumen(ventasFiltradas) {
             const totalVentas = ventasFiltradas.length;
@@ -395,7 +718,6 @@
         }
 
         function renderDesglose(ventasFiltradas) {
-            // Agrupar ventas por lote
             const ventasPorLote = {};
             ventasFiltradas.forEach(v => {
                 const key = v.loteNombre || 'Sin lote';
@@ -555,7 +877,6 @@
                 }).join('');
             }
 
-            // Evolución
             const evolucion = {};
             ventasFiltradas.forEach(v => {
                 const fecha = v.fecha || 'N/A';
@@ -673,5 +994,21 @@
             `).join('');
         }
     </script>
+
+    <script>
+    (function() {
+        const eventoId = localStorage.getItem('eventoId');
+        const link = document.getElementById('linkPanelPrincipal');
+        if (eventoId && link) {
+            link.href = `dashboard.html?id=${eventoId}`;
+        }
+    })();
+    </script>
+
+    <!-- ✅ Contenedor oculto para generar el PDF -->
+    <div id="pdf-content" style="display:none;"></div>
+
+    <!-- ✅ Script de roles centralizado -->
+    <script src="../shared/menu-rol.js"></script>
 </body>
 </html>

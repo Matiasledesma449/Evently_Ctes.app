@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Super Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .org-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .org-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+    </style>
+</head>
+<body>
+
+    <!-- Verificar autenticación y rol de superadmin -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+            if (!userDoc.exists() || userDoc.data().rol !== 'superadmin') {
+                alert('No tenés permisos para acceder a este panel.');
+                window.location.href = 'eventos-seleccion.html';
+            }
+        });
+    </script>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Super Admin</span>
+            </div>
+            <nav class="flex-1 px-4 space-y-1">
+                <a href="eventos-seleccion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">apps</span> Mis Eventos
+                </a>
+                <a id="linkPanelPrincipal" href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
+                </a>
+                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">add_circle</span> Solicitar Evento
+                </a>
+                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">bar_chart</span> Reportes
+                </a>
+                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
+                </a>
+                <a href="mensajes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    <span class="material-symbols-outlined">chat</span> Mensajes
+                </a>
+                <a href="superadmin.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
+                    <span class="material-symbols-outlined">admin_panel_settings</span> Super Admin
+                </a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
+                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
+                </a>
+            </div>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Panel Super Admin</h1>
+                    <p class="text-sm text-gray-500">Visión global de todas las organizaciones</p>
+                </div>
+                <div class="relative w-full sm:w-64">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    <input id="searchInput" type="text" placeholder="Buscar organización..." class="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                </div>
+            </div>
+
+            <!-- SECCIÓN: Solicitudes pendientes -->
+            <div id="seccionSolicitudes" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-violet-600">notifications_active</span>
+                        Solicitudes pendientes
+                        <span id="contadorSolicitudes" class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">0</span>
+                    </h2>
+                </div>
+                <div id="solicitudesContainer" class="space-y-3"></div>
+            </div>
+
+            <!-- KPIs Globales -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <p class="text-sm text-gray-500">Organizaciones</p>
+                    <p id="totalOrgs" class="text-2xl font-bold text-violet-600 mt-1">0</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <p class="text-sm text-gray-500">Eventos totales</p>
+                    <p id="totalEventos" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <p class="text-sm text-gray-500">Recaudación global</p>
+                    <p id="recaudacionGlobal" class="text-2xl font-bold text-violet-600 mt-1">$0</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5">
+                    <p class="text-sm text-gray-500">Entradas vendidas</p>
+                    <p id="entradasGlobales" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                </div>
+            </div>
+
+            <!-- Lista de organizaciones -->
+            <h2 class="text-lg font-bold text-gray-800 mb-3">Organizaciones</h2>
+            <div id="orgsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <p class="col-span-full text-center text-gray-400 py-8">Cargando organizaciones...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom nav (móvil) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
+        <a href="eventos-seleccion.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
+        <a href="mensajes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">chat</span><span class="text-[10px]">Mensajes</span></a>
+        <a href="superadmin.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Admin</span></a>
+        <a href="#" id="btnCerrarSesionMobile" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
+    </nav>
+
+    <!-- Modal de eventos de una organización -->
+    <div id="modalEventos" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 id="modalTitulo" class="text-xl font-bold text-gray-800"></h3>
+                    <p id="modalSubtitulo" class="text-sm text-gray-500"></p>
+                </div>
+                <button onclick="cerrarModalEventos()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="modalEventosLista" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- Firebase y lógica -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { collection, getDocs, query, where, doc, getDoc, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const orgsContainer = document.getElementById('orgsContainer');
+        const searchInput = document.getElementById('searchInput');
+        const modalEventos = document.getElementById('modalEventos');
+        const modalTitulo = document.getElementById('modalTitulo');
+        const modalSubtitulo = document.getElementById('modalSubtitulo');
+        const modalEventosLista = document.getElementById('modalEventosLista');
+
+        let organizaciones = [];
+        let eventosGlobales = [];
+        let ventasGlobales = [];
+        let solicitudesGlobales = [];
+
+        // --- Cerrar sesión ---
+        async function cerrarSesion() {
+            await signOut(auth);
+            window.location.href = 'login.html';
+        }
+        document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
+        document.getElementById('btnCerrarSesionMobile').addEventListener('click', cerrarSesion);
+
+        // --- Cargar organizaciones ---
+        function cargarOrganizaciones() {
+            const q = query(collection(db, "usuarios"), where("rol", "==", "organizacion"));
+            onSnapshot(q, (snapshot) => {
+                organizaciones = [];
+                snapshot.forEach(d => organizaciones.push({ id: d.id, ...d.data() }));
+                renderOrganizaciones();
+                actualizarKPIsGlobales();
+            });
+        }
+
+        // --- Cargar eventos ---
+        function cargarEventosGlobales() {
+            onSnapshot(collection(db, "eventos"), (snapshot) => {
+                eventosGlobales = [];
+                snapshot.forEach(d => eventosGlobales.push({ id: d.id, ...d.data() }));
+                actualizarKPIsGlobales();
+            });
+        }
+
+        // --- Cargar ventas ---
+        function cargarVentasGlobales() {
+            onSnapshot(collection(db, "ventas"), (snapshot) => {
+                ventasGlobales = [];
+                snapshot.forEach(d => ventasGlobales.push({ id: d.id, ...d.data() }));
+                actualizarKPIsGlobales();
+            });
+        }
+
+        // --- Cargar solicitudes pendientes ---
+        function cargarSolicitudes() {
+            onSnapshot(collection(db, "solicitudes_eventos"), (snapshot) => {
+                solicitudesGlobales = [];
+                snapshot.forEach(d => solicitudesGlobales.push({ id: d.id, ...d.data() }));
+                renderSolicitudes();
+            }, (error) => {
+                console.error('Error al cargar solicitudes:', error);
+            });
+        }
+
+        // --- Renderizar solicitudes ---
+        function renderSolicitudes() {
+            const pendientes = solicitudesGlobales.filter(s => s.estado === 'pendiente');
+            const seccion = document.getElementById('seccionSolicitudes');
+            const container = document.getElementById('solicitudesContainer');
+            const contador = document.getElementById('contadorSolicitudes');
+
+            if (pendientes.length === 0) {
+                seccion.classList.add('hidden');
+                return;
+            }
+
+            seccion.classList.remove('hidden');
+            contador.textContent = pendientes.length;
+
+            container.innerHTML = pendientes.map(sol => {
+                const cantidadLotes = sol.lotes ? sol.lotes.length : 0;
+                const fechaSol = sol.fechaSolicitud ? new Date(sol.fechaSolicitud.seconds * 1000).toLocaleString('es-AR') : 'N/A';
+                const imagenUrl = sol.imagen || '';
+
+                return `
+                    <div class="bg-white rounded-xl border-2 border-amber-200 p-5 shadow-sm">
+                        <div class="flex flex-col lg:flex-row gap-4">
+                            ${imagenUrl ? `<img src="${imagenUrl}" class="w-full lg:w-32 h-24 object-cover rounded-lg" onerror="this.style.display='none'">` : ''}
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 class="font-bold text-gray-800 text-lg">${sol.nombre || 'Sin nombre'}</h3>
+                                        <p class="text-sm text-gray-500">${sol.fecha || 'Sin fecha'} · ${sol.lugar || 'Sin lugar'}</p>
+                                        <p class="text-xs text-gray-400 mt-1">Solicitado por: <strong>${sol.correo || 'N/A'}</strong> · ${fechaSol}</p>
+                                        <p class="text-xs text-gray-400 mt-1">${cantidadLotes} lote(s)</p>
+                                    </div>
+                                    <span class="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap">Pendiente</span>
+                                </div>
+                                ${sol.descripcion ? `<p class="text-sm text-gray-600 mt-2 line-clamp-2">${sol.descripcion}</p>` : ''}
+                                <div class="flex gap-2 mt-3">
+                                    <button onclick="aprobarSolicitud('${sol.id}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">check</span> Aprobar
+                                    </button>
+                                    <button onclick="rechazarSolicitud('${sol.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-sm">close</span> Rechazar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Aprobar solicitud ---
+        window.aprobarSolicitud = async function(solId) {
+            if (!confirm('¿Aprobar esta solicitud? Se publicará el evento automáticamente.')) return;
+            try {
+                const solDoc = await getDoc(doc(db, "solicitudes_eventos", solId));
+                if (!solDoc.exists()) return;
+                const sol = solDoc.data();
+
+                await addDoc(collection(db, "eventos"), {
+                    nombre: sol.nombre,
+                    fecha: sol.fecha,
+                    lugar: sol.lugar,
+                    descripcion: sol.descripcion || '',
+                    imagen: sol.imagen || '',
+                    lotes: sol.lotes || [],
+                    estado: 'aprobado',
+                    correo: sol.correo || '',
+                    creadoPor: sol.creadoPor || '',
+                    organizacionId: sol.organizacionId || '',
+                    fechaAprobacion: serverTimestamp()
+                });
+
+                await updateDoc(doc(db, "solicitudes_eventos", solId), { estado: 'aprobada' });
+
+                alert('✅ Evento aprobado y publicado.');
+            } catch (err) {
+                console.error(err);
+                alert('Error al aprobar la solicitud.');
+            }
+        };
+
+        // --- Rechazar solicitud ---
+        window.rechazarSolicitud = async function(solId) {
+            const motivo = prompt('¿Motivo del rechazo? (opcional)');
+            if (motivo === null) return;
+            try {
+                await updateDoc(doc(db, "solicitudes_eventos", solId), {
+                    estado: 'rechazada',
+                    motivoRechazo: motivo || '',
+                    fechaRechazo: serverTimestamp()
+                });
+                alert('❌ Solicitud rechazada.');
+            } catch (err) {
+                console.error(err);
+                alert('Error al rechazar la solicitud.');
+            }
+        };
+
+        // --- KPIs globales ---
+        function actualizarKPIsGlobales() {
+            const totalOrgs = organizaciones.length;
+            const totalEventos = eventosGlobales.length;
+            const recaudacionGlobal = ventasGlobales.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            const entradasGlobales = ventasGlobales.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+
+            document.getElementById('totalOrgs').textContent = totalOrgs;
+            document.getElementById('totalEventos').textContent = totalEventos;
+            document.getElementById('recaudacionGlobal').textContent = `$${recaudacionGlobal.toLocaleString()}`;
+            document.getElementById('entradasGlobales').textContent = entradasGlobales;
+
+            renderOrganizaciones();
+        }
+
+        // --- Renderizar organizaciones ---
+        function renderOrganizaciones() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            let filtradas = organizaciones;
+            if (searchTerm) {
+                filtradas = filtradas.filter(o => 
+                    (o.nombre || '').toLowerCase().includes(searchTerm) ||
+                    (o.email || '').toLowerCase().includes(searchTerm) ||
+                    (o.organizacionId || '').toLowerCase().includes(searchTerm)
+                );
+            }
+
+            if (filtradas.length === 0) {
+                orgsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300">corporate_fare</span>
+                        <p class="text-gray-400 mt-3">${organizaciones.length === 0 ? 'No hay organizaciones registradas.' : 'No hay organizaciones que coincidan.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            orgsContainer.innerHTML = filtradas.map(org => {
+                const eventosOrg = eventosGlobales.filter(e => 
+                    (e.organizacionId && e.organizacionId === org.organizacionId) ||
+                    (e.creadoPor && e.creadoPor === org.id) ||
+                    (e.correo && e.correo === org.email)
+                );
+                
+                const eventoIdsOrg = eventosOrg.map(e => e.id);
+                const ventasOrg = ventasGlobales.filter(v => eventoIdsOrg.includes(v.eventoId));
+                const recaudacionOrg = ventasOrg.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+                const entradasOrg = ventasOrg.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+
+                const inicial = (org.nombre || 'O').charAt(0).toUpperCase();
+                const telefonoLimpio = (org.telefono || '').replace(/\D/g, '');
+                const mensajeWhatsApp = encodeURIComponent(`Hola ${org.nombre}, te contacto desde Evently.`);
+                const waLink = telefonoLimpio ? `https://wa.me/${telefonoLimpio}?text=${mensajeWhatsApp}` : '#';
+
+                return `
+                    <div class="org-card bg-white rounded-xl border border-gray-200 p-5">
+                        <div class="flex items-start justify-between gap-3 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                    <span class="font-bold text-violet-700 text-lg">${inicial}</span>
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="font-semibold text-gray-800 truncate">${org.nombre || 'Sin nombre'}</h3>
+                                    <p class="text-xs text-gray-500 truncate">${org.email || 'Sin email'}</p>
+                                </div>
+                            </div>
+                            ${telefonoLimpio ? `
+                                <a href="${waLink}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full transition" title="WhatsApp">
+                                    <span class="material-symbols-outlined text-sm">chat</span>
+                                </a>
+                            ` : ''}
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase">Eventos</p>
+                                <p class="text-lg font-bold text-gray-800">${eventosOrg.length}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase">Recaudado</p>
+                                <p class="text-lg font-bold text-violet-600">$${recaudacionOrg.toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase">Entradas</p>
+                                <p class="text-lg font-bold text-gray-800">${entradasOrg}</p>
+                            </div>
+                        </div>
+                        <button onclick="verEventosDeOrg('${org.id}')" class="mt-4 w-full text-violet-600 hover:bg-violet-50 text-sm font-medium py-2 rounded-lg transition">
+                            Ver eventos →
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Ver eventos de una org ---
+        window.verEventosDeOrg = function(orgId) {
+            const org = organizaciones.find(o => o.id === orgId);
+            if (!org) return;
+
+            const eventosOrg = eventosGlobales.filter(e => 
+                (e.organizacionId && e.organizacionId === org.organizacionId) ||
+                (e.creadoPor && e.creadoPor === org.id) ||
+                (e.correo && e.correo === org.email)
+            );
+
+            modalTitulo.textContent = org.nombre || 'Organización';
+            modalSubtitulo.textContent = `${eventosOrg.length} eventos`;
+
+            if (eventosOrg.length === 0) {
+                modalEventosLista.innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
+                        <p class="text-gray-400 mt-2">Sin eventos todavía.</p>
+                    </div>
+                `;
+            } else {
+                modalEventosLista.innerHTML = eventosOrg.map(ev => {
+                    const ventasEv = ventasGlobales.filter(v => v.eventoId === ev.id);
+                    const recaudado = ventasEv.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+                    const entradas = ventasEv.reduce((sum, v) => sum + (v.cantidad || 0), 0);
+                    return `
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex justify-between items-start gap-3">
+                                <div class="min-w-0">
+                                    <h4 class="font-semibold text-gray-800 truncate">${ev.nombre || 'Sin nombre'}</h4>
+                                    <p class="text-xs text-gray-500 mt-0.5">${ev.fecha || 'Sin fecha'} · ${ev.lugar || 'Sin lugar'}</p>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <p class="text-sm font-bold text-violet-600">$${recaudado.toLocaleString()}</p>
+                                    <p class="text-[10px] text-gray-500">${entradas} entradas</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            modalEventos.classList.remove('hidden');
+            modalEventos.classList.add('flex');
+        };
+
+        window.cerrarModalEventos = function() {
+            modalEventos.classList.add('hidden');
+            modalEventos.classList.remove('flex');
+        };
+
+        searchInput.addEventListener('input', renderOrganizaciones);
+
+        // --- Link panel principal ---
+        (function() {
+            const eventoId = localStorage.getItem('eventoId');
+            if (eventoId) {
+                const link = document.getElementById('linkPanelPrincipal');
+                if (link) link.href = `dashboard.html?id=${eventoId}`;
+            }
+        })();
+
+        // --- Iniciar ---
+        cargarOrganizaciones();
+        cargarEventosGlobales();
+        cargarVentasGlobales();
+        cargarSolicitudes();
+    </script>
+</body>
+</html>

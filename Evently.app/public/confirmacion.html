@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Compra exitosa</title>
+    <title>Evently - Confirmación</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -30,13 +30,17 @@
         </div>
     </main>
 
-    <!-- Importar Firebase -->
-    <script type="module" src="../shared/firebase-init.js"></script>
+    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
+        © 2024 Evently by Bali Group
+    </footer>
 
-    <!-- QR Code Generator Library -->
+    <!-- Firebase -->
+    <script type="module" src="../shared/firebase-init.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <script type="module">
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
         const params = new URLSearchParams(window.location.search);
         const ventaId = params.get('id');
         const container = document.getElementById('confirmacionContainer');
@@ -55,28 +59,73 @@
             try {
                 const docRef = doc(db, "ventas", id);
                 const docSnap = await getDoc(docRef);
-
                 if (!docSnap.exists()) {
                     container.innerHTML = `<p class="text-red-500">Compra no encontrada.</p>`;
                     return;
                 }
 
                 const venta = { id: docSnap.id, ...docSnap.data() };
+                const estado = venta.estado || 'confirmada';
+                const esPendiente = estado === 'pendiente';
+                const metodo = venta.metodo_pago || '';
 
-                // Obtener el primer código QR de la compra
-                const codigoQR = venta.entradas && venta.entradas.length > 0 
-                    ? venta.entradas[0].codigo 
-                    : `ENT-${Date.now()}`;
+                let icono, titulo, mensaje, instruccionesHtml, qrHtml, botonesHtml;
 
-                // Renderizar la confirmación
-                container.innerHTML = `
-                    <div class="flex flex-col items-center">
-                        <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-4xl text-green-600">check_circle</span>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800">¡Compra exitosa!</h2>
-                        <p class="text-gray-500 mt-1">Tu pago ha sido confirmado.</p>
+                // --- Construir según estado y método ---
+                if (esPendiente) {
+                    icono = 'pending';
+                    titulo = '¡Compra pendiente!';
+                    mensaje = 'Tu compra está pendiente de confirmación. Sigue las instrucciones para completar el pago.';
 
+                    if (metodo === 'Transferencia') {
+                        instruccionesHtml = `
+                            <div class="w-full max-w-sm bg-yellow-50 rounded-xl p-4 mt-4 border border-yellow-200 text-left">
+                                <h4 class="font-semibold text-yellow-800">Instrucciones de transferencia</h4>
+                                <ul class="mt-2 text-sm text-gray-700 space-y-1">
+                                    <li>💰 <strong>Monto:</strong> $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</li>
+                                    <li>🏦 <strong>Banco:</strong> Banco Nación</li>
+                                    <li>📋 <strong>CBU:</strong> 1234567890123456789012</li>
+                                    <li>📧 <strong>Email para comprobante:</strong> pagos@evently.com</li>
+                                </ul>
+                                <p class="text-xs text-gray-500 mt-2">Envía el comprobante a pagos@evently.com y espera la confirmación.</p>
+                            </div>
+                        `;
+                    } else if (metodo === 'Efectivo') {
+                        instruccionesHtml = `
+                            <div class="w-full max-w-sm bg-yellow-50 rounded-xl p-4 mt-4 border border-yellow-200 text-left">
+                                <h4 class="font-semibold text-yellow-800">Pago en efectivo</h4>
+                                <ul class="mt-2 text-sm text-gray-700 space-y-1">
+                                    <li>📍 <strong>Punto de pago:</strong> Boletería del evento</li>
+                                    <li>⏰ <strong>Horario:</strong> 2 horas antes del inicio</li>
+                                    <li>💰 <strong>Monto:</strong> $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</li>
+                                </ul>
+                                <p class="text-xs text-gray-500 mt-2">Presenta tu DNI y el código de reserva al pagar.</p>
+                            </div>
+                        `;
+                    } else {
+                        instruccionesHtml = `<p class="text-gray-500 mt-4">Tu compra está pendiente de revisión.</p>`;
+                    }
+
+                    qrHtml = ''; // Sin QR
+                    botonesHtml = `
+                        <button onclick="window.print()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
+                            Imprimir instrucciones
+                        </button>
+                        <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
+                            Volver al inicio
+                        </a>
+                    `;
+
+                } else {
+                    // Confirmada
+                    icono = 'check_circle';
+                    titulo = '¡Compra exitosa!';
+                    mensaje = 'Tu pago ha sido confirmado.';
+                    instruccionesHtml = '';
+
+                    // QR
+                    const codigoQR = venta.entradas && venta.entradas.length > 0 ? venta.entradas[0].codigo : `ENT-${Date.now()}`;
+                    qrHtml = `
                         <div class="w-full max-w-sm bg-gray-50 rounded-xl p-6 mt-6 border border-gray-200">
                             <div class="bg-white p-4 rounded-lg border border-gray-200 flex flex-col items-center">
                                 <span class="text-sm text-gray-500">Código QR de entrada</span>
@@ -84,6 +133,44 @@
                                 <p class="text-xs text-gray-400 mt-2">Presenta este QR en la entrada</p>
                             </div>
                         </div>
+                    `;
+
+                    botonesHtml = `
+                        <button id="btnDescargarPDF" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition">
+                            Descargar PDF
+                        </button>
+                        <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
+                            Volver al inicio
+                        </a>
+                    `;
+
+                    // Generar QR (después de renderizar)
+                    setTimeout(() => {
+                        const qrContainer = document.getElementById('qrCode');
+                        if (qrContainer) {
+                            new QRCode(qrContainer, {
+                                text: codigoQR,
+                                width: 180,
+                                height: 180,
+                                colorDark: "#1a1c1c",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                    }, 100);
+                }
+
+                // Renderizar todo
+                container.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 rounded-full ${esPendiente ? 'bg-yellow-100' : 'bg-green-100'} flex items-center justify-center mb-4">
+                            <span class="material-symbols-outlined text-4xl ${esPendiente ? 'text-yellow-600' : 'text-green-600'}">${icono}</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">${titulo}</h2>
+                        <p class="text-gray-500 mt-1">${mensaje}</p>
+
+                        ${instruccionesHtml}
+                        ${qrHtml}
 
                         <div class="w-full max-w-sm bg-gray-50 rounded-xl p-4 mt-4 text-left border border-gray-200">
                             <h4 class="font-semibold text-gray-800">Resumen</h4>
@@ -93,34 +180,23 @@
                                 <p><span class="text-gray-500">Cantidad:</span> ${venta.cantidad || 0}</p>
                                 <p><span class="text-gray-500">Método de pago:</span> ${venta.metodo_pago || 'N/A'}</p>
                                 <p class="text-lg font-bold text-violet-600">Total: $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</p>
+                                <p class="text-sm text-gray-500">Estado: <span class="${esPendiente ? 'text-yellow-600' : 'text-green-600'} font-semibold">${estado}</span></p>
                             </div>
                         </div>
 
                         <div class="flex flex-wrap gap-3 mt-6">
-                            <button onclick="window.print()" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition">
-                                Descargar PDF
-                            </button>
-                            <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
-                                Volver al inicio
-                            </a>
+                            ${botonesHtml}
                         </div>
                     </div>
                 `;
 
-                // Generar el QR después de que el DOM esté listo
-                setTimeout(() => {
-                    const qrContainer = document.getElementById('qrCode');
-                    if (qrContainer) {
-                        new QRCode(qrContainer, {
-                            text: codigoQR,
-                            width: 180,
-                            height: 180,
-                            colorDark: "#1a1c1c",
-                            colorLight: "#ffffff",
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                    }
-                }, 100);
+                // Botón de PDF (solo si existe)
+                const pdfBtn = document.getElementById('btnDescargarPDF');
+                if (pdfBtn) {
+                    pdfBtn.addEventListener('click', function() {
+                        alert('Función de descarga de PDF en desarrollo. Usa "Imprimir" para guardar como PDF.');
+                    });
+                }
 
             } catch (error) {
                 console.error('Error al cargar la venta:', error);

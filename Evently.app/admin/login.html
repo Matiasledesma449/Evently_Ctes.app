@@ -27,10 +27,7 @@
                 </div>
             </div>
             <div class="mb-6">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="block text-sm font-medium text-gray-700">Contraseña</label>
-                    <a href="#" class="text-sm text-violet-600 hover:underline">¿Olvidaste tu contraseña?</a>
-                </div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">lock</span>
                     <input type="password" id="password" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="••••••••" required />
@@ -40,10 +37,53 @@
                 Iniciar sesión
             </button>
         </form>
-        <p class="text-center text-sm text-gray-500 mt-6">
-            ¿No tienes una cuenta? <a href="#" class="text-violet-600 font-semibold hover:underline">Solicitar acceso</a>
-        </p>
+        <div class="text-center mt-6">
+            <button type="button" id="btnOlvido" class="text-sm text-violet-600 hover:underline font-medium">
+                ¿Olvidaste tu contraseña?
+            </button>
+        </div>
         <div id="mensajeError" class="mt-4 text-center text-sm text-red-500 hidden"></div>
+    </div>
+
+    <!-- Modal: Recuperar contraseña -->
+    <div id="modalOlvido" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Recuperar contraseña</h3>
+                <button onclick="cerrarModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div id="olvidoForm">
+                <p class="text-sm text-gray-600 mb-4">Completá tus datos y el equipo de Evently se comunicará con vos por WhatsApp para ayudarte a recuperar tu cuenta.</p>
+
+                <div class="space-y-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Email</label>
+                        <input type="email" id="emailRecuperar" placeholder="tu@email.com" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">WhatsApp</label>
+                        <input type="tel" id="telefonoRecuperar" placeholder="+54 9 3782 456789" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="flex gap-3 justify-end">
+                    <button onclick="cerrarModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full font-medium">Cancelar</button>
+                    <button id="btnEnviarRecuperacion" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full font-medium">Enviar solicitud</button>
+                </div>
+                <div id="msgRecuperar" class="mt-3 text-sm text-center hidden"></div>
+            </div>
+
+            <div id="olvidoExito" class="hidden text-center py-4">
+                <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-3xl text-green-600">check_circle</span>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-1">¡Solicitud recibida!</h4>
+                <p class="text-sm text-gray-500">En unos momentos nos comunicaremos con vos por WhatsApp para ayudarte a recuperar tu cuenta.</p>
+            </div>
+        </div>
     </div>
 
     <!-- Firebase -->
@@ -55,6 +95,7 @@
         const btnLogin = document.getElementById('btnLogin');
         const mensajeError = document.getElementById('mensajeError');
 
+        // ==================== LOGIN ====================
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             mensajeError.classList.add('hidden');
@@ -73,21 +114,80 @@
                 btnLogin.disabled = true;
 
                 await signInWithEmailAndPassword(auth, email, password);
-                // Redirigir al dashboard
-                window.location.href = 'dashboard.html';
+                window.location.replace('eventos-seleccion.html');
 
             } catch (error) {
                 console.error('Error de login:', error);
                 let msg = 'Error al iniciar sesión. Verifica tus credenciales.';
-                if (error.code === 'auth/user-not-found') {
-                    msg = 'Usuario no encontrado.';
-                } else if (error.code === 'auth/wrong-password') {
-                    msg = 'Contraseña incorrecta.';
-                }
+                if (error.code === 'auth/user-not-found') msg = 'Usuario no encontrado.';
+                else if (error.code === 'auth/wrong-password') msg = 'Contraseña incorrecta.';
+                else if (error.code === 'auth/invalid-credential') msg = 'Usuario o contraseña incorrectos.';
                 mensajeError.textContent = msg;
                 mensajeError.classList.remove('hidden');
                 btnLogin.textContent = 'Iniciar sesión';
                 btnLogin.disabled = false;
+            }
+        });
+
+        // ==================== MODAL OLVIDO CONTRASEÑA ====================
+        window.cerrarModal = function() {
+            const m = document.getElementById('modalOlvido');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+            // Resetear modal
+            document.getElementById('olvidoForm').classList.remove('hidden');
+            document.getElementById('olvidoExito').classList.add('hidden');
+            document.getElementById('msgRecuperar').classList.add('hidden');
+            document.getElementById('emailRecuperar').value = '';
+            document.getElementById('telefonoRecuperar').value = '';
+        };
+
+        document.getElementById('btnOlvido').addEventListener('click', () => {
+            const m = document.getElementById('modalOlvido');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            const email = emailInput.value.trim();
+            if (email) document.getElementById('emailRecuperar').value = email;
+        });
+
+        document.getElementById('btnEnviarRecuperacion').addEventListener('click', async () => {
+            const email = document.getElementById('emailRecuperar').value.trim();
+            const telefono = document.getElementById('telefonoRecuperar').value.trim();
+            const msgEl = document.getElementById('msgRecuperar');
+            const btn = document.getElementById('btnEnviarRecuperacion');
+            msgEl.classList.add('hidden');
+
+            if (!email || !telefono) {
+                msgEl.textContent = 'Completá tu email y tu WhatsApp.';
+                msgEl.className = 'mt-3 text-sm text-center text-red-500';
+                msgEl.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            try {
+                await addDoc(collection(db, 'solicitudes_password'), {
+                    email: email,
+                    telefono: telefono,
+                    estado: 'pendiente',
+                    fecha: serverTimestamp()
+                });
+
+                // Mostrar mensaje de éxito
+                document.getElementById('olvidoForm').classList.add('hidden');
+                document.getElementById('olvidoExito').classList.remove('hidden');
+
+                setTimeout(() => cerrarModal(), 5000);
+            } catch (error) {
+                console.error('Error al enviar solicitud:', error);
+                msgEl.textContent = 'No se pudo enviar la solicitud. Intentá de nuevo.';
+                msgEl.className = 'mt-3 text-sm text-center text-red-500';
+                msgEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Enviar solicitud';
             }
         });
     </script>
