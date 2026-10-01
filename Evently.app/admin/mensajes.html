@@ -227,7 +227,7 @@
             collection, query, where, onSnapshot, addDoc, doc, getDoc,
             getDocs, serverTimestamp, updateDoc, deleteDoc, writeBatch
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const listaConversaciones = document.getElementById('listaConversaciones');
         const chatHeader = document.getElementById('chatHeader');
@@ -281,7 +281,7 @@
         });
 
         // --- Iniciar ---
-        auth.onAuthStateChanged(async (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (!user) return;
             miUid = user.uid;
 

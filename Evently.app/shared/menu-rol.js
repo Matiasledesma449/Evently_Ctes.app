@@ -110,7 +110,7 @@
             btnLogout.addEventListener('click', async (e) => {
                 e.preventDefault();
                 try {
-                    await auth.signOut();
+                    await window.signOut(auth);
                     window.location.href = 'login.html';
                 } catch (err) {
                     console.error('Error al cerrar sesión:', err);
@@ -154,7 +154,7 @@ function initRoles() {
         return;
     }
 
-    auth.onAuthStateChanged(async (user) => {
+    window.onAuthStateChanged(auth, async (user) => {
         if (!user) return;
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
@@ -163,6 +163,25 @@ function initRoles() {
             const rol = userDoc.data().rol;
             const esAdmin = rol === 'superadmin';
 
+            document.querySelectorAll('aside.sidebar-principal nav a[href="eventos.html"], nav.lg\\:hidden a[href="eventos.html"]').forEach(enlace => {
+                if (esAdmin) {
+                    enlace.href = 'eventos.html?modo=directo';
+                    Array.from(enlace.childNodes).forEach(nodo => {
+                        if (nodo.nodeType === Node.TEXT_NODE && nodo.textContent.trim()) {
+                            nodo.textContent = ' Crear Evento Directo';
+                        }
+                    });
+                } else {
+                    enlace.href = 'eventos.html';
+                    Array.from(enlace.childNodes).forEach(nodo => {
+                        if (nodo.nodeType === Node.TEXT_NODE && nodo.textContent.trim()) {
+                            nodo.textContent = ' Solicitar Evento';
+                        }
+                    });
+                }
+            });
+
+            // ✅ Verificación de cambio Soporte <-> Mensajes sigue intacto
             const nuevoHref = esAdmin ? 'mensajes.html' : 'soporte.html';
             const nuevoIcono = esAdmin ? 'chat' : 'support_agent';
             const nuevoTexto = esAdmin ? 'Mensajes' : 'Soporte';
@@ -178,6 +197,55 @@ function initRoles() {
                 el.textContent = nuevoTexto;
             });
 
+            // =====================================================
+            // ✅ NUEVO: INYECTAR BOTÓN DE PANEL GLOBAL (SOLO SUPERADMIN)
+            // =====================================================
+            if (esAdmin) {
+                const navDesktop = document.querySelector('aside.sidebar-principal nav');
+                const navMobile = document.querySelector('nav.lg\\:hidden'); // Selector escapado para Tailwind
+                const urlActual = window.location.href;
+                const enSuperadmin = urlActual.includes('superadmin.html');
+
+                // Inyectar en Desktop
+                if (navDesktop && !document.getElementById('link-panel-global')) {
+                    const linkDesktop = document.createElement('a');
+                    linkDesktop.id = 'link-panel-global';
+                    linkDesktop.href = 'superadmin.html';
+                    linkDesktop.className = enSuperadmin 
+                        ? 'active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium'
+                        : 'flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition';
+                    
+                    linkDesktop.innerHTML = `
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                        <span>Panel Global</span>
+                    `;
+                    navDesktop.appendChild(linkDesktop);
+                }
+
+                // Inyectar en Mobile (Bottom Nav) antes del botón de Salir
+                if (navMobile && !document.getElementById('link-panel-global-mobile')) {
+                    const linkMobile = document.createElement('a');
+                    linkMobile.id = 'link-panel-global-mobile';
+                    linkMobile.href = 'superadmin.html';
+                    linkMobile.className = enSuperadmin
+                        ? 'flex flex-col items-center text-violet-600'
+                        : 'flex flex-col items-center text-gray-500';
+                    
+                    linkMobile.innerHTML = `
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                        <span class="text-[10px]">Admin</span>
+                    `;
+                    
+                    const btnCerrarMobile = document.getElementById('btnCerrarSesionMobile');
+                    if (btnCerrarMobile) {
+                        navMobile.insertBefore(linkMobile, btnCerrarMobile);
+                    } else {
+                        navMobile.appendChild(linkMobile);
+                    }
+                }
+            }
+
+            // Iniciar contadores de notificaciones
             escucharNoLeidos(user.uid, esAdmin);
         } catch (e) {
             console.error('Error al verificar rol:', e);
@@ -192,7 +260,6 @@ if (window.auth) {
     window.addEventListener('firebase-ready', initRoles);
 }
 
-// --- Contador de mensajes no leídos ---
 // --- Contador de mensajes no leídos + solicitudes de contraseña ---
 function escucharNoLeidos(miUid, esAdmin) {
     let totalMensajesNoLeidos = 0;
@@ -308,6 +375,7 @@ function escucharNoLeidos(miUid, esAdmin) {
         });
     }
 }   
+
 function actualizarBadge(count) {
     document.querySelectorAll('.link-soporte, .link-soporte-mobile').forEach(el => {
         let badge = el.querySelector('.badge-no-leidos');

@@ -25,8 +25,17 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        onAuthStateChanged(auth, (user) => {
-            if (!user) window.location.href = 'login.html';
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            const modoDirecto = new URLSearchParams(window.location.search).get('modo') === 'directo';
+            const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+            const esSuperadmin = userDoc.exists() && userDoc.data().rol === 'superadmin';
+            if (modoDirecto && !esSuperadmin) {
+                window.location.replace('eventos.html');
+            } else if (!modoDirecto && esSuperadmin) {
+                window.location.replace('eventos.html?modo=directo');
+            }
         });
     </script>
 
@@ -68,8 +77,8 @@
         <!-- Contenido principal -->
         <main class="flex-1 min-h-0 overflow-y-auto p-6 pb-24 lg:pb-6">
             <div class="max-w-4xl mx-auto">
-                <h1 class="text-2xl font-bold text-gray-800 mb-2">Solicitar nuevo evento</h1>
-                <p class="text-gray-500 mb-6">Completa el formulario para solicitar un nuevo evento. Nuestro equipo evaluará la solicitud y se pondrá en contacto contigo.</p>
+                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar nuevo evento</h1>
+                <p id="descripcionFormulario" class="text-gray-500 mb-6">Completa el formulario para solicitar un nuevo evento. Nuestro equipo evaluará la solicitud y se pondrá en contacto contigo.</p>
 
                 <form id="formSolicitud" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
                     <div>
@@ -140,7 +149,7 @@
                             Limpiar
                         </button>
                         <button type="submit" id="btnEnviar" class="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-full transition font-medium flex items-center gap-2 justify-center">
-                            <span class="material-symbols-outlined text-sm">send</span> Enviar solicitud
+                            <span class="material-symbols-outlined text-sm">send</span> <span id="textoBotonEnviar">Enviar solicitud</span>
                         </button>
                     </div>
                 </form>
@@ -170,7 +179,7 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const form = document.getElementById('formSolicitud');
@@ -178,12 +187,21 @@
         const btnAgregarLote = document.getElementById('agregarLote');
         const mensajeResultado = document.getElementById('mensajeResultado');
         const btnEnviar = document.getElementById('btnEnviar');
+        const textoBotonEnviar = document.getElementById('textoBotonEnviar');
         const fileInput = document.getElementById('imagenFile');
         const btnSubirImagen = document.getElementById('btnSubirImagen');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
         const nombreArchivo = document.getElementById('nombreArchivo');
         const imagenUrlInput = document.getElementById('imagenUrl');
+        const modoDirecto = new URLSearchParams(window.location.search).get('modo') === 'directo';
+
+        if (modoDirecto) {
+            document.title = 'Evently - Crear Evento Directo';
+            document.getElementById('tituloFormulario').textContent = 'Crear evento directo';
+            document.getElementById('descripcionFormulario').textContent = 'Publicá un evento directamente en Evently, sin crear una solicitud.';
+            document.getElementById('textoBotonEnviar').textContent = 'Publicar evento';
+        }
 
         let loteIndex = 1;
         let imagenSubiendo = false;
@@ -293,7 +311,7 @@
             e.preventDefault();
             mensajeResultado.classList.add('hidden');
             btnEnviar.disabled = true;
-            btnEnviar.textContent = 'Enviando...';
+            textoBotonEnviar.textContent = 'Enviando...';
 
             try {
                 const nombre = document.getElementById('nombre').value.trim();
@@ -322,49 +340,44 @@
                 if (imagenSubiendo) throw new Error('La imagen aún se está subiendo. Espera a que termine.');
 
                 const user = auth.currentUser;
-                let organizacionId = '';
-                try {
-                    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-                    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-                    if (userDoc.exists()) organizacionId = userDoc.data().organizacionId || '';
-                } catch (e) {}
+                if (!user) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
+                const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!userSnap.exists()) throw new Error('No se encontró el perfil del usuario.');
+                const userData = userSnap.data();
+                if (modoDirecto && userData.rol !== 'superadmin') throw new Error('Solo el superadmin puede publicar eventos directamente.');
+                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear Evento Directo.');
 
-                const solicitud = {
+                const evento = {
                     nombre, fecha, lugar,
                     imagen: imagenUrl || '',
                     descripcion: descripcion || '',
                     lotes,
-                    estado: 'pendiente',
-                    fechaSolicitud: serverTimestamp(),
-                    creadoPor: user?.uid || 'anónimo',
-                    correo: user?.email || '',
-                    organizacionId
+                    estado: modoDirecto ? 'publicado' : 'pendiente',
+                    creadoPor: user.uid,
+                    correo: user.email || userData.email || '',
+                    organizacionId: userData.organizacionId || '',
+                    ...(modoDirecto
+                        ? { fechaPublicacion: serverTimestamp() }
+                        : { fechaSolicitud: serverTimestamp() })
                 };
 
-                await addDoc(collection(db, 'solicitudes_eventos'), solicitud);
+                const eventoRef = await addDoc(collection(db, modoDirecto ? 'eventos' : 'solicitudes_eventos'), evento);
 
                 mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';
                 mensajeResultado.innerHTML = `
                     <span class="material-symbols-outlined align-middle text-green-600">check_circle</span>
-                    <strong>¡Solicitud enviada!</strong> Hemos recibido tu solicitud. Nuestro equipo la evaluará y se pondrá en contacto contigo.
+                    <strong>${modoDirecto ? '¡Evento publicado!' : '¡Solicitud enviada!'}</strong> Redirigiendo...
                 `;
                 mensajeResultado.classList.remove('hidden');
 
-                form.reset();
-                previewContainer.classList.add('hidden');
-                imagenUrlInput.value = '';
-                btnSubirImagen.textContent = 'Subir imagen';
-                btnSubirImagen.disabled = false;
-                const lotesExtra = document.querySelectorAll('.lote-item');
-                if (lotesExtra.length > 1) {
-                    lotesExtra.forEach((el, idx) => { if (idx > 0) el.remove(); });
-                }
-                const firstLote = document.querySelector('.lote-item');
-                if (firstLote) firstLote.querySelectorAll('input').forEach(inp => inp.value = '');
-                document.querySelectorAll('.lote-item').forEach((el, idx) => {
-                    el.querySelector('h4').textContent = `Lote ${idx + 1}`;
-                });
-                loteIndex = 1;
+                setTimeout(() => {
+                    if (modoDirecto) {
+                        localStorage.setItem('eventoId', eventoRef.id);
+                        window.location.href = `dashboard.html?id=${eventoRef.id}`;
+                    } else {
+                        window.location.href = 'eventos-seleccion.html';
+                    }
+                }, 800);
 
             } catch (error) {
                 console.error('Error al enviar solicitud:', error);
@@ -374,9 +387,10 @@
                     <strong>Error:</strong> ${error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'}
                 `;
                 mensajeResultado.classList.remove('hidden');
-            } finally {
+                
+                // Rehabilitamos el botón SOLO si hubo un error.
                 btnEnviar.disabled = false;
-                btnEnviar.textContent = 'Enviar solicitud';
+                textoBotonEnviar.textContent = modoDirecto ? 'Publicar evento' : 'Enviar solicitud';
             }
         });
 

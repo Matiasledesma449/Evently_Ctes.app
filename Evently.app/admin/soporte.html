@@ -114,14 +114,15 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { collection, query, where, getDocs, addDoc, serverTimestamp, onSnapshot, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, query, where, getDocs, serverTimestamp, onSnapshot, doc, getDoc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         
         const btnEnviar = document.getElementById('btnEnviar');
         const mensajeInput = document.getElementById('mensajeInput');
         const historialContainer = document.getElementById('historialContainer');
         
         let uidCliente = null;
+        let uidSuperadmin = null;
         let nombreCliente = 'Cliente';
         let conversacionId = null;
         let unsubscribeConversacion = null;
@@ -136,14 +137,19 @@
         document.getElementById('btnCerrarSesionMobile').addEventListener('click', cerrarSesion);
         
         // --- Iniciar ---
-        auth.onAuthStateChanged(async (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (!user) return;
             uidCliente = user.uid;
             
-            const userDoc = await getDoc(doc(db, 'usuarios', uidCliente));
-            if (userDoc.exists()) nombreCliente = userDoc.data().nombre || 'Cliente';
-            
-            escucharConversacion();
+            try {
+                const userDoc = await getDoc(doc(db, 'usuarios', uidCliente));
+                if (userDoc.exists()) nombreCliente = userDoc.data().nombre || user.displayName || 'Cliente';
+                uidSuperadmin = await getSuperadminUid();
+                escucharConversacion();
+            } catch (error) {
+                console.error('No se pudo iniciar el soporte:', error);
+                alert('No se pudo iniciar el soporte. Verificá tu conexión y los permisos de Firestore.');
+            }
         });
         
         // --- Escuchar conversación en tiempo real ---
@@ -156,20 +162,25 @@
             );
             
             unsubscribeConversacion = onSnapshot(qConv, (snapshot) => {
-                if (snapshot.empty) {
-                    if (!conversacionId) {
-                        historialContainer.innerHTML = '<p class="text-center text-gray-400 py-8">Todavía no enviaste consultas. Escribí tu problema abajo y hacé clic en "Enviar".</p>';
-                    }
+                const conv = snapshot.docs.find(d => {
+                    const participantes = d.data().participantes || [];
+                    return participantes.length === 2 && participantes.includes(uidCliente) && participantes.includes(uidSuperadmin);
+                });
+
+                if (!conv) {
+                    conversacionId = null;
+                    if (unsubscribeMensajes) unsubscribeMensajes();
+                    historialContainer.innerHTML = '<p class="text-center text-gray-400 py-8">Todavía no enviaste consultas. Escribí tu problema abajo y hacé clic en "Enviar".</p>';
                     return;
                 }
-                
-                const conv = snapshot.docs[0];
-                const nuevoId = conv.id;
-                
-                if (nuevoId !== conversacionId) {
-                    conversacionId = nuevoId;
+
+                if (conv.id !== conversacionId) {
+                    conversacionId = conv.id;
                     escucharMensajes();
                 }
+            }, (error) => {
+                console.error('No se pudo cargar la conversación:', error);
+                historialContainer.innerHTML = '<p class="text-center text-red-500 py-8">No se pudo cargar el historial. Revisá los permisos de Firestore.</p>';
             });
         }
         
@@ -177,7 +188,7 @@
             const q = query(collection(db, 'usuarios'), where('rol', '==', 'superadmin'));
             const snap = await getDocs(q);
             if (!snap.empty) return snap.docs[0].id;
-            return '4SrXPyclHIhjF3BMnlNxAaWSygz2';
+            throw new Error('No hay ningún usuario con rol superadmin en usuarios.');
         }
         
         // --- Escuchar mensajes ---
@@ -272,15 +283,20 @@
         btnEnviar.addEventListener('click', async () => {
             const texto = mensajeInput.value.trim();
             if (!texto) return;
+            if (!uidCliente || !uidSuperadmin) {
+                alert('El soporte todavía no está listo. Actualizá la página e intentá nuevamente.');
+                return;
+            }
             
             btnEnviar.disabled = true;
             btnEnviar.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>';
             
             try {
-                let uidSuperadmin = await getSuperadminUid();
-                
+                const batch = writeBatch(db);
+                const mensajeRef = doc(collection(db, 'mensajes'));
                 if (!conversacionId) {
-                    const docRef = await addDoc(collection(db, 'conversaciones'), {
+                    const conversacionRef = doc(collection(db, 'conversaciones'));
+                    batch.set(conversacionRef, {
                         participantes: [uidCliente, uidSuperadmin],
                         nombres: {
                             [uidCliente]: nombreCliente,
@@ -289,16 +305,15 @@
                         ultimoMensaje: texto,
                         ultimaFecha: serverTimestamp()
                     });
-                    conversacionId = docRef.id;
-                    escucharMensajes();
+                    conversacionId = conversacionRef.id;
                 } else {
-                    await updateDoc(doc(db, 'conversaciones', conversacionId), {
+                    batch.update(doc(db, 'conversaciones', conversacionId), {
                         ultimoMensaje: texto,
                         ultimaFecha: serverTimestamp()
                     });
                 }
-                
-                await addDoc(collection(db, 'mensajes'), {
+
+                batch.set(mensajeRef, {
                     conversacionId: conversacionId,
                     de: uidCliente,
                     texto: texto,
@@ -306,7 +321,8 @@
                     leido: false,
                     editado: false
                 });
-                
+                await batch.commit();
+                if (unsubscribeMensajes) escucharMensajes();
                 mensajeInput.value = '';
             } catch (error) {
                 console.error('Error al enviar mensaje', error);

@@ -14,19 +14,15 @@
         .org-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
     </style>
 </head>
-<body>
+<body class="h-screen overflow-hidden">
 
-    <!-- Verificar autenticación y rol de superadmin -->
+    <!-- Verificar autenticación y rol -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'login.html';
-                return;
-            }
+            if (!user) { window.location.href = 'login.html'; return; }
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (!userDoc.exists() || userDoc.data().rol !== 'superadmin') {
                 alert('No tenés permisos para acceder a este panel.');
@@ -35,7 +31,7 @@
         });
     </script>
 
-    <div class="flex min-h-screen">
+    <div class="flex h-screen min-h-0">
         <!-- Sidebar -->
         <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
             <div class="p-6">
@@ -73,7 +69,7 @@
         </aside>
 
         <!-- Contenido principal -->
-        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+        <main class="flex-1 min-h-0 overflow-y-auto p-6 pb-24 lg:pb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800">Panel Super Admin</h1>
@@ -86,15 +82,17 @@
             </div>
 
             <!-- SECCIÓN: Solicitudes pendientes -->
-            <div id="seccionSolicitudes" class="mb-6 hidden">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <div id="seccion-solicitudes" class="mb-8 hidden">
+                <div class="flex items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <span class="material-symbols-outlined text-violet-600">notifications_active</span>
                         Solicitudes pendientes
-                        <span id="contadorSolicitudes" class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">0</span>
                     </h2>
+                    <span id="contador-solicitudes" class="bg-violet-600 text-white text-sm font-semibold px-3 py-1 rounded-full ml-3 shadow-sm">0</span>
                 </div>
-                <div id="solicitudesContainer" class="space-y-3"></div>
+                <div id="grid-solicitudes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <p class="text-gray-500 col-span-full text-center py-8" id="mensaje-vacio">Cargando solicitudes...</p>
+                </div>
             </div>
 
             <!-- KPIs Globales -->
@@ -133,13 +131,13 @@
         <a href="#" id="btnCerrarSesionMobile" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
     </nav>
 
-    <!-- Modal de eventos de una organización -->
+    <!-- MODAL 1: Eventos de Organización -->
     <div id="modalEventos" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h3 id="modalTitulo" class="text-xl font-bold text-gray-800"></h3>
-                    <p id="modalSubtitulo" class="text-sm text-gray-500"></p>
+                    <h3 id="modalTituloOrg" class="text-xl font-bold text-gray-800"></h3>
+                    <p id="modalSubtituloOrg" class="text-sm text-gray-500"></p>
                 </div>
                 <button onclick="cerrarModalEventos()" class="text-gray-400 hover:text-gray-600">
                     <span class="material-symbols-outlined">close</span>
@@ -149,33 +147,50 @@
         </div>
     </div>
 
-    <!-- Firebase y lógica -->
-    <script type="module" src="../shared/firebase-init.js"></script>
+    <!-- MODAL 2: Confirmación de Aprobación/Rechazo -->
+    <div id="modalConfirmacion" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 id="modalConfirmacionTitulo" class="text-xl font-bold text-gray-900 mb-2">Confirmar Acción</h3>
+            <p id="modalConfirmacionMensaje" class="text-gray-600 mb-4 text-sm">¿Estás seguro?</p>
+            <div id="contenedorMotivoConfirmacion" class="hidden mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del rechazo (Opcional)</label>
+                <textarea id="inputMotivoConfirmacion" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-600 focus:border-violet-600 outline-none" placeholder="Ej: Faltan detalles..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="btnCancelarModalConfirmacion" class="px-5 py-2 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition">Cancelar</button>
+                <button id="btnConfirmarModalConfirmacion" class="px-5 py-2 text-white font-medium rounded-lg transition shadow-md min-w-[120px] bg-violet-600 hover:bg-violet-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase y lógica principal -->
     <script type="module">
-        import { collection, getDocs, query, where, doc, getDoc, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, query, where, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { signOut as fbSignOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const db = window.db;
+        const auth = window.auth;
 
         const orgsContainer = document.getElementById('orgsContainer');
         const searchInput = document.getElementById('searchInput');
         const modalEventos = document.getElementById('modalEventos');
-        const modalTitulo = document.getElementById('modalTitulo');
-        const modalSubtitulo = document.getElementById('modalSubtitulo');
+        const modalTituloOrg = document.getElementById('modalTituloOrg');
+        const modalSubtituloOrg = document.getElementById('modalSubtituloOrg');
         const modalEventosLista = document.getElementById('modalEventosLista');
 
         let organizaciones = [];
         let eventosGlobales = [];
         let ventasGlobales = [];
-        let solicitudesGlobales = [];
 
-        // --- Cerrar sesión ---
+        // Cerrar sesión
         async function cerrarSesion() {
-            await signOut(auth);
+            await fbSignOut(auth);
             window.location.href = 'login.html';
         }
         document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
         document.getElementById('btnCerrarSesionMobile').addEventListener('click', cerrarSesion);
 
-        // --- Cargar organizaciones ---
+        // Cargar datos
         function cargarOrganizaciones() {
             const q = query(collection(db, "usuarios"), where("rol", "==", "organizacion"));
             onSnapshot(q, (snapshot) => {
@@ -186,7 +201,6 @@
             });
         }
 
-        // --- Cargar eventos ---
         function cargarEventosGlobales() {
             onSnapshot(collection(db, "eventos"), (snapshot) => {
                 eventosGlobales = [];
@@ -195,7 +209,6 @@
             });
         }
 
-        // --- Cargar ventas ---
         function cargarVentasGlobales() {
             onSnapshot(collection(db, "ventas"), (snapshot) => {
                 ventasGlobales = [];
@@ -204,136 +217,21 @@
             });
         }
 
-        // --- Cargar solicitudes pendientes ---
-        function cargarSolicitudes() {
-            onSnapshot(collection(db, "solicitudes_eventos"), (snapshot) => {
-                solicitudesGlobales = [];
-                snapshot.forEach(d => solicitudesGlobales.push({ id: d.id, ...d.data() }));
-                renderSolicitudes();
-            }, (error) => {
-                console.error('Error al cargar solicitudes:', error);
-            });
-        }
-
-        // --- Renderizar solicitudes ---
-        function renderSolicitudes() {
-            const pendientes = solicitudesGlobales.filter(s => s.estado === 'pendiente');
-            const seccion = document.getElementById('seccionSolicitudes');
-            const container = document.getElementById('solicitudesContainer');
-            const contador = document.getElementById('contadorSolicitudes');
-
-            if (pendientes.length === 0) {
-                seccion.classList.add('hidden');
-                return;
-            }
-
-            seccion.classList.remove('hidden');
-            contador.textContent = pendientes.length;
-
-            container.innerHTML = pendientes.map(sol => {
-                const cantidadLotes = sol.lotes ? sol.lotes.length : 0;
-                const fechaSol = sol.fechaSolicitud ? new Date(sol.fechaSolicitud.seconds * 1000).toLocaleString('es-AR') : 'N/A';
-                const imagenUrl = sol.imagen || '';
-
-                return `
-                    <div class="bg-white rounded-xl border-2 border-amber-200 p-5 shadow-sm">
-                        <div class="flex flex-col lg:flex-row gap-4">
-                            ${imagenUrl ? `<img src="${imagenUrl}" class="w-full lg:w-32 h-24 object-cover rounded-lg" onerror="this.style.display='none'">` : ''}
-                            <div class="flex-1">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <h3 class="font-bold text-gray-800 text-lg">${sol.nombre || 'Sin nombre'}</h3>
-                                        <p class="text-sm text-gray-500">${sol.fecha || 'Sin fecha'} · ${sol.lugar || 'Sin lugar'}</p>
-                                        <p class="text-xs text-gray-400 mt-1">Solicitado por: <strong>${sol.correo || 'N/A'}</strong> · ${fechaSol}</p>
-                                        <p class="text-xs text-gray-400 mt-1">${cantidadLotes} lote(s)</p>
-                                    </div>
-                                    <span class="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap">Pendiente</span>
-                                </div>
-                                ${sol.descripcion ? `<p class="text-sm text-gray-600 mt-2 line-clamp-2">${sol.descripcion}</p>` : ''}
-                                <div class="flex gap-2 mt-3">
-                                    <button onclick="aprobarSolicitud('${sol.id}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm">check</span> Aprobar
-                                    </button>
-                                    <button onclick="rechazarSolicitud('${sol.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm">close</span> Rechazar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // --- Aprobar solicitud ---
-        window.aprobarSolicitud = async function(solId) {
-            if (!confirm('¿Aprobar esta solicitud? Se publicará el evento automáticamente.')) return;
-            try {
-                const solDoc = await getDoc(doc(db, "solicitudes_eventos", solId));
-                if (!solDoc.exists()) return;
-                const sol = solDoc.data();
-
-                await addDoc(collection(db, "eventos"), {
-                    nombre: sol.nombre,
-                    fecha: sol.fecha,
-                    lugar: sol.lugar,
-                    descripcion: sol.descripcion || '',
-                    imagen: sol.imagen || '',
-                    lotes: sol.lotes || [],
-                    estado: 'aprobado',
-                    correo: sol.correo || '',
-                    creadoPor: sol.creadoPor || '',
-                    organizacionId: sol.organizacionId || '',
-                    fechaAprobacion: serverTimestamp()
-                });
-
-                await updateDoc(doc(db, "solicitudes_eventos", solId), { estado: 'aprobada' });
-
-                alert('✅ Evento aprobado y publicado.');
-            } catch (err) {
-                console.error(err);
-                alert('Error al aprobar la solicitud.');
-            }
-        };
-
-        // --- Rechazar solicitud ---
-        window.rechazarSolicitud = async function(solId) {
-            const motivo = prompt('¿Motivo del rechazo? (opcional)');
-            if (motivo === null) return;
-            try {
-                await updateDoc(doc(db, "solicitudes_eventos", solId), {
-                    estado: 'rechazada',
-                    motivoRechazo: motivo || '',
-                    fechaRechazo: serverTimestamp()
-                });
-                alert('❌ Solicitud rechazada.');
-            } catch (err) {
-                console.error(err);
-                alert('Error al rechazar la solicitud.');
-            }
-        };
-
-        // --- KPIs globales ---
         function actualizarKPIsGlobales() {
-            const totalOrgs = organizaciones.length;
-            const totalEventos = eventosGlobales.length;
+            document.getElementById('totalOrgs').textContent = organizaciones.length;
+            document.getElementById('totalEventos').textContent = eventosGlobales.length;
             const recaudacionGlobal = ventasGlobales.reduce((sum, v) => sum + (v.monto_total || 0), 0);
             const entradasGlobales = ventasGlobales.reduce((sum, v) => sum + (v.cantidad || 0), 0);
-
-            document.getElementById('totalOrgs').textContent = totalOrgs;
-            document.getElementById('totalEventos').textContent = totalEventos;
             document.getElementById('recaudacionGlobal').textContent = `$${recaudacionGlobal.toLocaleString()}`;
             document.getElementById('entradasGlobales').textContent = entradasGlobales;
-
             renderOrganizaciones();
         }
 
-        // --- Renderizar organizaciones ---
         function renderOrganizaciones() {
             const searchTerm = searchInput.value.toLowerCase().trim();
             let filtradas = organizaciones;
             if (searchTerm) {
-                filtradas = filtradas.filter(o => 
+                filtradas = filtradas.filter(o =>
                     (o.nombre || '').toLowerCase().includes(searchTerm) ||
                     (o.email || '').toLowerCase().includes(searchTerm) ||
                     (o.organizacionId || '').toLowerCase().includes(searchTerm)
@@ -351,12 +249,11 @@
             }
 
             orgsContainer.innerHTML = filtradas.map(org => {
-                const eventosOrg = eventosGlobales.filter(e => 
+                const eventosOrg = eventosGlobales.filter(e =>
                     (e.organizacionId && e.organizacionId === org.organizacionId) ||
                     (e.creadoPor && e.creadoPor === org.id) ||
                     (e.correo && e.correo === org.email)
                 );
-                
                 const eventoIdsOrg = eventosOrg.map(e => e.id);
                 const ventasOrg = ventasGlobales.filter(v => eventoIdsOrg.includes(v.eventoId));
                 const recaudacionOrg = ventasOrg.reduce((sum, v) => sum + (v.monto_total || 0), 0);
@@ -407,19 +304,17 @@
             }).join('');
         }
 
-        // --- Ver eventos de una org ---
         window.verEventosDeOrg = function(orgId) {
             const org = organizaciones.find(o => o.id === orgId);
             if (!org) return;
-
-            const eventosOrg = eventosGlobales.filter(e => 
+            const eventosOrg = eventosGlobales.filter(e =>
                 (e.organizacionId && e.organizacionId === org.organizacionId) ||
                 (e.creadoPor && e.creadoPor === org.id) ||
                 (e.correo && e.correo === org.email)
             );
 
-            modalTitulo.textContent = org.nombre || 'Organización';
-            modalSubtitulo.textContent = `${eventosOrg.length} eventos`;
+            modalTituloOrg.textContent = org.nombre || 'Organización';
+            modalSubtituloOrg.textContent = `${eventosOrg.length} eventos`;
 
             if (eventosOrg.length === 0) {
                 modalEventosLista.innerHTML = `
@@ -461,7 +356,6 @@
 
         searchInput.addEventListener('input', renderOrganizaciones);
 
-        // --- Link panel principal ---
         (function() {
             const eventoId = localStorage.getItem('eventoId');
             if (eventoId) {
@@ -470,11 +364,12 @@
             }
         })();
 
-        // --- Iniciar ---
         cargarOrganizaciones();
         cargarEventosGlobales();
         cargarVentasGlobales();
-        cargarSolicitudes();
     </script>
+
+    <!-- Script de aprobaciones -->
+    <script type="module" src="aprobaciones.js"></script>
 </body>
 </html>

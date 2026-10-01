@@ -13,8 +13,6 @@
         .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
         .hover-card { transition: box-shadow 0.2s, transform 0.2s; }
         .hover-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-        .active-badge { background: #dcfce7; color: #166534; }
-        .inactive-badge { background: #fee2e2; color: #991b1b; }
         .org-card {
             cursor: pointer;
             background: white;
@@ -84,20 +82,29 @@
             </div>
 
             <!-- Header -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
                     <h1 id="tituloPagina" class="text-2xl font-bold text-gray-800">Mis Eventos</h1>
                     <p id="subtituloPagina" class="text-sm text-gray-500"></p>
                 </div>
-                <div id="filtrosContainer" class="flex flex-wrap gap-2">
+                <div id="filtrosContainer" class="flex flex-wrap gap-2 items-center">
+                    
+                    <!-- Boton de Solicitar Evento (Oculto por defecto, se muestra para clientes) -->
+                    <a href="eventos.html" id="btnSolicitarEventoCliente" class="hidden bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm mr-2">
+                        <span class="material-symbols-outlined text-sm">add</span> Solicitar Evento
+                    </a>
+
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
                         <input id="searchInput" type="text" placeholder="Buscar evento..." class="w-48 sm:w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                     </div>
+                    
+                    <!-- Filtros ajustados -->
                     <select id="estadoFilter" class="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
                         <option value="todos">Todos</option>
-                        <option value="activo">Activos</option>
-                        <option value="inactivo">Inactivos</option>
+                        <option value="publicado">Publicados</option>
+                        <option value="pendiente">Pendientes</option>
+                        <option value="rechazada">Rechazados</option>
                     </select>
                 </div>
             </div>
@@ -144,7 +151,7 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { onSnapshot, collection, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
@@ -155,15 +162,17 @@
         const subtituloPagina = document.getElementById('subtituloPagina');
         const btnVolverOrg = document.getElementById('btnVolverOrg');
         const textoMenuPrincipal = document.getElementById('textoMenuPrincipal');
+        const btnSolicitarEventoCliente = document.getElementById('btnSolicitarEventoCliente');
 
         // Estado
         let miUsuario = null;
         let soySuperAdmin = false;
         let organizaciones = [];
         let eventos = [];
+        let solicitudes = []; // Nuevo array para peticiones en limbo
         let orgSeleccionada = null;
 
-        // ✅ Restaurar filtro de estado guardado (si existe)
+        // ✅ Restaurar filtro de estado guardado
         (function restaurarFiltroEstado() {
             const filtroGuardado = localStorage.getItem('eventoEstadoFilter');
             if (filtroGuardado) {
@@ -197,22 +206,18 @@
                 subtituloPagina.textContent = 'Seleccioná una organización para ver sus eventos';
                 filtrosContainer.classList.add('hidden');
                 cargarOrganizaciones();
-
-                const orgGuardadaId = localStorage.getItem('orgSeleccionadaId');
-                if (orgGuardadaId) {
-                    window._orgPendienteRestaurar = orgGuardadaId;
-                }
             } else {
                 textoMenuPrincipal.textContent = 'Mis Eventos';
                 tituloPagina.textContent = 'Mis Eventos';
                 subtituloPagina.textContent = 'Todos tus eventos';
                 filtrosContainer.classList.remove('hidden');
+                btnSolicitarEventoCliente.classList.remove('hidden'); // Mostrar botón al cliente
                 cargarEventos();
             }
         });
 
         // =====================================================
-        // SUPERADMIN: ORGANIZACIONES
+        // SUPERADMIN: ORGANIZACIONES (Queda intacto)
         // =====================================================
         function cargarOrganizaciones() {
             onSnapshot(collection(db, "usuarios"), (snapshot) => {
@@ -228,59 +233,43 @@
                 if (eventos.length === 0) {
                     onSnapshot(collection(db, "eventos"), (snapEv) => {
                         eventos = [];
-                        snapEv.forEach(d => eventos.push({ id: d.id, ...d.data() }));
+                        snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
                         renderizarVista();
-
-                        if (window._orgPendienteRestaurar) {
-                            const orgId = window._orgPendienteRestaurar;
-                            window._orgPendienteRestaurar = null;
-                            const org = organizaciones.find(o => o.id === orgId);
-                            if (org) {
-                                orgSeleccionada = org;
-                                filtrosContainer.classList.remove('hidden');
-                                btnVolverOrg.classList.remove('hidden');
-                                renderizarVista();
-                            }
-                        }
                     });
                 } else {
                     renderizarVista();
-
-                    if (window._orgPendienteRestaurar) {
-                        const orgId = window._orgPendienteRestaurar;
-                        window._orgPendienteRestaurar = null;
-                        const org = organizaciones.find(o => o.id === orgId);
-                        if (org) {
-                            orgSeleccionada = org;
-                            filtrosContainer.classList.remove('hidden');
-                            btnVolverOrg.classList.remove('hidden');
-                            renderizarVista();
-                        }
-                    }
                 }
             });
         }
 
         // =====================================================
-        // CLIENTE: EVENTOS
+        // CLIENTE: EVENTOS + SOLICITUDES
         // =====================================================
         function cargarEventos() {
+            // 1. Escuchar los publicados (colección eventos)
             onSnapshot(collection(db, "eventos"), (snapshot) => {
                 eventos = [];
                 snapshot.forEach(doc => {
-                    eventos.push({ id: doc.id, ...doc.data() });
+                    eventos.push({ id: doc.id, estado: 'publicado', ...doc.data() });
                 });
-
-                if (!soySuperAdmin && miUsuario) {
-                    eventos = eventos.filter(ev => 
-                        (ev.organizacionId && ev.organizacionId === miUsuario.organizacionId) ||
-                        (ev.creadoPor && ev.creadoPor === auth.currentUser?.uid) ||
-                        (ev.correo && ev.correo === miUsuario.email)
-                    );
-                }
-
                 renderizarVista();
             });
+
+            // 2. Escuchar los pendientes/rechazados (colección solicitudes)
+            if (!soySuperAdmin && auth.currentUser) {
+                const qSol = query(collection(db, "solicitudes_eventos"), where("creadoPor", "==", auth.currentUser.uid));
+                onSnapshot(qSol, (snapSol) => {
+                    solicitudes = [];
+                    snapSol.forEach(d => {
+                        const sol = d.data();
+                        // Solo tomamos pendientes o rechazadas. Si fue aprobada, ya migró a "eventos".
+                        if (sol.estado === 'pendiente' || sol.estado === 'rechazada') {
+                            solicitudes.push({ id: d.id, ...sol });
+                        }
+                    });
+                    renderizarVista();
+                });
+            }
         }
 
         // =====================================================
@@ -363,28 +352,22 @@
             `;
         }
 
-        // ✅ Seleccionar organización (NO resetea el filtro)
         window.seleccionarOrganizacion = function(orgId) {
             const org = organizaciones.find(o => o.id === orgId);
             if (!org) return;
             orgSeleccionada = org;
-            localStorage.setItem('orgSeleccionadaId', orgId);
             filtrosContainer.classList.remove('hidden');
             btnVolverOrg.classList.remove('hidden');
             renderizarVista();
         };
 
-        // ✅ Volver a organizaciones (SÍ resetea el filtro)
         window.volverAOrganizaciones = function() {
             orgSeleccionada = null;
-            localStorage.removeItem('orgSeleccionadaId');
             searchInput.value = '';
             estadoFilter.value = 'todos';
-            localStorage.removeItem('eventoEstadoFilter');
             renderizarVista();
         };
 
-        // ✅ Vista: Eventos de una organización
         function renderizarEventosDeOrg(org) {
             tituloPagina.textContent = org.nombre || 'Organización';
             subtituloPagina.textContent = org.email || '';
@@ -399,26 +382,36 @@
             renderizarListaEventos(eventosFiltrados, `Esta organización no tiene eventos.`);
         }
 
-        // ✅ Vista: Eventos del cliente
+        // ✅ Vista: Eventos y Solicitudes combinados del cliente
         function renderizarEventosCliente() {
             tituloPagina.textContent = 'Mis Eventos';
-            subtituloPagina.textContent = `${eventos.length} eventos en total`;
+            
+            // 1. Tomamos sus eventos publicados
+            let misEventos = eventos.filter(ev => 
+                (ev.organizacionId && ev.organizacionId === miUsuario.organizacionId) ||
+                (ev.creadoPor && ev.creadoPor === auth.currentUser?.uid) ||
+                (ev.correo && ev.correo === miUsuario.email)
+            );
 
-            let filtrados = aplicarFiltrosBusqueda(eventos);
+            // 2. Juntamos con sus solicitudes en espera o rechazadas
+            let listaCompleta = [...misEventos, ...solicitudes];
+            
+            subtituloPagina.textContent = `${listaCompleta.length} registros en total`;
+
+            let filtrados = aplicarFiltrosBusqueda(listaCompleta);
             renderizarListaEventos(filtrados, `No tenés eventos creados todavía.`);
         }
 
-        // ✅ Aplicar filtros
+        // ✅ Aplicar filtros (Modificado para usar "estado")
         function aplicarFiltrosBusqueda(lista) {
             const searchTerm = searchInput.value.toLowerCase().trim();
             const estado = estadoFilter.value;
 
             let filtrados = [...lista];
 
-            if (estado === 'activo') {
-                filtrados = filtrados.filter(ev => esActivo(ev));
-            } else if (estado === 'inactivo') {
-                filtrados = filtrados.filter(ev => !esActivo(ev));
+            // Filtro por tab/select
+            if (estado !== 'todos') {
+                filtrados = filtrados.filter(ev => (ev.estado || 'publicado') === estado);
             }
 
             if (searchTerm) {
@@ -428,7 +421,7 @@
             return filtrados;
         }
 
-        // ✅ Renderizar grilla
+        // ✅ Renderizar grilla (Modificada para soportar estados)
         function renderizarListaEventos(lista, mensajeVacio) {
             if (lista.length === 0) {
                 contenidoContainer.innerHTML = `
@@ -443,29 +436,69 @@
             contenidoContainer.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${lista.map(evento => {
-                        const activo = esActivo(evento);
-                        const badgeClass = activo ? 'active-badge' : 'inactive-badge';
-                        const estadoTexto = activo ? 'Activo' : 'Inactivo';
+                        const estado = evento.estado || 'publicado'; // Seguro por defecto
                         const imagen = evento.imagen || '/public/imag/Imagen de evento 1.jpg';
+                        
+                        let badgeClass = '';
+                        let estadoTexto = '';
+                        let botonHTML = '';
+                        let motivoHTML = '';
+
+                        // Configuración visual según estado
+                        if (estado === 'publicado') {
+                            badgeClass = 'bg-green-100 text-green-800';
+                            estadoTexto = 'Publicado';
+                            botonHTML = `
+                                <a href="dashboard.html?id=${evento.id}" onclick="localStorage.setItem('eventoId', '${evento.id}')" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
+                                    <span>Entrar al Dashboard</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                </a>
+                            `;
+                        } else if (estado === 'pendiente') {
+                            badgeClass = 'bg-yellow-100 text-yellow-800';
+                            estadoTexto = 'Pendiente';
+                            botonHTML = `
+                                <button disabled class="bg-gray-100 text-gray-400 px-4 py-2 rounded-full text-sm font-medium cursor-not-allowed w-full flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">hourglass_empty</span> En Revisión
+                                </button>
+                            `;
+                        } else if (estado === 'rechazada') {
+                            badgeClass = 'bg-red-100 text-red-800';
+                            estadoTexto = 'Rechazada';
+                            motivoHTML = `
+                                <div class="mt-3 p-3 bg-red-50 rounded-lg text-sm text-red-700 border border-red-100">
+                                    <strong class="block mb-1">Motivo del rechazo:</strong> 
+                                    ${evento.motivoRechazo || 'No cumple con los requisitos del sitio.'}
+                                </div>
+                            `;
+                            botonHTML = `
+                                <button disabled class="bg-red-50 text-red-400 px-4 py-2 rounded-full text-sm font-medium cursor-not-allowed border border-red-100 w-full flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">cancel</span> Evento Rechazado
+                                </button>
+                            `;
+                        }
 
                         return `
-                            <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden">
-                                <img src="${imagen}" alt="${evento.nombre}" class="w-full h-40 object-cover">
-                                <div class="p-4">
-                                    <div class="flex justify-between items-start">
-                                        <h3 class="text-lg font-bold text-gray-800 truncate">${evento.nombre || 'Sin nombre'}</h3>
-                                        <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeClass}">${estadoTexto}</span>
+                            <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden flex flex-col">
+                                <div class="relative">
+                                    <img src="${imagen}" alt="${evento.nombre}" class="w-full h-40 object-cover bg-gray-100">
+                                    <div class="absolute top-3 right-3">
+                                        <span class="text-xs font-bold px-3 py-1 rounded-full shadow-sm ${badgeClass}">${estadoTexto}</span>
                                     </div>
-                                    <p class="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                                        <span class="material-symbols-outlined text-sm">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                                </div>
+                                <div class="p-5 flex-1 flex flex-col">
+                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${evento.nombre}">${evento.nombre || 'Sin nombre'}</h3>
+                                    
+                                    <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
                                     </p>
-                                    <p class="text-sm text-gray-500 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                                    <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${evento.lugar || 'Lugar no definido'}
                                     </p>
-                                    <div class="mt-3 flex justify-end">
-                                        <a href="dashboard.html?id=${evento.id}" onclick="localStorage.setItem('eventoId', '${evento.id}')" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition">
-                                            Entrar
-                                        </a>
+                                    
+                                    ${motivoHTML}
+                                    
+                                    <div class="mt-auto pt-5">
+                                        ${botonHTML}
                                     </div>
                                 </div>
                             </div>
@@ -475,7 +508,7 @@
             `;
         }
 
-        // ✅ Determinar si un evento está activo
+        // Se usa solo para los cálculos de la vista de superadmin (organizaciones)
         function esActivo(evento) {
             if (evento.activo !== undefined) return evento.activo;
             if (evento.fecha) {
@@ -487,15 +520,13 @@
                     const mes = meses[partes[1]];
                     const anio = parseInt(partes[2]);
                     if (!isNaN(dia) && mes !== undefined && !isNaN(anio)) {
-                        const fechaEvento = new Date(anio, mes, dia);
-                        return fechaEvento >= hoy;
+                        return new Date(anio, mes, dia) >= hoy;
                     }
                 }
             }
             return true;
         }
 
-        // ✅ Escuchar cambios en filtros (GUARDAR en localStorage)
         searchInput.addEventListener('input', renderizarVista);
         estadoFilter.addEventListener('change', function() {
             localStorage.setItem('eventoEstadoFilter', this.value);
@@ -503,7 +534,6 @@
         });
     </script>
 
-    <!-- Script para actualizar el enlace "Panel Principal" con el ID guardado -->
     <script>
         (function() {
             const eventoId = localStorage.getItem('eventoId');
@@ -517,7 +547,6 @@
         })();
     </script>
 
-    <!-- Script de roles centralizado -->
     <script src="../shared/menu-rol.js"></script>
 </body>
-</html> 
+</html>
