@@ -21,6 +21,7 @@ import {
     sendPasswordResetEmail,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDD3Kw5RHSoJLD1314xAwSWG4QUQTdHWPA",
@@ -34,9 +35,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 window.db = db;
 window.auth = auth;
+window.storage = storage;
 window.collection = collection;
 window.getDocs = getDocs;
 window.addDoc = addDoc;
@@ -57,7 +60,6 @@ console.log("🔥 Firebase inicializado correctamente");
 // ✅ Prevenir navegación hacia atrás después de cerrar sesión
 window.addEventListener('pageshow', (event) => {
     if (event.persisted) {
-        // Página restaurada desde bfcache (botón atrás)
         if (!auth.currentUser) {
             window.location.replace('login.html');
         }

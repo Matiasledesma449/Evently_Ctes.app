@@ -18,6 +18,10 @@
         .lote-item .remove-lote:hover { color: #dc2626; }
         .preview-image { max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #e5e7eb; }
     </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+    <link rel="prefetch" href="eventos-seleccion.html" />
+    <link rel="prefetch" href="dashboard.html" />
+    <link rel="prefetch" href="consultas-publicas.html" />
 </head>
 <body class="h-screen overflow-hidden">
 
@@ -41,36 +45,25 @@
 
     <div class="flex h-screen min-h-0">
         <!-- Sidebar -->
-        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen overflow-y-auto flex-shrink-0">
+        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
             <div class="p-6">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
                 <span class="block text-xs text-gray-500">Administración</span>
             </div>
-            <nav class="flex-1 px-4 space-y-1">
-                <a href="eventos-seleccion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">apps</span> Mis Eventos
-                </a>
-                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
-                </a>
-                <a href="eventos.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
-                    <span class="material-symbols-outlined">add_circle</span> Solicitar Evento
-                </a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">bar_chart</span> Reportes
-                </a>
-                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
-                </a>
-                <a class="link-soporte hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html">
-                    <span class="material-symbols-outlined icono-soporte">support_agent</span>
-                    <span class="texto-soporte">Soporte</span>
-                </a>
+            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
+                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
+                <a data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
+                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
+                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
+                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
+                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
+                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
+                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
             </nav>
             <div class="p-4 border-t border-gray-200">
-                <a href="login.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
-                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
-                </a>
+                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></a>
             </div>
         </aside>
 
@@ -160,20 +153,18 @@
     </div>
 
     <!-- Bottom nav (móvil) -->
-    <nav class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50">
-        <a href="eventos-seleccion.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
-        <a href="dashboard.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a href="eventos.html" class="flex flex-col items-center text-violet-600"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
-        <a href="reportes.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a href="escaner.html" class="flex flex-col items-center text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
-        <a class="link-soporte-mobile hidden flex flex-col items-center text-gray-500" href="soporte.html">
-            <span class="material-symbols-outlined icono-soporte-mobile">support_agent</span>
-            <span class="text-[10px] texto-soporte-mobile">Soporte</span>
-        </a>
-        <a href="#" id="btnCerrarSesionMobile" class="flex flex-col items-center text-gray-500">
-            <span class="material-symbols-outlined">logout</span>
-            <span class="text-[10px]">Salir</span>
-        </a>
+    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
+        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
+        <a data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
+        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
+        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
+        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
+        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
+        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
     </nav>
 
     <!-- Firebase y lógica -->
@@ -189,6 +180,7 @@
         const btnEnviar = document.getElementById('btnEnviar');
         const textoBotonEnviar = document.getElementById('textoBotonEnviar');
         const fileInput = document.getElementById('imagenFile');
+        const btnLimpiar = form.querySelector('button[type="reset"]');
         const btnSubirImagen = document.getElementById('btnSubirImagen');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
@@ -228,7 +220,7 @@
             loteIndex++;
             asignarEventosEliminar();
 
-            // Scroll suave DENTRO del main (no rompe el layout)
+            // Scroll suave DENTRO del main
             const main = document.querySelector('main');
             if (main) {
                 main.scrollTo({
@@ -265,6 +257,8 @@
 
         // ============ IMAGEN ============
         fileInput.addEventListener('change', () => {
+            imagenUrlInput.value = '';
+            btnSubirImagen.textContent = 'Subir imagen';
             const file = fileInput.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -287,14 +281,21 @@
             try {
                 imagenSubiendo = true;
                 btnSubirImagen.disabled = true;
+                fileInput.disabled = true;
+                btnLimpiar.disabled = true;
                 btnSubirImagen.textContent = 'Subiendo...';
+                // ✅ USAR storage desde window
+                const storage = window.storage;
                 const path = `eventos_solicitudes/${Date.now()}_${file.name}`;
                 const storageRef = ref(storage, path);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                const uploadResult = await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(uploadResult.ref);
+                if (!url) throw new Error('Storage no devolvió una URL para la imagen.');
                 imagenUrlInput.value = url;
                 btnSubirImagen.textContent = '✅ Subida correcta';
                 btnSubirImagen.disabled = false;
+                fileInput.disabled = false;
+                btnLimpiar.disabled = false;
                 imagenSubiendo = false;
                 console.log('Imagen subida:', url);
             } catch (error) {
@@ -302,6 +303,8 @@
                 alert('Error al subir la imagen. Intenta nuevamente.');
                 btnSubirImagen.textContent = 'Subir imagen';
                 btnSubirImagen.disabled = false;
+                fileInput.disabled = false;
+                btnLimpiar.disabled = false;
                 imagenSubiendo = false;
             }
         });
@@ -338,6 +341,7 @@
 
                 if (!lotesValidos || lotes.length === 0) throw new Error('Todos los lotes deben tener nombre, precio válido y cantidad disponible (mayor a 0).');
                 if (imagenSubiendo) throw new Error('La imagen aún se está subiendo. Espera a que termine.');
+                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('Subí la imagen antes de enviar el evento.');
 
                 const user = auth.currentUser;
                 if (!user) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
@@ -388,7 +392,6 @@
                 `;
                 mensajeResultado.classList.remove('hidden');
                 
-                // Rehabilitamos el botón SOLO si hubo un error.
                 btnEnviar.disabled = false;
                 textoBotonEnviar.textContent = modoDirecto ? 'Publicar evento' : 'Enviar solicitud';
             }
@@ -398,6 +401,8 @@
             mensajeResultado.classList.add('hidden');
             previewContainer.classList.add('hidden');
             imagenUrlInput.value = '';
+            fileInput.disabled = false;
+            btnLimpiar.disabled = false;
             btnSubirImagen.textContent = 'Subir imagen';
         });
     </script>

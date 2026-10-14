@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Consultas públicas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+    </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+    <link rel="prefetch" href="superadmin.html" />
+    <link rel="prefetch" href="mensajes.html" />
+    <link rel="prefetch" href="eventos-seleccion.html" />
+</head>
+<body class="min-h-screen">
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.replace('login.html');
+                return;
+            }
+            try {
+                const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!perfil.exists() || perfil.data().rol !== 'superadmin') {
+                    window.location.replace('eventos-seleccion.html');
+                    return;
+                }
+                const eventoId = localStorage.getItem('eventoId');
+                const linkPanelPrincipal = document.getElementById('linkPanelPrincipal');
+                if (eventoId && linkPanelPrincipal) linkPanelPrincipal.href = `dashboard.html?id=${eventoId}`;
+            } catch (error) {
+                console.error('No se pudo verificar el rol:', error);
+                window.location.replace('eventos-seleccion.html');
+            }
+        });
+    </script>
+
+    <div class="flex min-h-screen">
+        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
+            <div class="p-6">
+                <span class="text-2xl font-bold text-violet-600">Evently</span>
+                <span class="block text-xs text-gray-500">Super Admin</span>
+            </div>
+            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
+                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
+                <a id="linkPanelPrincipal" data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
+                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
+                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
+                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
+                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
+                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
+                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
+            </nav>
+            <div class="p-4 border-t border-gray-200">
+                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></a>
+            </div>
+        </aside>
+
+        <main class="flex-1 min-w-0 p-4 sm:p-6 pb-24 lg:pb-6">
+            <div class="max-w-5xl mx-auto">
+                <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Consultas públicas</h1>
+                        <p class="text-sm text-gray-500 mt-1">Mensajes enviados desde el sitio público.</p>
+                    </div>
+                    <label class="text-sm text-gray-600">
+                        Estado
+                        <select id="filtroEstado" class="block mt-1 border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
+                            <option value="nueva">Nuevas</option>
+                            <option value="leida">Leídas</option>
+                            <option value="respondida">Respondidas</option>
+                            <option value="todas">Todas</option>
+                        </select>
+                    </label>
+                </header>
+                <div id="consultasContainer" class="space-y-3" aria-live="polite">
+                    <p class="text-center text-gray-400 py-10">Cargando consultas...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
+        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
+        <a id="linkPanelPrincipalMobile" data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
+        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
+        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
+        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
+        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-violet-600"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
+        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
+    </nav>
+
+    <script type="module">
+        import {
+            collection, query, orderBy, onSnapshot, doc, updateDoc
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const consultasContainer = document.getElementById('consultasContainer');
+        const filtroEstado = document.getElementById('filtroEstado');
+        let consultas = [];
+
+        function formatearFecha(fecha) {
+            if (!fecha || typeof fecha.toDate !== 'function') return 'Fecha no disponible';
+            return fecha.toDate().toLocaleString('es-AR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+
+        function crearBoton(texto, clases, accion) {
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = clases;
+            boton.textContent = texto;
+            boton.addEventListener('click', accion);
+            return boton;
+        }
+
+        function crearConsultaCard(consulta) {
+            const card = document.createElement('article');
+            card.className = 'bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm';
+
+            const encabezado = document.createElement('div');
+            encabezado.className = 'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2';
+
+            const identidad = document.createElement('div');
+            identidad.className = 'min-w-0';
+            const nombre = document.createElement('h2');
+            nombre.className = 'font-semibold text-gray-900 break-words';
+            nombre.textContent = consulta.nombre || 'Sin nombre';
+            const email = document.createElement('a');
+            email.className = 'text-sm text-violet-700 hover:underline break-all';
+            email.href = `mailto:${consulta.email || ''}`;
+            email.textContent = consulta.email || 'Sin correo';
+            identidad.append(nombre, email);
+
+            const estado = document.createElement('span');
+            const etiquetasEstado = { nueva: 'Nueva', leida: 'Leída', respondida: 'Respondida' };
+            estado.className = 'self-start text-xs font-semibold px-2.5 py-1 rounded-full ' +
+                (consulta.estado === 'nueva' ? 'bg-amber-100 text-amber-800' :
+                    consulta.estado === 'respondida' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700');
+            estado.textContent = etiquetasEstado[consulta.estado] || 'Sin estado';
+            encabezado.append(identidad, estado);
+
+            const mensaje = document.createElement('p');
+            mensaje.className = 'text-sm text-gray-700 whitespace-pre-wrap break-words mt-4';
+            mensaje.textContent = consulta.mensaje || '';
+
+            const metadata = document.createElement('p');
+            metadata.className = 'text-xs text-gray-500 mt-4';
+            metadata.textContent = `${formatearFecha(consulta.fecha)} · ${consulta.origen || 'origen desconocido'}`;
+
+            const acciones = document.createElement('div');
+            acciones.className = 'flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100';
+
+            if (consulta.estado === 'nueva') {
+                acciones.appendChild(crearBoton('Marcar como leída', 'px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-800', () => actualizarEstado(consulta.id, 'leida')));
+            }
+
+            const asunto = 'Respuesta a tu consulta en Evently';
+            const cuerpo = `Hola ${consulta.nombre || ''},\n\nGracias por comunicarte con Evently.\n\n\nSaludos,\nEquipo Evently`;
+            const responder = document.createElement('a');
+            responder.className = 'px-3 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white';
+            responder.href = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(consulta.email || '')}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+            responder.target = '_blank';
+            responder.rel = 'noopener noreferrer';
+            responder.textContent = 'Responder por Gmail';
+            acciones.appendChild(responder);
+
+            if (consulta.estado !== 'respondida') {
+                acciones.appendChild(crearBoton('Marcar como respondida', 'px-3 py-2 rounded-lg text-sm font-medium border border-green-300 text-green-800 hover:bg-green-50', () => actualizarEstado(consulta.id, 'respondida')));
+            }
+
+            card.append(encabezado, mensaje, metadata, acciones);
+            return card;
+        }
+
+        function renderizarConsultas() {
+            const estado = filtroEstado.value;
+            const visibles = estado === 'todas' ? consultas : consultas.filter(consulta => consulta.estado === estado);
+            consultasContainer.replaceChildren();
+
+            if (visibles.length === 0) {
+                const vacio = document.createElement('p');
+                vacio.className = 'text-center text-gray-400 py-10';
+                vacio.textContent = 'No hay consultas para este filtro.';
+                consultasContainer.appendChild(vacio);
+                return;
+            }
+
+            visibles.forEach(consulta => consultasContainer.appendChild(crearConsultaCard(consulta)));
+        }
+
+        async function actualizarEstado(consultaId, estado) {
+            try {
+                await updateDoc(doc(db, 'consultas_publicas', consultaId), { estado });
+            } catch (error) {
+                console.error('No se pudo actualizar el estado de la consulta:', error);
+                alert('No se pudo actualizar la consulta. Verificá las reglas de Firestore.');
+            }
+        }
+
+        filtroEstado.addEventListener('change', renderizarConsultas);
+
+        const consultasQuery = query(
+            collection(db, 'consultas_publicas'),
+            orderBy('fecha', 'desc')
+        );
+
+        onSnapshot(consultasQuery, snapshot => {
+            consultas = snapshot.docs.map(documento => ({ id: documento.id, ...documento.data() }));
+            renderizarConsultas();
+        }, error => {
+            console.error('No se pudieron cargar las consultas públicas:', error);
+            consultasContainer.innerHTML = '<p class="text-center text-red-600 py-10">No se pudieron cargar las consultas. Verificá las reglas de Firestore.</p>';
+        });
+    </script>
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>

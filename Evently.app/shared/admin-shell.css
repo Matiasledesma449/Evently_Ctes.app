@@ -1,0 +1,20 @@
+html {
+    background: #f9f9f9;
+}
+
+@view-transition {
+    navigation: auto;
+}
+
+.admin-bottom-nav {
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.admin-bottom-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.admin-role-nav.invisible {
+    visibility: hidden;
+}

@@ -93,33 +93,22 @@
             <form id="soporteForm" class="mt-6 space-y-4">
                 <div>
                     <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
-                    <input type="text" id="nombre" name="nombre" required class="input-field" placeholder="Tu nombre" />
+                    <input type="text" id="nombre" name="nombre" maxlength="100" required class="input-field" placeholder="Tu nombre" />
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                    <input type="email" id="email" name="email" required class="input-field" placeholder="tu@email.com" />
-                </div>
-                <div>
-                    <label for="asunto" class="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
-                    <select id="asunto" name="asunto" class="input-field">
-                        <option value="problema-compra">Problema con mi compra</option>
-                        <option value="problema-evento">Problema con evento</option>
-                        <option value="problema-pago">Problema con pago</option>
-                        <option value="otro">Otro</option>
-                    </select>
+                    <input type="email" id="email" name="email" maxlength="254" required class="input-field" placeholder="tu@email.com" />
                 </div>
                 <div>
                     <label for="mensaje" class="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-                    <textarea id="mensaje" name="mensaje" rows="5" required class="input-field" placeholder="Describe tu problema con detalle..."></textarea>
+                    <textarea id="mensaje" name="mensaje" rows="5" maxlength="5000" required class="input-field" placeholder="Describe tu problema con detalle..."></textarea>
                 </div>
                 <button type="submit" id="btnEnviar" class="btn-enviar w-full flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-sm">send</span> Enviar mensaje
+                    <span class="material-symbols-outlined text-sm">send</span> Enviar consulta
                 </button>
             </form>
 
-            <div id="mensajeExito" class="hidden mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm text-center">
-                <span class="material-symbols-outlined text-sm align-middle">check_circle</span>
-                ¡Mensaje enviado! Nos pondremos en contacto contigo pronto.
+            <div id="mensajeEstado" class="hidden mt-4 p-4 rounded-xl text-sm text-center" role="status" aria-live="polite">
             </div>
         </div>
     </main>
@@ -135,42 +124,50 @@
 
         const form = document.getElementById('soporteForm');
         const btnEnviar = document.getElementById('btnEnviar');
-        const mensajeExito = document.getElementById('mensajeExito');
+        const mensajeEstado = document.getElementById('mensajeEstado');
+        const origenParam = new URLSearchParams(window.location.search).get('origen');
+        const origen = ['public/evento.html', 'public/index.html'].includes(origenParam)
+            ? origenParam
+            : 'public/soporte.html';
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            btnEnviar.disabled = true;
-            btnEnviar.textContent = 'Enviando...';
 
             const nombre = document.getElementById('nombre').value.trim();
             const email = document.getElementById('email').value.trim();
-            const asunto = document.getElementById('asunto').value;
             const mensaje = document.getElementById('mensaje').value.trim();
 
+            if (!nombre || !email || !mensaje) {
+                mensajeEstado.className = 'mt-4 p-4 rounded-xl text-sm text-center bg-red-50 border border-red-200 text-red-700';
+                mensajeEstado.textContent = 'Completá nombre, correo y mensaje.';
+                return;
+            }
+
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Enviando...';
+            mensajeEstado.classList.add('hidden');
+
             try {
-                // Guardar en Firestore (colección 'soporte')
-                await addDoc(collection(db, 'soporte'), {
+                await addDoc(collection(db, 'consultas_publicas'), {
                     nombre,
                     email,
-                    asunto,
                     mensaje,
+                    estado: 'nueva',
                     fecha: serverTimestamp(),
-                    leido: false
+                    origen
                 });
 
-                // Mostrar éxito
-                mensajeExito.classList.remove('hidden');
                 form.reset();
-                btnEnviar.textContent = 'Enviado ✅';
-                setTimeout(() => {
-                    btnEnviar.textContent = 'Enviar mensaje';
-                    btnEnviar.disabled = false;
-                }, 3000);
+                mensajeEstado.className = 'mt-4 p-4 rounded-xl text-sm text-center bg-green-50 border border-green-200 text-green-700';
+                mensajeEstado.textContent = 'Recibimos tu consulta, te responderemos al correo indicado.';
             } catch (error) {
-                console.error('Error al enviar mensaje:', error);
-                alert('Hubo un error al enviar tu mensaje. Intenta nuevamente.');
+                console.error('Error al enviar consulta pública:', error);
+                mensajeEstado.className = 'mt-4 p-4 rounded-xl text-sm text-center bg-red-50 border border-red-200 text-red-700';
+                mensajeEstado.textContent = 'No se pudo enviar la consulta. Intentá nuevamente.';
+            } finally {
                 btnEnviar.disabled = false;
-                btnEnviar.textContent = 'Enviar mensaje';
+                btnEnviar.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Enviar consulta';
+                mensajeEstado.classList.remove('hidden');
             }
         });
     </script>

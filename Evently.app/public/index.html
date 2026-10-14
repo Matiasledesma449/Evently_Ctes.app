@@ -23,25 +23,57 @@
         }
 
         .event-card {
-            transition: transform 0.2s ease, box-shadow 0.25s ease;
-            border-radius: 16px;
             overflow: hidden;
-            flex: 0 0 auto;
-            width: 280px;
-            scroll-snap-align: start;
+            border-radius: 12px;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         }
         .event-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.10);
+            transform: translateY(-4px);
+            box-shadow: 0 14px 30px -16px rgba(31, 41, 55, 0.38);
+            border-color: #c4b5fd;
         }
         .event-image {
-            height: 160px;
-            background-color: #ede9fe;
+            height: 208px;
+            background: #f3f0ff;
+            position: relative;
+            overflow: hidden;
+        }
+        .event-image img { transition: transform 0.35s ease; }
+        .event-card:hover .event-image img { transform: scale(1.035); }
+        .event-placeholder {
+            position: absolute;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #7c3aed;
-            font-size: 3rem;
+            color: #a78bfa;
+        }
+        .hero-frame {
+            min-height: 330px;
+            height: 420px;
+            isolation: isolate;
+            background: #27243a;
+        }
+        .hero-media, .hero-image, .hero-shade { position: absolute; inset: 0; }
+        .hero-image { width: 100%; height: 100%; object-fit: cover; }
+        .hero-shade { background: rgba(17, 24, 39, 0.58); z-index: 1; }
+        .hero-content { animation: hero-reveal 0.38s ease both; }
+        .hero-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.5);
+        }
+        [hidden] { display: none !important; }
+        .hero-dot { width: 8px; height: 8px; border-radius: 9999px; background: #d1d5db; transition: width 0.2s, background 0.2s; }
+        .hero-dot[aria-current="true"] { width: 24px; background: #7c3aed; }
+        .fade-in { animation: card-reveal 0.45s ease both; }
+        @keyframes hero-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes card-reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
         }
         .price-badge {
             background: #ede9fe;
@@ -76,29 +108,6 @@
         .event-meta .material-symbols-outlined {
             font-size: 1rem;
         }
-        .scroll-container {
-            display: flex;
-            gap: 20px;
-            overflow-x: auto;
-            padding: 8px 4px 16px 4px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
-        }
-        .scroll-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .scroll-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .scroll-container::-webkit-scrollbar-thumb {
-            background: #c4b5fd;
-            border-radius: 10px;
-        }
-        .scroll-container::-webkit-scrollbar-thumb:hover {
-            background: #7c3aed;
-        }
         .nav-arrow {
             background: white;
             border: 1px solid #e5e7eb;
@@ -119,10 +128,7 @@
             border-color: #7c3aed;
             box-shadow: 0 4px 12px rgba(124,58,237,0.15);
         }
-        .nav-arrow:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
+        .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
         .support-link {
             color: #6b7280;
             transition: color 0.2s;
@@ -148,33 +154,71 @@
             <div class="flex items-center gap-2">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
             </div>
-            <a href="soporte.html" class="support-link">
+            <button type="button" data-open-consulta data-origen="public/index.html" class="support-link border-0 bg-transparent">
                 <span class="material-symbols-outlined text-sm">help</span> Soporte
-            </a>
+            </button>
         </div>
     </header>
 
     <!-- Contenido principal -->
-    <main class="max-w-7xl mx-auto px-4 py-6 w-full">
-        <h1 class="text-2xl font-bold text-gray-800 mb-1">Próximos eventos</h1>
-
-        <!-- Contenedor con scroll horizontal y flechas -->
-        <div class="relative mt-4">
-            <!-- Flecha izquierda -->
-            <button id="scrollLeft" class="nav-arrow absolute left-0 top-1/2 -translate-y-1/2 -ml-5 lg:-ml-6 hidden lg:flex">
-                <span class="material-symbols-outlined">chevron_left</span>
-            </button>
-
-            <!-- Scroll container -->
-            <div id="eventosContainer" class="scroll-container">
-                <div class="w-full text-center text-gray-400 py-12">Cargando eventos...</div>
+    <main class="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full">
+        <section aria-labelledby="tituloDestacados">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
+                <div>
+                    <p class="text-xs uppercase font-semibold text-violet-700">Evently · Agenda</p>
+                    <h1 id="tituloDestacados" class="text-2xl font-bold text-gray-900 mt-1">Encontrá tu próximo evento</h1>
+                </div>
+                <p class="text-sm text-gray-500">Experiencias para compartir, cerca y más adelante.</p>
             </div>
 
-            <!-- Flecha derecha -->
-            <button id="scrollRight" class="nav-arrow absolute right-0 top-1/2 -translate-y-1/2 -mr-5 lg:-mr-6 hidden lg:flex">
-                <span class="material-symbols-outlined">chevron_right</span>
+            <div id="heroCarousel" class="relative" aria-roledescription="carrusel" aria-label="Eventos destacados" hidden>
+                <div class="hero-frame relative overflow-hidden rounded-xl">
+                    <div class="hero-media" aria-hidden="true">
+                        <img id="heroImage" class="hero-image" alt="" />
+                        <div id="heroPlaceholder" class="hero-placeholder" hidden>
+                            <span class="material-symbols-outlined text-7xl">event</span>
+                        </div>
+                        <div class="hero-shade"></div>
+                    </div>
+                    <div id="heroContent" class="hero-content absolute inset-0 z-10 flex flex-col justify-end items-start p-6 sm:p-10 text-white">
+                        <p id="heroBadge" class="text-xs uppercase tracking-wide font-semibold mb-2">Destacado</p>
+                        <h2 id="heroTitle" class="text-2xl sm:text-4xl font-bold max-w-2xl"></h2>
+                        <div class="flex flex-wrap gap-x-5 gap-y-2 mt-3 text-sm text-white/90">
+                            <p class="flex items-center gap-1.5"><span class="material-symbols-outlined text-base">calendar_month</span><span id="heroDate"></span></p>
+                            <p class="flex items-center gap-1.5"><span class="material-symbols-outlined text-base">location_on</span><span id="heroPlace"></span></p>
+                        </div>
+                        <a id="heroLink" href="#" class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold px-5 py-3 rounded-lg mt-5 transition shadow-sm">
+                            Ver evento <span class="material-symbols-outlined text-base">arrow_forward</span>
+                        </a>
+                    </div>
+                    <button id="heroAnterior" type="button" aria-label="Evento destacado anterior" class="nav-arrow absolute left-3 top-1/2 -translate-y-1/2 z-20">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <button id="heroSiguiente" type="button" aria-label="Siguiente evento destacado" class="nav-arrow absolute right-3 top-1/2 -translate-y-1/2 z-20">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                </div>
+                <div id="heroDots" class="flex justify-center items-center gap-2 py-4" aria-label="Seleccionar evento destacado"></div>
+            </div>
+        </section>
+
+        <section class="mt-5 sm:mt-8" aria-labelledby="tituloEventos">
+            <div class="flex items-end justify-between gap-3 mb-4">
+                <div>
+                    <h2 id="tituloEventos" class="text-xl font-bold text-gray-900">Todos los eventos</h2>
+                    <p class="text-sm text-gray-500 mt-1">Elegí tu próxima salida.</p>
+                </div>
+            </div>
+            <div id="eventosContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <p class="text-gray-400 py-10 text-center col-span-full">Cargando eventos...</p>
+            </div>
+        </section>
+        <section class="mt-10 border-t border-gray-200 py-6 text-center">
+            <p class="text-sm text-gray-600">¿Necesitás ayuda con una compra?</p>
+            <button type="button" data-open-consulta data-origen="public/index.html" class="mt-2 font-semibold text-violet-700 hover:text-violet-900">
+                Enviar una consulta
             </button>
-        </div>
+        </section>
     </main>
 
     <!-- Footer -->
@@ -186,115 +230,263 @@
     <script type="module" src="../shared/firebase-init.js"></script>
 
     <script type="module">
-        const container = document.getElementById('eventosContainer');
-        const scrollLeftBtn = document.getElementById('scrollLeft');
-        const scrollRightBtn = document.getElementById('scrollRight');
+        import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        function scrollContainer(direction) {
-            const scrollAmount = 300;
-            if (direction === 'left') {
-                container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        const db = window.db;
+        const container = document.getElementById('eventosContainer');
+        const heroCarousel = document.getElementById('heroCarousel');
+        const heroImage = document.getElementById('heroImage');
+        const heroPlaceholder = document.getElementById('heroPlaceholder');
+        const heroContent = document.getElementById('heroContent');
+        const heroDots = document.getElementById('heroDots');
+        const heroAnterior = document.getElementById('heroAnterior');
+        const heroSiguiente = document.getElementById('heroSiguiente');
+        let eventosDestacados = [];
+        let indiceDestacado = 0;
+        let temporizadorCarrusel = null;
+
+        const meses = {
+            enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+            julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
+        };
+
+        function fechaEvento(valor) {
+            if (valor && typeof valor.toDate === 'function') return valor.toDate();
+            if (valor instanceof Date) return valor;
+            if (typeof valor !== 'string') return null;
+
+            const fechaIso = valor.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (fechaIso) return new Date(Number(fechaIso[1]), Number(fechaIso[2]) - 1, Number(fechaIso[3]));
+
+            const fechaLocal = valor.match(/^(\d{1,2})\s+([a-záéíóúñ]+)\s+(\d{4})$/i);
+            if (fechaLocal) {
+                const mes = fechaLocal[2].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                if (meses[mes] !== undefined) return new Date(Number(fechaLocal[3]), meses[mes], Number(fechaLocal[1]));
+            }
+
+            const fechaNumerica = valor.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+            if (fechaNumerica) return new Date(Number(fechaNumerica[3]), Number(fechaNumerica[2]) - 1, Number(fechaNumerica[1]));
+
+            const timestamp = Date.parse(valor);
+            return Number.isNaN(timestamp) ? null : new Date(timestamp);
+        }
+
+        function inicioDelDia(fecha) {
+            return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+        }
+
+        function fechaLegible(evento) {
+            const fecha = fechaEvento(evento.fecha);
+            return fecha
+                ? fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })
+                : evento.fecha || 'Fecha por confirmar';
+        }
+
+        function imagenEvento(evento) {
+            return typeof evento.imagen === 'string' && evento.imagen.trim()
+                ? evento.imagen.trim()
+                : './imag/Imagen de evento 1.jpg';
+        }
+
+        function etiquetaProximidad(evento) {
+            const fecha = fechaEvento(evento.fecha);
+            if (!fecha) return '';
+            const dias = Math.ceil((inicioDelDia(fecha) - inicioDelDia(new Date())) / 86400000);
+            if (dias < 0) return '';
+            if (dias <= 3) return 'Últimos días';
+            if (dias <= 14) return 'Próximo';
+            return '';
+        }
+
+        function configurarImagen(img, placeholder, src, alt) {
+            img.alt = alt;
+            img.hidden = false;
+            placeholder.hidden = true;
+            img.onerror = () => {
+                img.hidden = true;
+                placeholder.hidden = false;
+            };
+            img.src = src;
+        }
+
+        function crearIcono(nombre, clases = '') {
+            const icono = document.createElement('span');
+            icono.className = `material-symbols-outlined ${clases}`.trim();
+            icono.textContent = nombre;
+            return icono;
+        }
+
+        function crearCardEvento(evento, indice) {
+            const card = document.createElement('article');
+            card.className = 'event-card fade-in bg-white border border-gray-200';
+            card.style.animationDelay = `${Math.min(indice * 55, 330)}ms`;
+
+            const frame = document.createElement('div');
+            frame.className = 'event-image';
+            const img = document.createElement('img');
+            img.className = 'w-full h-full object-cover';
+            img.loading = 'lazy';
+            const placeholder = document.createElement('div');
+            placeholder.className = 'event-placeholder';
+            placeholder.hidden = true;
+            placeholder.appendChild(crearIcono('image', 'text-5xl'));
+            configurarImagen(img, placeholder, imagenEvento(evento), evento.nombre || 'Imagen del evento');
+            frame.append(img, placeholder);
+
+            const badgeText = etiquetaProximidad(evento);
+            if (badgeText) {
+                const badge = document.createElement('span');
+                badge.className = 'absolute top-3 left-3 bg-white/95 text-violet-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm';
+                badge.textContent = badgeText;
+                frame.appendChild(badge);
+            }
+
+            const body = document.createElement('div');
+            body.className = 'p-4 flex flex-col min-h-[174px]';
+            const title = document.createElement('h3');
+            title.className = 'text-lg font-bold leading-snug text-gray-900 line-clamp-2';
+            title.textContent = evento.nombre || 'Sin nombre';
+
+            const details = document.createElement('div');
+            details.className = 'mt-3 space-y-2';
+            const dateRow = document.createElement('p');
+            dateRow.className = 'event-meta';
+            dateRow.append(crearIcono('calendar_month'), document.createTextNode(fechaLegible(evento)));
+            const placeRow = document.createElement('p');
+            placeRow.className = 'event-meta';
+            placeRow.append(crearIcono('location_on'), document.createTextNode(evento.lugar || 'Lugar no definido'));
+            details.append(dateRow, placeRow);
+
+            const actions = document.createElement('div');
+            actions.className = 'mt-auto pt-4 flex items-center justify-between gap-3';
+            const precio = Number(evento.lotes?.[0]?.precio);
+            if (Number.isFinite(precio) && precio > 0) {
+                const price = document.createElement('span');
+                price.className = 'text-sm font-semibold text-gray-800';
+                price.textContent = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(precio);
+                actions.appendChild(price);
             } else {
-                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                actions.appendChild(document.createElement('span'));
+            }
+
+            const link = document.createElement('a');
+            link.href = `evento.html?id=${encodeURIComponent(evento.id)}`;
+            link.className = 'btn-detail text-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md inline-flex items-center gap-2 font-semibold';
+            link.append('Ver entradas', crearIcono('arrow_forward', 'text-base'));
+            actions.appendChild(link);
+
+            body.append(title, details, actions);
+            card.append(frame, body);
+            return card;
+        }
+
+        function renderizarGrilla(eventos) {
+            container.replaceChildren();
+            if (eventos.length === 0) {
+                const vacio = document.createElement('div');
+                vacio.className = 'col-span-full text-center py-14';
+                vacio.appendChild(crearIcono('event_busy', 'text-5xl text-gray-300'));
+                const mensaje = document.createElement('p');
+                mensaje.className = 'text-gray-500 mt-3';
+                mensaje.textContent = 'No hay eventos disponibles por ahora.';
+                vacio.appendChild(mensaje);
+                container.appendChild(vacio);
+                return;
+            }
+            eventos.forEach((evento, indice) => container.appendChild(crearCardEvento(evento, indice)));
+        }
+
+        function renderizarDestacado() {
+            if (eventosDestacados.length === 0) return;
+            const evento = eventosDestacados[indiceDestacado];
+            heroContent.classList.remove('hero-content');
+            void heroContent.offsetWidth;
+            heroContent.classList.add('hero-content');
+
+            configurarImagen(heroImage, heroPlaceholder, imagenEvento(evento), evento.nombre || 'Evento destacado');
+            document.getElementById('heroTitle').textContent = evento.nombre || 'Evento destacado';
+            document.getElementById('heroDate').textContent = fechaLegible(evento);
+            document.getElementById('heroPlace').textContent = evento.lugar || 'Lugar no definido';
+            document.getElementById('heroLink').href = `evento.html?id=${encodeURIComponent(evento.id)}`;
+            document.getElementById('heroBadge').textContent = etiquetaProximidad(evento) || 'Eventos destacados';
+            heroAnterior.hidden = eventosDestacados.length < 2;
+            heroSiguiente.hidden = eventosDestacados.length < 2;
+            heroDots.replaceChildren();
+
+            eventosDestacados.forEach((item, indice) => {
+                const punto = document.createElement('button');
+                punto.type = 'button';
+                punto.className = 'hero-dot';
+                punto.setAttribute('aria-label', `Mostrar ${item.nombre || 'evento'} destacado`);
+                punto.setAttribute('aria-current', String(indice === indiceDestacado));
+                punto.addEventListener('click', () => {
+                    indiceDestacado = indice;
+                    renderizarDestacado();
+                    reiniciarCarrusel();
+                });
+                heroDots.appendChild(punto);
+            });
+        }
+
+        function moverDestacado(direccion) {
+            if (eventosDestacados.length < 2) return;
+            indiceDestacado = (indiceDestacado + direccion + eventosDestacados.length) % eventosDestacados.length;
+            renderizarDestacado();
+            reiniciarCarrusel();
+        }
+
+        function reiniciarCarrusel() {
+            window.clearInterval(temporizadorCarrusel);
+            if (eventosDestacados.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                temporizadorCarrusel = window.setInterval(() => moverDestacado(1), 5000);
             }
         }
 
-        scrollLeftBtn.addEventListener('click', () => scrollContainer('left'));
-        scrollRightBtn.addEventListener('click', () => scrollContainer('right'));
-
-        function updateArrows() {
-            const isAtStart = container.scrollLeft === 0;
-            const isAtEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 2;
-            scrollLeftBtn.style.display = isAtStart ? 'none' : 'flex';
-            scrollRightBtn.style.display = isAtEnd ? 'none' : 'flex';
-        }
-
-        container.addEventListener('scroll', updateArrows);
+        heroAnterior.addEventListener('click', () => moverDestacado(-1));
+        heroSiguiente.addEventListener('click', () => moverDestacado(1));
 
         async function cargarEventos() {
             try {
-                const querySnapshot = await getDocs(collection(db, "eventos"));
-                const eventos = [];
-                querySnapshot.forEach((doc) => {
-                    eventos.push({ id: doc.id, ...doc.data() });
-                });
+                const eventosPublicados = query(collection(db, 'eventos'), where('estado', '==', 'publicado'));
+                const querySnapshot = await getDocs(eventosPublicados);
+                const todos = querySnapshot.docs
+                    .map(documento => ({ id: documento.id, ...documento.data() }))
+                    .filter(evento => evento.activo !== false);
 
-                if (eventos.length === 0) {
-                    container.innerHTML = `
-                        <div class="w-full text-center py-16">
-                            <span class="material-symbols-outlined text-6xl text-gray-300">event_busy</span>
-                            <p class="text-gray-400 mt-4">No hay eventos disponibles por ahora.</p>
-                            <p class="text-sm text-gray-300">Vuelve más tarde.</p>
-                        </div>
-                    `;
-                    return;
+                const hoy = inicioDelDia(new Date());
+                const eventos = todos
+                    .filter(evento => !fechaEvento(evento.fecha) || inicioDelDia(fechaEvento(evento.fecha)) >= hoy)
+                    .sort((a, b) => {
+                        const fechaA = fechaEvento(a.fecha)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+                        const fechaB = fechaEvento(b.fecha)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+                        return fechaA - fechaB;
+                    });
+
+                eventosDestacados = eventos.slice(0, 3);
+                heroCarousel.hidden = eventosDestacados.length === 0;
+                if (eventosDestacados.length) {
+                    renderizarDestacado();
+                    reiniciarCarrusel();
                 }
-
-                container.innerHTML = eventos.map(evento => {
-                    let precio = '';
-                    if (evento.lotes && evento.lotes.length > 0) {
-                        const p = Number(evento.lotes[0].precio);
-                        if (!isNaN(p) && p > 0) {
-                            precio = `$${p.toLocaleString()}`;
-                        }
-                    }
-                    const imagen = evento.imagen || './imag/Imagen de evento 1.jpg';
-
-                    let fechaFormateada = evento.fecha || 'Fecha no definida';
-                    if (evento.fecha) {
-                        try {
-                            const partes = evento.fecha.split(' ');
-                            if (partes.length === 3) {
-                                const meses = { 'Enero':'Ene','Febrero':'Feb','Marzo':'Mar','Abril':'Abr','Mayo':'May','Junio':'Jun','Julio':'Jul','Agosto':'Ago','Septiembre':'Sep','Octubre':'Oct','Noviembre':'Nov','Diciembre':'Dic' };
-                                const mesAbr = meses[partes[1]] || partes[1];
-                                fechaFormateada = `${partes[0]} ${mesAbr} ${partes[2]}`;
-                            }
-                        } catch (e) { }
-                    }
-
-                    return `
-                        <div class="bg-white border border-gray-200 event-card">
-                            <div class="event-image">
-                                <img src="${imagen}" alt="${evento.nombre}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\'material-symbols-outlined text-5xl text-violet-300\'>image</span>'">
-                            </div>
-                            <div class="p-4">
-                                <h3 class="event-title truncate">${evento.nombre || 'Sin nombre'}</h3>
-                                <div class="mt-1 space-y-0.5">
-                                    <p class="event-meta">
-                                        <span class="material-symbols-outlined">calendar_month</span>
-                                        <span>${fechaFormateada}</span>
-                                    </p>
-                                    <p class="event-meta">
-                                        <span class="material-symbols-outlined">location_on</span>
-                                        <span>${evento.lugar || 'Lugar no definido'}</span>
-                                    </p>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between">
-                                    ${precio ? `<span class="price-badge">${precio}</span>` : '<span></span>'}
-                                    <a href="evento.html?id=${evento.id}" class="btn-detail text-white px-4 py-1.5 rounded-full shadow-sm hover:shadow-md inline-flex items-center gap-1">
-                                        Detalles
-                                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                setTimeout(updateArrows, 100);
-
+                renderizarGrilla(eventos);
             } catch (error) {
                 console.error('Error al cargar eventos:', error);
-                container.innerHTML = `
-                    <div class="w-full text-center py-12">
-                        <span class="material-symbols-outlined text-5xl text-red-400">error</span>
-                        <p class="text-red-500 mt-4">Error al cargar eventos. Intenta nuevamente.</p>
-                    </div>
-                `;
+                container.replaceChildren();
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'col-span-full text-center text-red-600 py-10';
+                errorMsg.textContent = 'Error al cargar eventos. Intenta nuevamente.';
+                container.appendChild(errorMsg);
+                heroCarousel.hidden = true;
             }
         }
 
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) window.clearInterval(temporizadorCarrusel);
+            else reiniciarCarrusel();
+        });
+
         cargarEventos();
     </script>
+    <script type="module" src="contacto-modal.js"></script>
 </body>
 </html>

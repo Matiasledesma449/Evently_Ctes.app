@@ -43,6 +43,10 @@
                 radial-gradient(circle at 80% 80%, rgba(124,58,237,0.03) 0%, transparent 50%);
         }
     </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+    <link rel="prefetch" href="consultas-publicas.html" />
+    <link rel="prefetch" href="eventos-seleccion.html" />
+    <link rel="prefetch" href="dashboard.html" />
 </head>
 <body>
 
@@ -66,30 +70,22 @@
 
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <aside class="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
+        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
             <div class="p-6">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
                 <span class="block text-xs text-gray-500">Administración</span>
             </div>
-            <nav class="flex-1 px-4 space-y-1">
-                <a href="eventos-seleccion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">apps</span> Mis Eventos
-                </a>
-                <a id="linkPanelPrincipal" href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">dashboard</span> Panel Principal
-                </a>
-                <a href="eventos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">add_circle</span> Solicitar Evento
-                </a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">bar_chart</span> Reportes
-                </a>
-                <a href="escaner.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined">qr_code_scanner</span> Escáner
-                </a>
-                <a href="mensajes.html" class="active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium">
-                    <span class="material-symbols-outlined">chat</span> Mensajes
-                </a>
+            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
+                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
+                <a id="linkPanelPrincipal" data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
+                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
+                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
+                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
+                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
+                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
+                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
             </nav>
             <div class="p-4 border-t border-gray-200">
                 <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
@@ -204,6 +200,20 @@
         </main>
     </div>
 
+    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
+        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
+        <a data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
+        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
+        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
+        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
+        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
+        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
+        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-violet-600" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
+        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
+        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
+    </nav>
+
     <!-- Modal nueva conversación -->
     <div id="modalNuevaConv" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
@@ -227,7 +237,7 @@
             collection, query, where, onSnapshot, addDoc, doc, getDoc,
             getDocs, serverTimestamp, updateDoc, deleteDoc, writeBatch
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const listaConversaciones = document.getElementById('listaConversaciones');
         const chatHeader = document.getElementById('chatHeader');
@@ -260,13 +270,6 @@
         let unsubscribeMensajes = null;
         let unsubscribeConversaciones = null;
         let unsubscribeSolicitudes = null;
-
-        // --- Cerrar sesión ---
-        async function cerrarSesion() {
-            await signOut(auth);
-            window.location.href = 'login.html';
-        }
-        document.getElementById('btnCerrarSesion').addEventListener('click', cerrarSesion);
 
         // --- Botón volver (móvil) ---
         document.getElementById('btnVolverLista').addEventListener('click', () => {

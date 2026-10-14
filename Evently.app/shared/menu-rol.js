@@ -97,26 +97,8 @@
 
         aside.classList.add('sidebar-principal');
 
-        // ✅ Selector robusto del link de cerrar sesión
-        const linkLogout = aside.querySelector('a[href="login.html"]') 
-                        || aside.querySelector('#btnCerrarSesion') 
-                        || aside.querySelector('#btnCerrarSesionMobile');
+        const linkLogout = aside.querySelector('#btnCerrarSesion');
         if (linkLogout) linkLogout.classList.add('link-logout');
-
-        // ✅ Listener de logout si no lo tiene (para superadmin.html)
-        const btnLogout = aside.querySelector('#btnCerrarSesion');
-        if (btnLogout && !btnLogout.dataset.listenerAttached) {
-            btnLogout.dataset.listenerAttached = 'true';
-            btnLogout.addEventListener('click', async (e) => {
-                e.preventDefault();
-                try {
-                    await window.signOut(auth);
-                    window.location.href = 'login.html';
-                } catch (err) {
-                    console.error('Error al cerrar sesión:', err);
-                }
-            });
-        }
 
         const btn = document.createElement('button');
         btn.id = 'btnToggleSidebar';
@@ -148,108 +130,116 @@
 // =====================================================
 // 2. LÓGICA DE ROLES Y BADGE DE MENSAJES
 // =====================================================
+function aplicarRolVisual(rol) {
+    const esAdmin = rol === 'superadmin';
+    const esOrganizacion = rol === 'organizacion';
+    document.querySelectorAll('[data-role="superadmin"]').forEach(enlace => enlace.classList.toggle('hidden', !esAdmin));
+    document.querySelectorAll('[data-role="organizacion"]').forEach(enlace => enlace.classList.toggle('hidden', !esOrganizacion));
+    document.querySelectorAll('[data-nav-key="superadmin"] > span:last-child').forEach(label => {
+        label.textContent = 'Panel Global';
+    });
+
+    const nuevoHref = esAdmin ? 'mensajes.html' : 'soporte.html';
+    document.querySelectorAll('.link-soporte, .link-soporte-mobile').forEach(enlace => {
+        enlace.href = nuevoHref;
+        enlace.classList.remove('hidden');
+    });
+    document.querySelectorAll('.icono-soporte, .icono-soporte-mobile').forEach(icono => {
+        icono.textContent = esAdmin ? 'chat' : 'support_agent';
+    });
+    document.querySelectorAll('.texto-soporte, .texto-soporte-mobile').forEach(texto => {
+        texto.textContent = esAdmin ? 'Mensajes' : 'Soporte';
+    });
+
+    const eventoId = localStorage.getItem('eventoId');
+    const hrefDashboard = eventoId ? `dashboard.html?id=${encodeURIComponent(eventoId)}` : 'dashboard.html';
+    document.querySelectorAll('[data-nav-key="dashboard"]').forEach(enlace => { enlace.href = hrefDashboard; });
+
+    const paginaActual = window.location.pathname.split('/').pop();
+    document.querySelectorAll('[data-nav-key]').forEach(enlace => {
+        const destino = enlace.dataset.navKey === 'soporte-mensajes'
+            ? esAdmin ? 'mensajes.html' : 'soporte.html'
+            : `${enlace.dataset.navKey}.html`;
+        const activo = paginaActual === destino;
+        if (enlace.classList.contains('mobile-nav-link')) {
+            enlace.classList.toggle('text-violet-600', activo);
+            enlace.classList.toggle('text-gray-500', !activo);
+        } else {
+            enlace.classList.toggle('active-link', activo);
+            enlace.classList.toggle('font-medium', activo);
+            enlace.classList.toggle('text-gray-600', !activo);
+        }
+        if (activo) enlace.setAttribute('aria-current', 'page');
+        else enlace.removeAttribute('aria-current');
+    });
+
+    document.querySelectorAll('.admin-role-nav').forEach(nav => nav.classList.remove('invisible'));
+}
+
+const rolCacheado = localStorage.getItem('eventlyRol');
+if (rolCacheado) aplicarRolVisual(rolCacheado);
+
 function initRoles() {
     if (typeof auth === 'undefined' || !auth) {
         console.warn('⚠️ auth no está disponible todavía');
         return;
     }
 
+    const mostrarNavegacion = () => document.querySelectorAll('.admin-role-nav').forEach(nav => nav.classList.remove('invisible'));
+
     window.onAuthStateChanged(auth, async (user) => {
-        if (!user) return;
+        if (!user) {
+            localStorage.removeItem('eventlyRol');
+            aplicarRolVisual(null);
+            mostrarNavegacion();
+            return;
+        }
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-            if (!userDoc.exists()) return;
+            if (!userDoc.exists()) {
+                localStorage.removeItem('eventlyRol');
+                aplicarRolVisual(null);
+                mostrarNavegacion();
+                return;
+            }
 
             const rol = userDoc.data().rol;
             const esAdmin = rol === 'superadmin';
-
-            document.querySelectorAll('aside.sidebar-principal nav a[href="eventos.html"], nav.lg\\:hidden a[href="eventos.html"]').forEach(enlace => {
-                if (esAdmin) {
-                    enlace.href = 'eventos.html?modo=directo';
-                    Array.from(enlace.childNodes).forEach(nodo => {
-                        if (nodo.nodeType === Node.TEXT_NODE && nodo.textContent.trim()) {
-                            nodo.textContent = ' Crear Evento Directo';
-                        }
-                    });
-                } else {
-                    enlace.href = 'eventos.html';
-                    Array.from(enlace.childNodes).forEach(nodo => {
-                        if (nodo.nodeType === Node.TEXT_NODE && nodo.textContent.trim()) {
-                            nodo.textContent = ' Solicitar Evento';
-                        }
-                    });
-                }
-            });
-
-            // ✅ Verificación de cambio Soporte <-> Mensajes sigue intacto
-            const nuevoHref = esAdmin ? 'mensajes.html' : 'soporte.html';
-            const nuevoIcono = esAdmin ? 'chat' : 'support_agent';
-            const nuevoTexto = esAdmin ? 'Mensajes' : 'Soporte';
-
-            document.querySelectorAll('.link-soporte, .link-soporte-mobile').forEach(el => {
-                el.href = nuevoHref;
-                el.classList.remove('hidden');
-            });
-            document.querySelectorAll('.icono-soporte, .icono-soporte-mobile').forEach(el => {
-                el.textContent = nuevoIcono;
-            });
-            document.querySelectorAll('.texto-soporte, .texto-soporte-mobile').forEach(el => {
-                el.textContent = nuevoTexto;
-            });
-
-            // =====================================================
-            // ✅ NUEVO: INYECTAR BOTÓN DE PANEL GLOBAL (SOLO SUPERADMIN)
-            // =====================================================
-            if (esAdmin) {
-                const navDesktop = document.querySelector('aside.sidebar-principal nav');
-                const navMobile = document.querySelector('nav.lg\\:hidden'); // Selector escapado para Tailwind
-                const urlActual = window.location.href;
-                const enSuperadmin = urlActual.includes('superadmin.html');
-
-                // Inyectar en Desktop
-                if (navDesktop && !document.getElementById('link-panel-global')) {
-                    const linkDesktop = document.createElement('a');
-                    linkDesktop.id = 'link-panel-global';
-                    linkDesktop.href = 'superadmin.html';
-                    linkDesktop.className = enSuperadmin 
-                        ? 'active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium'
-                        : 'flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition';
-                    
-                    linkDesktop.innerHTML = `
-                        <span class="material-symbols-outlined">admin_panel_settings</span>
-                        <span>Panel Global</span>
-                    `;
-                    navDesktop.appendChild(linkDesktop);
-                }
-
-                // Inyectar en Mobile (Bottom Nav) antes del botón de Salir
-                if (navMobile && !document.getElementById('link-panel-global-mobile')) {
-                    const linkMobile = document.createElement('a');
-                    linkMobile.id = 'link-panel-global-mobile';
-                    linkMobile.href = 'superadmin.html';
-                    linkMobile.className = enSuperadmin
-                        ? 'flex flex-col items-center text-violet-600'
-                        : 'flex flex-col items-center text-gray-500';
-                    
-                    linkMobile.innerHTML = `
-                        <span class="material-symbols-outlined">admin_panel_settings</span>
-                        <span class="text-[10px]">Admin</span>
-                    `;
-                    
-                    const btnCerrarMobile = document.getElementById('btnCerrarSesionMobile');
-                    if (btnCerrarMobile) {
-                        navMobile.insertBefore(linkMobile, btnCerrarMobile);
-                    } else {
-                        navMobile.appendChild(linkMobile);
-                    }
-                }
-            }
+            localStorage.setItem('eventlyRol', rol);
+            aplicarRolVisual(rol);
+            actualizarBadgeConsultasPublicas(esAdmin);
 
             // Iniciar contadores de notificaciones
             escucharNoLeidos(user.uid, esAdmin);
+            mostrarNavegacion();
         } catch (e) {
             console.error('Error al verificar rol:', e);
+            localStorage.removeItem('eventlyRol');
+            aplicarRolVisual(null);
+            mostrarNavegacion();
         }
+    });
+}
+
+function actualizarBadgeConsultasPublicas(esAdmin) {
+    if (!esAdmin) return;
+    const badges = [...document.querySelectorAll('.badge-consultas-publicas')];
+    if (badges.length === 0) return;
+    const consultasNuevasQuery = query(
+        collection(db, 'consultas_publicas'),
+        where('estado', '==', 'nueva')
+    );
+
+    onSnapshot(consultasNuevasQuery, snapshot => {
+        const cantidad = snapshot.size;
+        badges.forEach(badge => {
+            badge.textContent = cantidad > 99 ? '99+' : String(cantidad);
+            badge.classList.toggle('hidden', cantidad === 0);
+            if (cantidad > 0) badge.classList.add('flex');
+            else badge.classList.remove('flex');
+        });
+    }, error => {
+        console.error('No se pudo cargar el contador de consultas públicas:', error);
     });
 }
 
@@ -378,20 +368,8 @@ function escucharNoLeidos(miUid, esAdmin) {
 
 function actualizarBadge(count) {
     document.querySelectorAll('.link-soporte, .link-soporte-mobile').forEach(el => {
-        let badge = el.querySelector('.badge-no-leidos');
-        if (!badge) {
-            badge = document.createElement('span');
-            badge.className = 'badge-no-leidos bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center';
-
-            if (el.classList.contains('link-soporte')) {
-                badge.classList.add('ml-auto');
-            }
-            if (el.classList.contains('link-soporte-mobile')) {
-                badge.classList.add('absolute', 'top-1', 'right-2');
-                el.style.position = 'relative';
-            }
-            el.appendChild(badge);
-        }
+        const badge = el.querySelector('.badge-no-leidos');
+        if (!badge) return;
         if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count;
             badge.style.display = 'flex';
@@ -409,7 +387,8 @@ document.addEventListener('click', async (e) => {
     if (link) {
         e.preventDefault();
         try {
-            await auth.signOut();
+            await window.signOut(auth);
+            localStorage.removeItem('eventlyRol');
             // ✅ replace: elimina la página actual del historial
             window.location.replace('login.html');
         } catch (err) {

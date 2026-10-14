@@ -36,6 +36,9 @@
                 </a>
                 <span class="text-2xl font-bold text-violet-600 ml-4">Evently</span>
             </div>
+            <button type="button" data-open-consulta data-origen="public/evento.html" class="text-sm font-medium text-violet-700 hover:text-violet-900 flex items-center gap-1 border-0 bg-transparent">
+                <span class="material-symbols-outlined text-base">help</span> Ayuda
+            </button>
         </div>
     </header>
 
@@ -341,11 +344,15 @@
         }
 
         function renderEvento(evento) {
-            // Usar picsum.photos para imagen de respaldo (funciona bien)
-            const imagenUrl = './imag/Imagen de evento 1.jpg';
+            const imagenUrl = typeof evento.imagen === 'string' && evento.imagen.trim()
+                ? evento.imagen.trim()
+                : './imag/Imagen de evento 1.jpg';
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <img src="${imagenUrl}" alt="${evento.nombre}" class="w-full h-64 object-cover" onerror="this.src='https://picsum.photos/800/300?random=1'">
+                    <img src="${imagenUrl}" alt="${evento.nombre || 'Imagen del evento'}" class="w-full h-64 object-cover" onerror="this.hidden=true; this.nextElementSibling.classList.remove('hidden')">
+                    <div class="hidden w-full h-64 bg-violet-50 text-violet-300 items-center justify-center" aria-label="Imagen no disponible">
+                        <span class="material-symbols-outlined text-6xl">image</span>
+                    </div>
                     <div class="p-6">
                         <h1 class="text-3xl font-bold text-gray-800">${evento.nombre || 'Evento sin nombre'}</h1>
                         <p class="text-gray-500 flex items-center gap-2 mt-2">
@@ -608,5 +615,6 @@
         cargarEvento(eventoId);
         document.getElementById('pagoEfectivo').style.display = 'block';
     </script>
+    <script type="module" src="contacto-modal.js"></script>
 </body>
 </html>

@@ -114,6 +114,13 @@
                 btnLogin.disabled = true;
 
                 await signInWithEmailAndPassword(auth, email, password);
+                try {
+                    const perfil = await getDoc(doc(db, 'usuarios', auth.currentUser.uid));
+                    if (perfil.exists()) localStorage.setItem('eventlyRol', perfil.data().rol || '');
+                } catch (error) {
+                    localStorage.removeItem('eventlyRol');
+                    console.warn('No se pudo precargar el rol para la navegación:', error);
+                }
                 window.location.replace('eventos-seleccion.html');
 
             } catch (error) {
