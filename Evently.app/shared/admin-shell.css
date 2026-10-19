@@ -18,3 +18,36 @@ html {
 .admin-role-nav.invisible {
     visibility: hidden;
 }
+
+/* SHR-10: Shell admin con scroll independiente */
+/* Solo aplica cuando la página tiene el contenedor del shell */
+body:has(> .flex.min-h-screen) {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* El contenedor del shell ocupa exactamente la pantalla */
+body:has(> .flex.min-h-screen) > .flex.min-h-screen {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* El main scrollea internamente */
+body:has(> .flex.min-h-screen) > .flex.min-h-screen > main {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* El sidebar no fuerza altura extra */
+body:has(> .flex.min-h-screen) > .flex.min-h-screen > aside {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* El nav del sidebar scrollea solo */
+body:has(> .flex.min-h-screen) > .flex.min-h-screen > aside > nav {
+  overflow-y: auto;
+}

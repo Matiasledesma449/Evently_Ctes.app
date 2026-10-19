@@ -81,6 +81,8 @@
                     </select>
                 </div>
             </div>
+            <!-- SUP-03: Listado de eventos globales -->
+            <div id="listaEventosGlobales" class="space-y-3 mb-6"></div>
 
             <!-- SECCIÓN: Solicitudes pendientes -->
             <div id="seccion-solicitudes" class="mb-8 hidden">
@@ -221,7 +223,7 @@
                 organizaciones = [];
                 snapshot.forEach(d => organizaciones.push({ id: d.id, ...d.data() }));
                 rellenarFiltroOrganizaciones();
-                actualizarKPIsGlobales();
+                renderizarEventosGlobales();
             });
         }
 
@@ -229,7 +231,7 @@
             onSnapshot(collection(db, "eventos"), (snapshot) => {
                 eventosGlobales = [];
                 snapshot.forEach(d => eventosGlobales.push({ id: d.id, ...d.data() }));
-                actualizarKPIsGlobales();
+                renderizarEventosGlobales();
             });
         }
 
@@ -237,7 +239,7 @@
             onSnapshot(collection(db, "ventas"), (snapshot) => {
                 ventasGlobales = [];
                 snapshot.forEach(d => ventasGlobales.push({ id: d.id, ...d.data() }));
-                actualizarKPIsGlobales();
+                renderizarEventosGlobales();
             });
         }
 
@@ -295,16 +297,55 @@
             filtroOrganizacion.value = organizaciones.some(org => org.id === seleccionActual) ? seleccionActual : 'todas';
         }
 
-        function actualizarKPIsGlobales() {
+                function renderizarEventosGlobales() {
+            const contenedor = document.getElementById('listaEventosGlobales');
+            if (!contenedor) return;
+
             const orgs = organizacionesFiltradas();
-            const eventos = orgs.flatMap(eventosDeOrganizacion);
-            const ventas = orgs.flatMap(ventasDeOrganizacion);
-            document.getElementById('totalOrgs').textContent = orgs.length;
-            document.getElementById('totalEventos').textContent = eventos.length;
-            const recaudacion = ventas.reduce((suma, venta) => suma + (Number(venta.monto_total) || 0), 0);
-            const entradas = ventas.reduce((suma, venta) => suma + (Number(venta.cantidad) || 0), 0);
-            document.getElementById('recaudacionGlobal').textContent = `$${recaudacion.toLocaleString('es-AR')}`;
-            document.getElementById('entradasGlobales').textContent = entradas;
+            const pares = orgs.flatMap(org =>
+                eventosDeOrganizacion(org).map(ev => ({ ev, org }))
+            );
+
+            pares.sort((a, b) => {
+                const fa = a.ev.fechaPublicacion || a.ev.createdAt || a.ev.fechaCreacion;
+                const fb = b.ev.fechaPublicacion || b.ev.createdAt || b.ev.fechaCreacion;
+                const ta = (fa && fa.seconds) || 0;
+                const tb = (fb && fb.seconds) || 0;
+                return tb - ta;
+            });
+
+            if (pares.length === 0) {
+                contenedor.innerHTML = '<p class="text-sm text-gray-400 p-4">No hay eventos para mostrar.</p>';
+                return;
+            }
+
+            const mostrarOrg = filtroOrganizacion.value === 'todas';
+
+            contenedor.innerHTML = pares.map(({ ev, org }) => {
+                const ventasEv = ventasGlobales.filter(v => v.eventoId === ev.id);
+                const recaudado = ventasEv.reduce((s, v) => s + (Number(v.monto_total) || 0), 0);
+                const entradas = ventasEv.reduce((s, v) => s + (Number(v.cantidad) || 0), 0);
+                const fecha = ev.fechaPublicacion || ev.createdAt || ev.fechaCreacion;
+                const fechaTexto = (fecha && fecha.seconds)
+                    ? new Date(fecha.seconds * 1000).toLocaleDateString('es-AR')
+                    : 'Sin fecha';
+
+                return `
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div class="flex justify-between items-start gap-4">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-gray-800 truncate">${ev.nombre || 'Sin nombre'}</h3>
+                                ${mostrarOrg ? `<p class="text-xs text-violet-600 font-medium mt-1">${org.nombre || org.email || 'Organización'}</p>` : ''}
+                                <p class="text-xs text-gray-500 mt-1">${ev.lugar || 'Sin lugar'} · ${fechaTexto}</p>
+                            </div>
+                            <div class="text-right flex-shrink-0">
+                                <p class="text-sm font-semibold text-gray-800">$${recaudado.toLocaleString('es-AR')}</p>
+                                <p class="text-xs text-gray-500">${entradas} entradas</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         window.verEventosDeOrg = function(orgId) {
@@ -358,7 +399,7 @@
         };
 
         function aplicarFiltrosPanel() {
-            actualizarKPIsGlobales();
+            renderizarEventosGlobales();
         }
 
         searchInput.addEventListener('input', aplicarFiltrosPanel);

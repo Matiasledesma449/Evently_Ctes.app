@@ -359,8 +359,18 @@
                 (ev.correo && ev.correo === miUsuario.email)
             );
 
-            // 2. Juntamos con sus solicitudes en espera o rechazadas
-            let listaCompleta = [...misEventos, ...solicitudes];
+            // 2. Juntamos con sus solicitudes en espera o rechazadas (filtrando rechazadas de > 30 días)
+            const ahora = new Date();
+            const solicitudesRecientes = solicitudes.filter(sol => {
+                if (sol.estado === 'rechazada') {
+                    if (!sol.fechaRechazo) return false;
+                    const fecha = new Date(sol.fechaRechazo.seconds * 1000);
+                    const diasPasados = (ahora - fecha) / (1000 * 60 * 60 * 24);
+                    return diasPasados <= 30;
+                }
+                return true;
+            });
+            let listaCompleta = [...misEventos, ...solicitudesRecientes];
             
             subtituloPagina.textContent = `${listaCompleta.length} registros en total`;
 
@@ -434,6 +444,8 @@
                                 <div class="mt-3 p-3 bg-red-50 rounded-lg text-sm text-red-700 border border-red-100">
                                     <strong class="block mb-1">Motivo del rechazo:</strong> 
                                     ${evento.motivoRechazo || 'No cumple con los requisitos del sitio.'}
+                                    <hr class="my-2 border-red-200 opacity-50">
+                                    <p class="text-xs">Nos comunicaremos con vos a la brevedad. Este evento dejará de mostrarse 30 días después del rechazo.</p>
                                 </div>
                             `;
                             botonHTML = `
