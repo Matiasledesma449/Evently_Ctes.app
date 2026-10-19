@@ -1,10 +1,12 @@
-# Ignorar TODOS los archivos y carpetas en la raíz
-/*
-# Excepto la carpeta Evently.app
-!/Evently.app/
-# Excepto este .gitignore (para que se guarde)
-!.gitignore
-
-# También ignoramos archivos temporales y claves (por si acaso)
+# Claves privadas de Firebase (nunca subir)
 *-firebase-adminsdk-*.json
+
+# Variables de entorno
+.env
+.env.*
+
+# Dependencias
+node_modules/
+
+# Archivos temporales de Office
 ~$*
