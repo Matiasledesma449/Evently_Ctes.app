@@ -10,3 +10,6 @@ node_modules/
 
 # Archivos temporales de Office
 ~$*
+
+# Configuración local de Claude Code (personal, no se sube)
+.claude/settings.local.json
