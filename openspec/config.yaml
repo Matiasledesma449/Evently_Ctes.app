@@ -4,20 +4,21 @@ schema: spec-driven
 # Add only constraints that should guide OpenSpec artifacts and workflows.
 # Include constraints an agent cannot infer by reading the code.
 # Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  Escribir todos los artefactos en español simple.
+  La descripción del proyecto está en CLAUDE.md; no repetirla acá.
+  Estado actual: sitio estático con Firebase y sin tests automatizados.
+  Cada propuesta debe incluir cómo se verifica a mano.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Indicar qué queda fuera de alcance
+    - Explicar por qué se elige una opción y no otra
+    - Incluir cómo se verifica a mano
+  tasks:
+    - Cada tarea indica cómo se comprueba a mano que quedó bien
 
 # Per-operation guidance (optional)
 # Add advisory guidance for how apply and archive work should be conducted.
