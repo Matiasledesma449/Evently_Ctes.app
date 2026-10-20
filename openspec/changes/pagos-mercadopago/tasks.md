@@ -18,12 +18,12 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 
 ## 3. Función `/api/crear-pago`
 
-- [ ] 3.1 Validar el pedido (nombre, apellido, correo con formato válido, cantidad entera de 1 a 10, evento y lote) ignorando cualquier precio o estado que llegue. Se comprueba con `node -e` y una lista de casos: datos correctos pasan; falta de nombre, correo inválido, cantidad 0, 11 o 2,5 fallan con un mensaje que indica qué corregir.
+- [x] 3.1 Validar el pedido (nombre, apellido, correo con formato válido, cantidad entera de 1 a 10, evento y lote) ignorando cualquier precio o estado que llegue. Se comprueba con `node -e` y una lista de casos: datos correctos pasan; falta de nombre, correo inválido, cantidad 0, 11 o 2,5 fallan con un mensaje que indica qué corregir.
 - [ ] 3.2 Leer el evento en Firestore, comprobar que esté publicado y que el lote exista, y calcular precio y stock disponible (capacidad menos vendidas). Se comprueba tras desplegar, llamando a la función con un evento inexistente, uno sin publicar y una cantidad mayor que la disponible: cada caso devuelve su error y no aparece ninguna venta nueva en Firestore.
 - [ ] 3.3 Crear la venta `pendiente` con token aleatorio, vencimiento a 30 minutos, monto calculado por el servidor y entradas vacías. Se comprueba en la consola de Firestore: el documento tiene los campos esperados, el monto coincide con el precio del lote por la cantidad, y el token tiene al menos 32 caracteres.
 - [ ] 3.4 Consultar una sola vez `GET /v1/payment_methods` con el Access Token de prueba para confirmar los identificadores de tipo de pago a excluir, y anotar la lista final en `design.md`. Se comprueba cuando la lista anotada deja solo crédito, débito y dinero en cuenta.
 - [ ] 3.5 Crear la preferencia en Mercado Pago (ítem con el total, `external_reference` con el id de la venta, tres `back_urls` a `confirmacion.html?id=…&t=…`, `auto_return` aprobado, aviso a `/api/mp-webhook`, vencimiento a 30 minutos y métodos excluidos) y devolver el enlace de pago. Se comprueba abriendo el enlace en incógnito: aparece la página de Mercado Pago con el monto correcto y sin opción de efectivo.
-- [ ] 3.6 Si Mercado Pago falla, marcar la venta `rechazada` con motivo `error_mercado_pago` y devolver un mensaje para reintentar. Se comprueba con `node -e` simulando una respuesta de error de Mercado Pago: la venta queda rechazada y la respuesta no incluye detalles internos ni claves.
+- [x] 3.6 Si Mercado Pago falla, marcar la venta `rechazada` con motivo `error_mercado_pago` y devolver un mensaje para reintentar. Se comprueba con `node -e` simulando una respuesta de error de Mercado Pago: la venta queda rechazada y la respuesta no incluye detalles internos ni claves.
 
 ## 4. Función `/api/mp-webhook`
 

@@ -44,10 +44,25 @@ function requerir(nombres) {
   return valores;
 }
 
+// Direccion publica del sitio, sin barra final. Mercado Pago exige https para
+// las direcciones de retorno y de aviso, asi que cualquier otra cosa es un error de configuracion.
+function siteUrl() {
+  const { SITE_URL } = requerir([VARIABLES.SITE_URL]);
+  let url;
+  try {
+    url = new URL(SITE_URL.trim());
+  } catch (e) {
+    throw new ConfigError(['SITE_URL (no es una dirección válida)']);
+  }
+  if (url.protocol !== 'https:') throw new ConfigError(['SITE_URL (debe empezar con https://)']);
+  return url.origin; // origin no incluye barra final ni ruta
+}
+
 module.exports = {
   MINUTOS_VENCIMIENTO,
   MAX_ENTRADAS_POR_COMPRA,
   VARIABLES,
   ConfigError,
   requerir,
+  siteUrl,
 };
