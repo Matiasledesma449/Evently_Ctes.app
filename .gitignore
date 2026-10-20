@@ -13,3 +13,8 @@ node_modules/
 
 # Configuración local de Claude Code (personal, no se sube)
 .claude/settings.local.json
+
+# Claves JSON de cuentas de servicio de Google Cloud (nombre: <proyecto>-<12 caracteres>.json)
+*-????????????.json
+*service-account*.json
+.secrets/
