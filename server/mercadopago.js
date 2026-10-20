@@ -7,12 +7,12 @@ const { MINUTOS_VENCIMIENTO } = require('./config');
 const API = 'https://api.mercadopago.com';
 const TIEMPO_MAXIMO_MS = 10000;
 
-// Solo se aceptan tarjetas de credito, de debito y dinero en cuenta.
-// TIPOS_EXCLUIDOS es la lista de todos los demas tipos de pago que se le pide a Mercado Pago
-// que NO muestre. PROVISORIA hasta la tarea 3.4: se confirma con GET /v1/payment_methods
-// y se anota la lista final en design.md.
-const TIPOS_PERMITIDOS = ['credit_card', 'debit_card', 'account_money'];
-const TIPOS_EXCLUIDOS = ['ticket', 'atm', 'bank_transfer', 'prepaid_card', 'digital_currency', 'digital_wallet'];
+// Se aceptan tarjetas de credito, de debito y prepagas, y dinero en cuenta.
+// Lo unico que se excluye es el efectivo (tipo `ticket`: Rapipago y Pago Facil).
+// Lista confirmada en la tarea 3.4 con GET /v1/payment_methods en la cuenta de prueba:
+// los tipos de esa cuenta son debit_card, credit_card, prepaid_card y ticket.
+const TIPOS_PERMITIDOS = ['credit_card', 'debit_card', 'prepaid_card', 'account_money'];
+const TIPOS_EXCLUIDOS = ['ticket'];
 
 // Error de Mercado Pago. `.message` es generico y seguro; `.estado` y `.detalle` son
 // solo para los registros del servidor y NO deben enviarse al navegador.

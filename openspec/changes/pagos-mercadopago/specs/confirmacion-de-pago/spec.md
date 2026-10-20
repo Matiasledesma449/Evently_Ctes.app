@@ -36,7 +36,7 @@ Antes de confirmar, el sistema MUST comprobar que el pago pertenece a una venta 
 - **THEN** el sistema no cambia nada y responde que el aviso fue recibido
 
 ### Requirement: Confirmación con emisión de entradas
-Cuando el pago está aprobado y coincide con la venta, el sistema SHALL, en una sola operación, pasar la venta a `confirmada`, sumar las entradas vendidas al lote, guardar el método de pago real (Crédito, Débito o Dinero en cuenta) y generar una entrada por cada unidad con un código aleatorio difícil de adivinar y sin usar.
+Cuando el pago está aprobado y coincide con la venta, el sistema SHALL, en una sola operación, pasar la venta a `confirmada`, sumar las entradas vendidas al lote, guardar el método de pago real (Crédito, Débito, Prepaga o Dinero en cuenta) y generar una entrada por cada unidad con un código aleatorio difícil de adivinar y sin usar.
 
 #### Scenario: Pago aprobado
 - **WHEN** Mercado Pago informa un pago aprobado que coincide con la venta

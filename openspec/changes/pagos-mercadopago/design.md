@@ -38,6 +38,7 @@ Tres archivos en `api/` (`crear-pago.js`, `mp-webhook.js`, `venta.js`) en Common
 Llamadas directas a `POST /checkout/preferences`, `GET /v1/payments/{id}` y, una sola vez, `GET /v1/payment_methods`. Con el Access Token en el encabezado `Authorization`.
 - **Por qué:** una dependencia menos y se ve exactamente qué se envía.
 - **Alternativa:** el SDK oficial de Node; ahorra poco código y suma peso.
+- **Tipos de pago (confirmado en la tarea 3.4):** `GET /v1/payment_methods` con las credenciales de prueba de Argentina devuelve cuatro tipos: `credit_card` (cabal, visa, amex, master, naranja, argencard, diners), `debit_card` (debcabal, debmaster, maestro, debvisa), `prepaid_card` (visa, cabal, master) y `ticket` (pagofacil, rapipago). **Se excluye únicamente `ticket`** (efectivo). Se permiten crédito, débito, prepagas y dinero en cuenta. `account_money` no aparece en esa lista, así que que se ofrezca depende de la cuenta del comprador. No se excluyen `atm`, `bank_transfer`, `digital_currency` ni `digital_wallet` porque esta cuenta no los tiene.
 
 ### 3. Acceso a Firestore con `firebase-admin` y una cuenta de servicio dedicada
 Se inicia una sola vez por proceso, con tres variables (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`). La clave llega con `\n` escapados y se convierten al leerla. La cuenta tiene solo el rol *Cloud Datastore User*.
@@ -128,6 +129,5 @@ Se reutilizan `esSuperadmin()` y `esOrganizacion()` que ya existen (esta última
 
 Se resuelven al implementar, sin cambiar las specs ni las tareas:
 - Si con credenciales de prueba se usa `init_point` o `sandbox_init_point`.
-- Los identificadores exactos de los tipos de pago a excluir (se leen con `GET /v1/payment_methods`).
 - Si `transaction_amount` o `total_paid_amount` es el campo correcto para comparar el monto cuando hay cuotas con interés.
 - Si los archivos con guion bajo dentro de `api/` se pueden usar como código compartido; si no, queda `server/`.

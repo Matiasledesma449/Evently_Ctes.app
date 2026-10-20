@@ -6,7 +6,7 @@ Hoy el pago es simulado: el navegador arma la venta, calcula el precio y descuen
 
 ## What Changes
 
-- **Pago con Mercado Pago Checkout Pro (modo de prueba).** El comprador carga nombre, apellido y correo, y paga en la página de Mercado Pago. Solo se aceptan tarjetas de crédito, débito y dinero en cuenta (sin efectivo).
+- **Pago con Mercado Pago Checkout Pro (modo de prueba).** El comprador carga nombre, apellido y correo, y paga en la página de Mercado Pago. Se aceptan tarjetas de crédito, débito y prepagas, y dinero en cuenta (sin efectivo).
 - **Servidor propio en el mismo proyecto de Vercel**, con 3 funciones en `/api`:
   - `/api/crear-pago`: calcula precio y stock, crea la venta en `pendiente` y la preferencia de Mercado Pago.
   - `/api/mp-webhook`: recibe el aviso de Mercado Pago, valida la firma, consulta el pago y confirma la venta.
@@ -57,7 +57,7 @@ Hoy el pago es simulado: el navegador arma la venta, calcula el precio y descuen
 
 - **Última entrada:** si dos personas pagan la última entrada al mismo tiempo, la segunda paga y al confirmar no hay stock. Esa venta queda `rechazada` con motivo `sin_stock` y `requiereReembolso`, y el reembolso se hace a mano en el panel de Mercado Pago.
 - **Ventas pendientes sin pagar:** cualquiera puede llamar a `/api/crear-pago`. Se acota con el vencimiento de 30 minutos y el máximo de 10 entradas. No se agrega captcha.
-- **A confirmar con el primer pago de prueba:** si se usa `init_point` o `sandbox_init_point`, los ids exactos de los tipos de pago a excluir, si `data.id` va en minúsculas en la firma, y con qué campo del pago se compara el monto.
+- **A confirmar con el primer pago de prueba:** si se usa `init_point` o `sandbox_init_point`, si `data.id` va en minúsculas en la firma, y con qué campo del pago se compara el monto.
 - **Pruebas en producción:** las vistas previas de Vercel suelen estar protegidas y Mercado Pago no podría avisarles, así que los pagos se prueban en la URL de producción.
 - **Secretos:** la clave de la cuenta de servicio y los tokens nunca van al repo ni al chat.
 

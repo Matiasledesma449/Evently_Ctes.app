@@ -43,7 +43,7 @@ Al aceptar un pedido, el sistema SHALL crear una venta en estado `pendiente` con
 - **THEN** existe una venta `pendiente` con su token, su vencimiento a 30 minutos y el monto calculado por el servidor, y todavía sin entradas
 
 ### Requirement: Preferencia de pago con métodos permitidos
-El sistema SHALL crear en Mercado Pago un pago asociado a la venta, que vence a los 30 minutos y vuelve al sitio al terminar. Solo MUST permitir tarjetas de crédito, tarjetas de débito y dinero en cuenta, y MUST excluir efectivo y cualquier otro método. Cuando el pago se aprueba, el comprador vuelve automáticamente a la pantalla de confirmación.
+El sistema SHALL crear en Mercado Pago un pago asociado a la venta, que vence a los 30 minutos y vuelve al sitio al terminar. MUST permitir tarjetas de crédito, de débito y prepagas, y dinero en cuenta, y MUST excluir el efectivo (pago en puntos como Rapipago o Pago Fácil). Cuando el pago se aprueba, el comprador vuelve automáticamente a la pantalla de confirmación.
 
 #### Scenario: Pago creado
 - **WHEN** la venta se creó correctamente
