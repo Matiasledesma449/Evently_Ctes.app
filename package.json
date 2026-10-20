@@ -1,0 +1,12 @@
+{
+  "name": "evently",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio de Evently. Este package.json existe solo para las funciones del servidor (carpeta api/).",
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}
