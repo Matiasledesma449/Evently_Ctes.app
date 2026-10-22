@@ -27,30 +27,30 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 
 ## 4. Función `/api/mp-webhook`
 
-- [ ] 4.1 Verificar la firma del aviso (texto `id:…;request-id:…;ts:…;`, HMAC-SHA256 en hexadecimal, comparación de tiempo constante) y responder 401 si falla. Se comprueba con `node -e`: una firma armada a mano con una clave de ejemplo pasa, y la misma con un carácter cambiado, sin `ts` o sin `v1` falla.
+- [x] 4.1 Verificar la firma del aviso (texto `id:…;request-id:…;ts:…;`, HMAC-SHA256 en hexadecimal, comparación de tiempo constante) y responder 401 si falla. Se comprueba con `node -e`: una firma armada a mano con una clave de ejemplo pasa, y la misma con un carácter cambiado, sin `ts` o sin `v1` falla.
 - [ ] 4.2 Ignorar con un 200 los avisos que no sean de pagos, y para los de pagos consultar `GET /v1/payments/{id}`. Se comprueba desde el panel de Mercado Pago con "Simular notificación" y un id inexistente: la función no cambia ninguna venta y responde sin romperse.
-- [ ] 4.3 Comparar el pago con la venta (`external_reference`, moneda ARS, monto con tolerancia de un centavo) y registrar el motivo si no coincide. Se comprueba con `node -e` y pagos de ejemplo: monto distinto, moneda distinta y venta inexistente no confirman nada.
+- [x] 4.3 Comparar el pago con la venta (`external_reference`, moneda ARS, monto con tolerancia de un centavo) y registrar el motivo si no coincide. Se comprueba con `node -e` y pagos de ejemplo: monto distinto, moneda distinta y venta inexistente no confirman nada.
 - [ ] 4.4 Confirmar la venta en una transacción: estado `confirmada`, suma de vendidas al lote, método de pago real (Crédito, Débito, Prepaga o Dinero en cuenta), entradas con códigos aleatorios distintos y `mpPaymentId`. Se comprueba con la prueba completa de la tarea 9.1.
-- [ ] 4.5 Manejar los demás casos: pendiente o en proceso se queda `pendiente`; rechazado o cancelado pasa a `rechazada` con motivo; una `rechazada` pasa a `confirmada` si llega un aprobado y hay stock; una `confirmada` no cambia; sin stock queda `rechazada` con `sin_stock` y `requiereReembolso`. Se comprueba con `node -e` y una tabla de casos sobre la función que decide el estado.
-- [ ] 4.6 Hacer la confirmación segura ante avisos repetidos y responder 500 en errores temporales para que Mercado Pago reintente. Se comprueba con `node -e`: procesar dos veces el mismo pago aprobado deja una sola confirmación, y un error simulado de base de datos devuelve 500 sin dejar la venta a medias.
+- [x] 4.5 Manejar los demás casos: pendiente o en proceso se queda `pendiente`; rechazado o cancelado pasa a `rechazada` con motivo; una `rechazada` pasa a `confirmada` si llega un aprobado y hay stock; una `confirmada` no cambia; sin stock queda `rechazada` con `sin_stock` y `requiereReembolso`. Se comprueba con `node -e` y una tabla de casos sobre la función que decide el estado.
+- [x] 4.6 Hacer la confirmación segura ante avisos repetidos y responder 500 en errores temporales para que Mercado Pago reintente. Se comprueba con `node -e`: procesar dos veces el mismo pago aprobado deja una sola confirmación, y un error simulado de base de datos devuelve 500 sin dejar la venta a medias.
 
 ## 5. Función `/api/venta`
 
 - [ ] 5.1 Consultar una venta con su id y su token, devolviendo el mismo mensaje de "no encontrada" si el token es incorrecto o la venta no existe. Se comprueba llamando la función con un token equivocado y con un id inventado: ambas respuestas son idénticas, y con los datos correctos devuelve la venta (también valida la conexión a Firestore de la tarea 2.3).
-- [ ] 5.2 Devolver estado, motivo, datos del evento, lote, cantidad y monto, y las entradas solo si la venta está `confirmada`, sin token ni identificadores internos de pago. Se comprueba con una venta pendiente y una confirmada de prueba: la pendiente no trae códigos y la confirmada trae uno por entrada.
+- [x] 5.2 Devolver estado, motivo, datos del evento, lote, cantidad y monto, y las entradas solo si la venta está `confirmada`, sin token ni identificadores internos de pago. Se comprueba con una venta pendiente y una confirmada de prueba: la pendiente no trae códigos y la confirmada trae uno por entrada.
 - [ ] 5.3 Pasar a `rechazada` con motivo `vencida` una venta pendiente cuyo vencimiento ya pasó, al consultarla. Se comprueba cambiando a mano `venceEn` de una venta de prueba a una hora pasada en la consola de Firestore: la consulta devuelve `rechazada` y el documento queda actualizado.
 
 ## 6. Pantalla de compra (`public/evento.html`)
 
 - [ ] 6.1 Reemplazar el paso 2 por nombre, apellido, correo, resumen de la compra, aviso visible de modo de prueba y un botón "Pagar con Mercado Pago". Se comprueba abriendo un evento: no hay campos de tarjeta, billetera ni efectivo.
 - [ ] 6.2 Llamar a `/api/crear-pago`, mostrar los errores en pantalla en lugar de `alert()`, deshabilitar el botón mientras se procesa y redirigir al enlace de pago. Se comprueba con un correo inválido y con más entradas que las disponibles: aparece el mensaje en pantalla, y con datos válidos el navegador va a Mercado Pago.
-- [ ] 6.3 Eliminar de `evento.html` la creación de la venta, el descuento de stock, los recargos y el correo fijo. Se comprueba con una búsqueda de texto en el archivo: no aparecen `addDoc`, `updateDoc`, `sin-correo@evently.com` ni `serverTimestamp`.
+- [x] 6.3 Eliminar de `evento.html` la creación de la venta, el descuento de stock, los recargos y el correo fijo. Se comprueba con una búsqueda de texto en el archivo: no aparecen `addDoc`, `updateDoc`, `sin-correo@evently.com` ni `serverTimestamp`.
 
 ## 7. Pantalla de confirmación (`public/confirmacion.html`)
 
 - [ ] 7.1 Reescribir la carga para usar `/api/venta` con el id y el token de la dirección, sin leer Firestore, y volver a consultar cada 3 segundos hasta 2 minutos mientras esté `pendiente`. Se comprueba abriendo la pantalla con un enlace sin token o con otro token: muestra "compra no encontrada", y con una compra pendiente de prueba se actualiza sola.
 - [ ] 7.2 Mostrar mensajes según el estado, un código QR por cada entrada cuando está `confirmada`, y el motivo con un botón para volver a intentar cuando está `rechazada`. Se comprueba con una compra confirmada de 3 entradas (3 QR distintos), una rechazada (motivo y botón) y una pendiente (sin QR).
-- [ ] 7.3 Quitar el CBU falso, el botón "Descargar PDF" falso y la lectura de Firestore, e indicar al comprador que guarde el enlace de la compra. Se comprueba con una búsqueda de texto: no aparecen `CBU`, `pagos@evently.com` ni `getDoc`, y la pantalla confirmada muestra la indicación de guardar el enlace.
+- [x] 7.3 Quitar el CBU falso, el botón "Descargar PDF" falso y la lectura de Firestore, e indicar al comprador que guarde el enlace de la compra. Se comprueba con una búsqueda de texto: no aparecen `CBU`, `pagos@evently.com` ni `getDoc`, y la pantalla confirmada muestra la indicación de guardar el enlace.
 
 ## 8. Panel de ventas
 

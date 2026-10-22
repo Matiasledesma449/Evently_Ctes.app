@@ -199,6 +199,7 @@
     <!-- Firebase y lógica principal -->
     <script type="module">
         import { collection, query, where, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { soloConfirmadas } from "../shared/ventas-utils.js";
 
         const db = window.db;
         const auth = window.auth;
@@ -322,7 +323,8 @@
             const mostrarOrg = filtroOrganizacion.value === 'todas';
 
             contenedor.innerHTML = pares.map(({ ev, org }) => {
-                const ventasEv = ventasGlobales.filter(v => v.eventoId === ev.id);
+                // Solo ventas confirmadas: las pendientes y rechazadas no suman dinero ni entradas
+                const ventasEv = soloConfirmadas(ventasGlobales.filter(v => v.eventoId === ev.id));
                 const recaudado = ventasEv.reduce((s, v) => s + (Number(v.monto_total) || 0), 0);
                 const entradas = ventasEv.reduce((s, v) => s + (Number(v.cantidad) || 0), 0);
                 const fecha = ev.fechaPublicacion || ev.createdAt || ev.fechaCreacion;
@@ -369,7 +371,8 @@
                 `;
             } else {
                 modalEventosLista.innerHTML = eventosOrg.map(ev => {
-                    const ventasEv = ventasGlobales.filter(v => v.eventoId === ev.id);
+                    // Solo ventas confirmadas: las pendientes y rechazadas no suman dinero ni entradas
+                    const ventasEv = soloConfirmadas(ventasGlobales.filter(v => v.eventoId === ev.id));
                     const recaudado = ventasEv.reduce((sum, v) => sum + (v.monto_total || 0), 0);
                     const entradas = ventasEv.reduce((sum, v) => sum + (v.cantidad || 0), 0);
                     return `

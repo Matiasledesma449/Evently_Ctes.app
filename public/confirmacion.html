@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- La direccion de esta pagina lleva el token de la compra: que no viaje a otros sitios -->
+    <meta name="referrer" content="no-referrer" />
     <title>Evently - Confirmación</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -10,7 +12,11 @@
     <style>
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
         .qr-container { display: flex; justify-content: center; align-items: center; }
-        #qrCode { padding: 16px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; }
+        .qr-container > div { padding: 12px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; }
+        @media print {
+            header, footer, .no-imprimir { display: none !important; }
+            body { background: white; }
+        }
     </style>
 </head>
 <body>
@@ -25,7 +31,7 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-8">
-        <div id="confirmacionContainer" class="bg-white rounded-xl border border-gray-200 p-6 text-center">
+        <div id="confirmacionContainer" class="bg-white rounded-xl border border-gray-200 p-6 text-center" aria-live="polite">
             <p class="text-gray-400">Cargando datos de tu compra...</p>
         </div>
     </main>
@@ -34,177 +40,301 @@
         © 2024 Evently by Bali Group
     </footer>
 
-    <!-- Firebase -->
-    <script type="module" src="../shared/firebase-init.js"></script>
+    <!-- Solo se usa para dibujar los codigos QR. Esta pagina no se conecta a la base de datos:
+         todo lo que muestra lo pide al servidor (/api/venta) con el id y el token de la compra. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <script type="module">
-        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <script>
+        const ESPERA_MS = 3000;       // cada cuanto se vuelve a consultar mientras el pago esta pendiente
+        const MAX_CONSULTAS = 40;     // 40 consultas x 3 segundos = 2 minutos
 
         const params = new URLSearchParams(window.location.search);
         const ventaId = params.get('id');
+        const token = params.get('t');
         const container = document.getElementById('confirmacionContainer');
 
-        if (!ventaId) {
-            container.innerHTML = `
-                <div class="py-12">
-                    <p class="text-red-500">No se encontró la compra.</p>
-                    <a href="index.html" class="text-violet-600 hover:underline">Volver al inicio</a>
-                </div>
-            `;
-            throw new Error('Falta ID de venta');
+        let consultas = 0;
+        let enCurso = false; // hay una consulta al servidor en marcha (evita cadenas de consultas en paralelo)
+
+        // ---------- Ayudas para armar la pantalla sin innerHTML ----------
+        // Todo texto se escribe con textContent: lo que llega del servidor (nombre del evento, lugar, etc.)
+        // nunca se interpreta como HTML.
+        function crear(etiqueta, clases, texto) {
+            const nodo = document.createElement(etiqueta);
+            if (clases) nodo.className = clases;
+            if (texto !== undefined && texto !== null) nodo.textContent = String(texto);
+            return nodo;
         }
 
-        async function cargarVenta(id) {
-            try {
-                const docRef = doc(db, "ventas", id);
-                const docSnap = await getDoc(docRef);
-                if (!docSnap.exists()) {
-                    container.innerHTML = `<p class="text-red-500">Compra no encontrada.</p>`;
-                    return;
+        function icono(nombre, fondo, color) {
+            const caja = crear('div', `w-20 h-20 rounded-full ${fondo} flex items-center justify-center mb-4 mx-auto`);
+            caja.appendChild(crear('span', `material-symbols-outlined text-4xl ${color}`, nombre));
+            return caja;
+        }
+
+        function girando() {
+            const caja = crear('div', 'w-20 h-20 flex items-center justify-center mb-4 mx-auto');
+            caja.appendChild(crear('div', 'animate-spin rounded-full h-12 w-12 border-4 border-violet-600 border-t-transparent'));
+            return caja;
+        }
+
+        function boton(texto, clases, alHacerClic) {
+            const b = crear('button', clases, texto);
+            b.type = 'button';
+            b.addEventListener('click', () => alHacerClic(b));
+            return b;
+        }
+
+        function enlace(texto, clases, destino) {
+            const a = crear('a', clases, texto);
+            a.href = destino;
+            return a;
+        }
+
+        const CLASE_BOTON = 'bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition';
+        const CLASE_BOTON_GRIS = 'bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition';
+
+        function pintar(...nodos) {
+            container.replaceChildren(...nodos);
+        }
+
+        function formatoMonto(valor) {
+            const n = Number(valor);
+            return '$' + (Number.isFinite(n) ? n : 0).toLocaleString();
+        }
+
+        // Resumen de la compra (solo con los datos que devuelve el servidor)
+        function resumen(v) {
+            const caja = crear('div', 'w-full max-w-sm mx-auto bg-gray-50 rounded-xl p-4 mt-4 text-left border border-gray-200');
+            caja.appendChild(crear('h4', 'font-semibold text-gray-800', 'Resumen'));
+            const lista = crear('div', 'mt-2 space-y-1 text-sm');
+            const fila = (etiqueta, valor) => {
+                const p = crear('p');
+                p.appendChild(crear('span', 'text-gray-500', etiqueta + ': '));
+                p.appendChild(document.createTextNode(String(valor)));
+                lista.appendChild(p);
+            };
+            const e = v.evento || {};
+            fila('Evento', e.nombre || '-');
+            if (e.fecha) fila('Fecha', e.fecha);
+            if (e.lugar) fila('Lugar', e.lugar);
+            fila('Lote', v.lote || '-');
+            fila('Cantidad', v.cantidad || 0);
+            if (v.metodoPago) fila('Método de pago', v.metodoPago);
+            lista.appendChild(crear('p', 'text-lg font-bold text-violet-600', 'Total: ' + formatoMonto(v.monto)));
+            caja.appendChild(lista);
+            return caja;
+        }
+
+        // Direccion limpia de la compra (sin los datos que agrega Mercado Pago)
+        function enlaceDeLaCompra() {
+            const l = window.location;
+            return `${l.origin}${l.pathname}?id=${encodeURIComponent(ventaId)}&t=${encodeURIComponent(token)}`;
+        }
+
+        // Como el sistema no envia correos, se le pide al comprador que guarde este enlace
+        function bloqueGuardarEnlace() {
+            const url = enlaceDeLaCompra();
+            const caja = crear('div', 'w-full max-w-sm mx-auto bg-violet-50 border border-violet-200 rounded-xl p-4 mt-4 text-left no-imprimir');
+            caja.appendChild(crear('h4', 'font-semibold text-violet-900', 'Guardá el enlace de tu compra'));
+            caja.appendChild(crear('p', 'text-sm text-gray-700 mt-1',
+                'No te enviamos las entradas por correo. Para volver a verlas, guardá o copiá este enlace. Cualquiera que lo tenga puede ver tus entradas: no lo compartas.'));
+            const campo = crear('input', 'w-full border border-gray-300 rounded-lg px-3 py-2 mt-2 text-xs text-gray-600 bg-white');
+            campo.type = 'text';
+            campo.readOnly = true;
+            campo.value = url;
+            campo.setAttribute('aria-label', 'Enlace de tu compra');
+            campo.addEventListener('focus', () => { if (campo.select) campo.select(); });
+            caja.appendChild(campo);
+            const copiar = boton('Copiar enlace', CLASE_BOTON + ' mt-2', async () => {
+                try {
+                    await navigator.clipboard.writeText(url);
+                    copiar.textContent = '¡Enlace copiado!';
+                } catch (e) {
+                    if (campo.select) campo.select(); // si el navegador no deja copiar, queda seleccionado para copiarlo a mano
+                    copiar.textContent = 'Copialo manualmente';
                 }
+            });
+            caja.appendChild(copiar);
+            return caja;
+        }
 
-                const venta = { id: docSnap.id, ...docSnap.data() };
-                const estado = venta.estado || 'confirmada';
-                const esPendiente = estado === 'pendiente';
-                const metodo = venta.metodo_pago || '';
+        // ---------- Pantallas segun el estado ----------
+        function pantallaNoEncontrada() {
+            pintar(
+                icono('search_off', 'bg-gray-100', 'text-gray-500'),
+                crear('h2', 'text-2xl font-bold text-gray-800', 'Compra no encontrada'),
+                crear('p', 'text-gray-500 mt-1', 'No encontramos esta compra. Revisá que el enlace esté completo, tal como lo guardaste.'),
+                enlace('Volver al inicio', CLASE_BOTON + ' inline-block mt-6', 'index.html')
+            );
+        }
 
-                let icono, titulo, mensaje, instruccionesHtml, qrHtml, botonesHtml;
+        function pantallaPendiente(v, huboError) {
+            const nodos = [
+                girando(),
+                crear('h2', 'text-2xl font-bold text-gray-800', 'Estamos confirmando tu pago'),
+                crear('p', 'text-gray-500 mt-1', 'Puede tardar unos segundos. No cierres esta página: se actualiza sola.'),
+            ];
+            if (huboError) nodos.push(crear('p', 'text-sm text-yellow-700 mt-2', 'Tuvimos un problema para actualizar. Seguimos intentando.'));
+            if (v) nodos.push(resumen(v));
+            pintar(...nodos);
+        }
 
-                // --- Construir según estado y método ---
-                if (esPendiente) {
-                    icono = 'pending';
-                    titulo = '¡Compra pendiente!';
-                    mensaje = 'Tu compra está pendiente de confirmación. Sigue las instrucciones para completar el pago.';
+        function pantallaDemora(v) {
+            const nodos = [
+                icono('schedule', 'bg-yellow-100', 'text-yellow-600'),
+                crear('h2', 'text-2xl font-bold text-gray-800', 'El pago está tardando más de lo esperado'),
+                crear('p', 'text-gray-500 mt-1', 'Si ya pagaste, no pagues de nuevo: a veces la confirmación demora unos minutos. Guardá el enlace de abajo y volvé a abrirlo más tarde.'),
+            ];
+            if (v) nodos.push(resumen(v));
+            nodos.push(bloqueGuardarEnlace());
+            const botones = crear('div', 'flex flex-wrap gap-3 mt-6 justify-center no-imprimir');
+            botones.appendChild(boton('Volver a consultar', CLASE_BOTON, reintentar));
+            botones.appendChild(enlace('Volver al inicio', CLASE_BOTON_GRIS, 'index.html'));
+            nodos.push(botones);
+            pintar(...nodos);
+        }
 
-                    if (metodo === 'Transferencia') {
-                        instruccionesHtml = `
-                            <div class="w-full max-w-sm bg-yellow-50 rounded-xl p-4 mt-4 border border-yellow-200 text-left">
-                                <h4 class="font-semibold text-yellow-800">Instrucciones de transferencia</h4>
-                                <ul class="mt-2 text-sm text-gray-700 space-y-1">
-                                    <li>💰 <strong>Monto:</strong> $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</li>
-                                    <li>🏦 <strong>Banco:</strong> Banco Nación</li>
-                                    <li>📋 <strong>CBU:</strong> 1234567890123456789012</li>
-                                    <li>📧 <strong>Email para comprobante:</strong> pagos@evently.com</li>
-                                </ul>
-                                <p class="text-xs text-gray-500 mt-2">Envía el comprobante a pagos@evently.com y espera la confirmación.</p>
-                            </div>
-                        `;
-                    } else if (metodo === 'Efectivo') {
-                        instruccionesHtml = `
-                            <div class="w-full max-w-sm bg-yellow-50 rounded-xl p-4 mt-4 border border-yellow-200 text-left">
-                                <h4 class="font-semibold text-yellow-800">Pago en efectivo</h4>
-                                <ul class="mt-2 text-sm text-gray-700 space-y-1">
-                                    <li>📍 <strong>Punto de pago:</strong> Boletería del evento</li>
-                                    <li>⏰ <strong>Horario:</strong> 2 horas antes del inicio</li>
-                                    <li>💰 <strong>Monto:</strong> $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</li>
-                                </ul>
-                                <p class="text-xs text-gray-500 mt-2">Presenta tu DNI y el código de reserva al pagar.</p>
-                            </div>
-                        `;
-                    } else {
-                        instruccionesHtml = `<p class="text-gray-500 mt-4">Tu compra está pendiente de revisión.</p>`;
-                    }
+        function pantallaConfirmada(v) {
+            const nodos = [
+                icono('check_circle', 'bg-green-100', 'text-green-600'),
+                crear('h2', 'text-2xl font-bold text-gray-800', '¡Compra exitosa!'),
+                crear('p', 'text-gray-500 mt-1', 'Tu pago fue confirmado. Estas son tus entradas.'),
+            ];
 
-                    qrHtml = ''; // Sin QR
-                    botonesHtml = `
-                        <button onclick="window.print()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
-                            Imprimir instrucciones
-                        </button>
-                        <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
-                            Volver al inicio
-                        </a>
-                    `;
+            if (v.reembolsoPendiente) {
+                nodos.push(crear('p', 'text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4 max-w-sm mx-auto',
+                    'Detectamos un segundo pago por esta misma compra. Tus entradas no cambian y vamos a devolverte el dinero del pago repetido.'));
+            }
 
+            // Una entrada por unidad, cada una con su codigo QR
+            const entradas = Array.isArray(v.entradas) ? v.entradas : [];
+            const lista = crear('div', 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-left');
+            entradas.forEach((entrada, i) => {
+                const tarjeta = crear('div', 'bg-gray-50 rounded-xl p-4 border border-gray-200 text-center');
+                tarjeta.appendChild(crear('p', 'text-sm font-semibold text-gray-700', `Entrada ${i + 1} de ${entradas.length}`));
+                const caja = crear('div', 'qr-container mt-2');
+                tarjeta.appendChild(caja);
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(caja, { text: String(entrada.codigo), width: 160, height: 160, colorDark: '#1a1c1c', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
                 } else {
-                    // Confirmada
-                    icono = 'check_circle';
-                    titulo = '¡Compra exitosa!';
-                    mensaje = 'Tu pago ha sido confirmado.';
-                    instruccionesHtml = '';
-
-                    // QR
-                    const codigoQR = venta.entradas && venta.entradas.length > 0 ? venta.entradas[0].codigo : `ENT-${Date.now()}`;
-                    qrHtml = `
-                        <div class="w-full max-w-sm bg-gray-50 rounded-xl p-6 mt-6 border border-gray-200">
-                            <div class="bg-white p-4 rounded-lg border border-gray-200 flex flex-col items-center">
-                                <span class="text-sm text-gray-500">Código QR de entrada</span>
-                                <div id="qrCode" class="qr-container mt-2"></div>
-                                <p class="text-xs text-gray-400 mt-2">Presenta este QR en la entrada</p>
-                            </div>
-                        </div>
-                    `;
-
-                    botonesHtml = `
-                        <button id="btnDescargarPDF" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition">
-                            Descargar PDF
-                        </button>
-                        <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-full text-sm font-medium transition">
-                            Volver al inicio
-                        </a>
-                    `;
-
-                    // Generar QR (después de renderizar)
-                    setTimeout(() => {
-                        const qrContainer = document.getElementById('qrCode');
-                        if (qrContainer) {
-                            new QRCode(qrContainer, {
-                                text: codigoQR,
-                                width: 180,
-                                height: 180,
-                                colorDark: "#1a1c1c",
-                                colorLight: "#ffffff",
-                                correctLevel: QRCode.CorrectLevel.H
-                            });
-                        }
-                    }, 100);
+                    caja.appendChild(crear('p', 'text-xs text-gray-500', 'No pudimos dibujar el QR. Presentá este código:'));
                 }
+                tarjeta.appendChild(crear('p', 'text-xs text-gray-400 mt-2 break-all', String(entrada.codigo)));
+                if (entrada.usado) tarjeta.appendChild(crear('p', 'text-xs font-semibold text-red-600 mt-1', 'Esta entrada ya fue utilizada'));
+                lista.appendChild(tarjeta);
+            });
+            nodos.push(lista);
+            nodos.push(crear('p', 'text-xs text-gray-400 mt-3', 'Presentá cada QR en la entrada del evento.'));
+            nodos.push(resumen(v));
+            nodos.push(bloqueGuardarEnlace());
 
-                // Renderizar todo
-                container.innerHTML = `
-                    <div class="flex flex-col items-center">
-                        <div class="w-20 h-20 rounded-full ${esPendiente ? 'bg-yellow-100' : 'bg-green-100'} flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-4xl ${esPendiente ? 'text-yellow-600' : 'text-green-600'}">${icono}</span>
-                        </div>
-                        <h2 class="text-2xl font-bold text-gray-800">${titulo}</h2>
-                        <p class="text-gray-500 mt-1">${mensaje}</p>
+            const botones = crear('div', 'flex flex-wrap gap-3 mt-6 justify-center no-imprimir');
+            botones.appendChild(boton('Imprimir entradas', CLASE_BOTON, () => window.print()));
+            botones.appendChild(enlace('Volver al inicio', CLASE_BOTON_GRIS, 'index.html'));
+            nodos.push(botones);
+            pintar(...nodos);
+        }
 
-                        ${instruccionesHtml}
-                        ${qrHtml}
+        // El motivo del rechazo, en lenguaje simple
+        const MOTIVOS = {
+            vencida: 'Pasaron más de 30 minutos sin recibir el pago, así que la compra se canceló.',
+            pago_rechazado: 'Mercado Pago no aprobó el pago. Podés intentar de nuevo con otra tarjeta o con otro medio de pago.',
+            pago_cancelado: 'El pago fue cancelado.',
+            sin_stock: 'Mientras pagabas se agotaron las entradas de este lote.',
+            lote_inconsistente: 'El lote de este evento cambió mientras comprabas y no pudimos entregarte las entradas.',
+            evento_inexistente: 'Este evento ya no está disponible y no pudimos entregarte las entradas.',
+            error_mercado_pago: 'No pudimos iniciar el pago con Mercado Pago. Intentá de nuevo en unos minutos.',
+        };
 
-                        <div class="w-full max-w-sm bg-gray-50 rounded-xl p-4 mt-4 text-left border border-gray-200">
-                            <h4 class="font-semibold text-gray-800">Resumen</h4>
-                            <div class="mt-2 space-y-1 text-sm">
-                                <p><span class="text-gray-500">Evento:</span> ${venta.eventoNombre || 'N/A'}</p>
-                                <p><span class="text-gray-500">Lote:</span> ${venta.loteNombre || 'N/A'}</p>
-                                <p><span class="text-gray-500">Cantidad:</span> ${venta.cantidad || 0}</p>
-                                <p><span class="text-gray-500">Método de pago:</span> ${venta.metodo_pago || 'N/A'}</p>
-                                <p class="text-lg font-bold text-violet-600">Total: $${venta.monto_total ? venta.monto_total.toLocaleString() : '0'}</p>
-                                <p class="text-sm text-gray-500">Estado: <span class="${esPendiente ? 'text-yellow-600' : 'text-green-600'} font-semibold">${estado}</span></p>
-                            </div>
-                        </div>
+        function pantallaRechazada(v) {
+            const nodos = [
+                icono('cancel', 'bg-red-100', 'text-red-600'),
+                crear('h2', 'text-2xl font-bold text-gray-800', 'No pudimos completar tu compra'),
+                crear('p', 'text-gray-600 mt-1', MOTIVOS[v.motivo] || 'Tu compra no pudo completarse.'),
+            ];
+            if (v.reembolsoPendiente) {
+                nodos.push(crear('p', 'text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4 max-w-sm mx-auto',
+                    'Si se te cobró, vamos a devolverte el dinero. Guardá el enlace de esta página por si necesitás consultarlo.'));
+            }
+            nodos.push(resumen(v));
+            if (v.reembolsoPendiente) nodos.push(bloqueGuardarEnlace());
 
-                        <div class="flex flex-wrap gap-3 mt-6">
-                            ${botonesHtml}
-                        </div>
-                    </div>
-                `;
+            // Volver al mismo evento (solo si el identificador tiene un formato valido)
+            const destino = typeof v.eventoId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(v.eventoId)
+                ? 'evento.html?id=' + encodeURIComponent(v.eventoId)
+                : 'index.html';
+            const botones = crear('div', 'flex flex-wrap gap-3 mt-6 justify-center no-imprimir');
+            botones.appendChild(enlace('Volver a intentar', CLASE_BOTON, destino));
+            botones.appendChild(boton('Ya pagué: actualizar', CLASE_BOTON_GRIS, reintentar));
+            botones.appendChild(enlace('Volver al inicio', CLASE_BOTON_GRIS, 'index.html'));
+            nodos.push(botones);
+            pintar(...nodos);
+        }
 
-                // Botón de PDF (solo si existe)
-                const pdfBtn = document.getElementById('btnDescargarPDF');
-                if (pdfBtn) {
-                    pdfBtn.addEventListener('click', function() {
-                        alert('Función de descarga de PDF en desarrollo. Usa "Imprimir" para guardar como PDF.');
-                    });
-                }
+        // ---------- Consulta al servidor ----------
+        function esperarYVolverAConsultar(venta, huboError) {
+            if (consultas >= MAX_CONSULTAS) { pantallaDemora(venta); return; }
+            pantallaPendiente(venta, huboError);
+            setTimeout(consultar, ESPERA_MS);
+        }
 
-            } catch (error) {
-                console.error('Error al cargar la venta:', error);
-                container.innerHTML = `<p class="text-red-500">Error al cargar los datos de la compra.</p>`;
+        // Boton "volver a consultar": empieza de nuevo la espera de 2 minutos. Si ya hay una consulta en marcha
+        // se ignora el clic, asi apretarlo varias veces seguidas no multiplica las consultas.
+        function reintentar(boton) {
+            if (enCurso) return;
+            if (boton) boton.disabled = true;
+            consultas = 0;
+            consultar();
+        }
+
+        async function consultar() {
+            if (enCurso) return;
+            enCurso = true;
+            try {
+                await consultarYMostrar();
+            } finally {
+                enCurso = false;
             }
         }
 
-        cargarVenta(ventaId);
+        async function consultarYMostrar() {
+            consultas++;
+            let respuesta = null;
+            let datos = null;
+            try {
+                respuesta = await fetch('/api/venta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: ventaId, t: token }),
+                });
+                try { datos = await respuesta.json(); } catch (e) { datos = null; }
+            } catch (e) {
+                respuesta = null; // sin conexion: se sigue intentando
+            }
+
+            if (respuesta && respuesta.status === 404) { pantallaNoEncontrada(); return; }
+
+            if (respuesta && respuesta.ok && datos && datos.ok === true && datos.venta) {
+                const v = datos.venta;
+                if (v.estado === 'confirmada') { pantallaConfirmada(v); return; }
+                if (v.estado === 'rechazada') { pantallaRechazada(v); return; }
+                esperarYVolverAConsultar(v, false); // pendiente
+                return;
+            }
+            // Error temporal (servidor caido, sin conexion, respuesta rara): no es "compra no encontrada"
+            esperarYVolverAConsultar(null, true);
+        }
+
+        // ---------- Inicio ----------
+        if (!ventaId || !token) {
+            pantallaNoEncontrada();
+        } else {
+            // Se quitan de la direccion los datos que agrega Mercado Pago: la pantalla muestra
+            // el estado REAL de la compra (lo que dice el servidor), no lo que diga la direccion.
+            try { window.history.replaceState(null, '', `?id=${encodeURIComponent(ventaId)}&t=${encodeURIComponent(token)}`); } catch (e) { /* no es grave */ }
+            consultar();
+        }
     </script>
 </body>
 </html>

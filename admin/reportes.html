@@ -78,11 +78,10 @@
                     <label class="block text-xs font-medium text-gray-500 uppercase">Método de pago</label>
                     <select id="metodoFilter" class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                         <option value="todos">Todos</option>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Transferencia">Transferencia</option>
-                        <option value="Débito">Débito</option>
                         <option value="Crédito">Crédito</option>
-                        <option value="Mixto">Mixto</option>
+                        <option value="Débito">Débito</option>
+                        <option value="Prepaga">Prepaga</option>
+                        <option value="Dinero en cuenta">Dinero en cuenta</option>
                     </select>
                 </div>
                 <div class="flex gap-2 ml-auto">
@@ -209,6 +208,7 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml } from "../shared/ventas-utils.js";
 
         // Estado
         let eventos = [];
@@ -258,7 +258,7 @@
             loteFilter.innerHTML = `<option value="todos">Todos</option>`;
             lotesUnicos.forEach(lote => {
                 const selected = lote === currentVal ? 'selected' : '';
-                loteFilter.innerHTML += `<option value="${lote}" ${selected}>${lote}</option>`;
+                loteFilter.innerHTML += `<option value="${escaparHtml(lote)}" ${selected}>${escaparHtml(lote)}</option>`;
             });
         }
 
@@ -267,7 +267,7 @@
             const loteSeleccionado = loteFilter.value;
             const metodoSeleccionado = metodoFilter.value;
 
-            let ventasFiltradas = [...ventas];
+            let ventasFiltradas = soloConfirmadas(ventas); // solo ventas confirmadas: son las unicas que suman dinero y entradas
 
             if (loteSeleccionado !== 'todos') {
                 ventasFiltradas = ventasFiltradas.filter(v => v.loteNombre === loteSeleccionado);
@@ -297,7 +297,7 @@
             const loteSeleccionado = loteFilter.value;
             const metodoSeleccionado = metodoFilter.value;
 
-            let ventasFiltradas = [...ventas];
+            let ventasFiltradas = soloConfirmadas(ventas); // solo ventas confirmadas: son las unicas que suman dinero y entradas
             if (loteSeleccionado !== 'todos') {
                 ventasFiltradas = ventasFiltradas.filter(v => v.loteNombre === loteSeleccionado);
             }
@@ -467,7 +467,7 @@
                                 const vendidas = ventas.reduce((s, v) => s + (v.cantidad || 0), 0);
                                 const subtotal = ventas.reduce((s, v) => s + (v.monto_total || 0), 0);
                                 return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
-                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${nombreLote}</td>
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(nombreLote)}</td>
                                     <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${info.vigencia || 'N/A'}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">$${Number(info.precio||0).toLocaleString()}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${info.disponibles || 0}</td>
@@ -502,10 +502,10 @@
                             ${ventasFiltradas.length === 0 ? '<tr><td colspan="7" style="padding:16px;text-align:center;color:#9ca3af;">Sin transacciones</td></tr>' :
                             ventasFiltradas.map((v, i) => `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.fecha || 'N/A'}</td>
-                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.correo || v.comprador || 'N/A'}</td>
-                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.loteNombre || 'N/A'}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.correo || v.comprador || 'N/A')}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.loteNombre || 'N/A')}</td>
                                 <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${v.cantidad || 0}</td>
-                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${v.metodo_pago || 'N/A'}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.metodo_pago || 'N/A')}</td>
                                 <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">$${(v.monto_total||0).toLocaleString()}</td>
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">
                                     <span style="padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;
@@ -533,7 +533,7 @@
                             Object.entries(metodos).map(([nombre, data], i) => {
                                 const pct = totalVentas > 0 ? Math.round((data.transacciones / totalVentas) * 100) : 0;
                                 return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
-                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${nombre}</td>
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(nombre)}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${data.transacciones}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">$${data.monto.toLocaleString()}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">${pct}%</td>
@@ -550,11 +550,11 @@
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Lote agotado</p>
-                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${loteAgotado}</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(loteAgotado)}</p>
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Lote con mayor recaudación</p>
-                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${loteMasRentable.nombre} — $${loteMasRentable.monto.toLocaleString()}</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(loteMasRentable.nombre)} — $${loteMasRentable.monto.toLocaleString()}</p>
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Pico de ventas</p>
@@ -562,7 +562,7 @@
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Método más usado</p>
-                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(metodoMasUsado.nombre)} — ${metodoMasUsado.porcentaje}%</p>
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Recaudación por entrada</p>
@@ -634,6 +634,10 @@
             const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
             const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalEntradas / capacidadTotal) * 100) : 0;
 
+            // Las ventas pendientes de pago no suman a ninguna cifra: se informan aparte (respetando el filtro de lote;
+            // el de metodo no aplica porque una venta pendiente todavia no tiene metodo de pago)
+            const pendientesDePago = resumenDeVentas(ventas.filter(v => loteFilter.value === 'todos' || v.loteNombre === loteFilter.value)).pendientes;
+
             const container = document.getElementById('kpiContainer');
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
@@ -673,11 +677,11 @@
                         <span class="material-symbols-outlined text-violet-600">payments</span>
                     </div>
                     <p class="text-3xl font-bold text-violet-600 mt-2">$${totalRecaudado.toLocaleString()}</p>
-                    <span class="text-xs text-gray-400">${totalVentas} transacciones</span>
+                    <span class="text-xs text-gray-400">${totalVentas} ventas confirmadas</span>
                 </div>
                 <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
                     <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Total transacciones</span>
+                        <span class="text-sm text-gray-500">Ventas confirmadas</span>
                         <span class="material-symbols-outlined text-violet-600">receipt_long</span>
                     </div>
                     <p class="text-2xl font-bold text-gray-800 mt-2">${totalVentas}</p>
@@ -688,6 +692,14 @@
                         <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
                     </div>
                     <p class="text-2xl font-bold text-gray-800 mt-2">${totalVentas > 0 ? (totalEntradas / totalVentas).toFixed(1) : 0}</p>
+                </div>
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Pendientes de pago</span>
+                        <span class="material-symbols-outlined text-yellow-600">hourglass_top</span>
+                    </div>
+                    <p class="text-2xl font-bold text-yellow-600 mt-2">${pendientesDePago}</p>
+                    <span class="text-xs text-gray-400">no suman a las cifras</span>
                 </div>
             `;
         }
@@ -742,7 +754,7 @@
 
                 html += `
                     <tr class="border-t">
-                        <td class="p-3 font-medium">${nombreLote}</td>
+                        <td class="p-3 font-medium">${escaparHtml(nombreLote)}</td>
                         <td class="p-3">${info.vigencia || 'N/A'}</td>
                         <td class="p-3 text-right">$${precio.toLocaleString()}</td>
                         <td class="p-3 text-right">${disponibles}</td>
@@ -773,17 +785,19 @@
 
             tbody.innerHTML = ventasFiltradas.map(v => {
                 const estado = v.estado || 'Confirmada';
-                const badgeClass = estado === 'Confirmada' ? 'bg-green-100 text-green-700' :
-                                   estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-700' :
+                // El servidor guarda el estado en minusculas ('confirmada'): se compara sin importar mayusculas
+                const claveEstado = String(estado).toLowerCase();
+                const badgeClass = claveEstado === 'confirmada' ? 'bg-green-100 text-green-700' :
+                                   claveEstado === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
                                    'bg-red-100 text-red-700';
                 return `
                     <tr class="border-t">
                         <td class="p-3">${v.fecha || 'N/A'}</td>
-                        <td class="p-3">${v.correo || v.comprador || 'N/A'}</td>
+                        <td class="p-3">${escaparHtml(v.correo || v.comprador || 'N/A')}</td>
                         <td class="p-3 text-right">${v.cantidad || 0}</td>
-                        <td class="p-3">${v.metodo_pago || 'N/A'}</td>
+                        <td class="p-3">${escaparHtml(v.metodo_pago || 'N/A')}</td>
                         <td class="p-3 text-right font-semibold">$${(v.monto_total || 0).toLocaleString()}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">${estado}</span></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">${escaparHtml(estado)}</span></td>
                     </tr>
                 `;
             }).join('');
@@ -810,7 +824,7 @@
                 const pct = totalTrans > 0 ? Math.round((data.transacciones / totalTrans) * 100) : 0;
                 return `
                     <tr class="border-t">
-                        <td class="p-3 font-medium">${nombre}</td>
+                        <td class="p-3 font-medium">${escaparHtml(nombre)}</td>
                         <td class="p-3 text-right">${data.transacciones}</td>
                         <td class="p-3 text-right">$${data.monto.toLocaleString()}</td>
                         <td class="p-3 text-right font-semibold">${pct}%</td>
