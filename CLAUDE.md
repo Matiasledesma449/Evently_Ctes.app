@@ -20,7 +20,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Hay pruebas simuladas solo para el flujo de pagos: `node pruebas/ejecutar-todas.js` (ver `pruebas/LEEME.md`). El resto del sitio no tiene tests: la verificación es manual, por rol (ver SHR-72 en el backlog).
 
 ## Pagos (Mercado Pago)
-- Flujo: `evento.html` llama a `/api/crear-pago` → crea la venta `pendiente` y la preferencia de pago → Mercado Pago avisa a `/api/mp-webhook` (firma verificada) → la venta pasa a `aprobado` y se descuenta el stock en una transacción → `confirmacion.html` consulta `/api/venta` hasta ver el estado real.
+- Flujo: `evento.html` llama a `/api/crear-pago` → crea la venta `pendiente` y la preferencia de pago → Mercado Pago avisa a `/api/mp-webhook` (firma verificada) → la venta pasa a `confirmada` y se descuenta el stock en una transacción → `confirmacion.html` consulta `/api/venta` hasta ver el estado real.
 - Las ventas y el stock solo los escribe el servidor (`firebase-admin`); el navegador no debe escribir en `ventas` (queda garantizado cuando se publiquen las reglas de Firestore, tarea 10.3).
 - Variables de entorno (solo los nombres, los valores van en Vercel): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `SITE_URL`.
 - Detalle del change: `openspec/changes/pagos-mercadopago/`.
