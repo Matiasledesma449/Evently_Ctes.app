@@ -13,6 +13,19 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Pruebas guardadas en el repo (pedido del usuario, no es una tarea de `tasks.md`)
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** carpeta `pruebas/` nueva: 10 archivos de prueba numerados, `_ayuda-db-falsa.js`, `ejecutar-todas.js` y `LEEME.md`.
+- **Cómo se corren:** `node pruebas/ejecutar-todas.js` desde la raíz. No instala nada y no usa red ni Firestore real.
+- **Qué cambió respecto de las pruebas temporales:** se reemplazaron las rutas de mi PC por rutas relativas (el repo es público) y se agregó `01-firma.js`, que de 4.1 se había hecho "al vuelo" y no estaba guardada.
+- **Resultado:** 10 archivos, 220 casos, todos bien.
+- **Límite:** son simulaciones. No reemplazan la sección 9 (pruebas reales con Mercado Pago y Firestore).
+- **Pendiente:** la tarea 10.5 (actualizar `CLAUDE.md`) tiene que mencionar la carpeta `pruebas/`; hoy `CLAUDE.md` todavía dice que no hay pruebas automatizadas. No se tocó `package.json` (no se agregó el comando `npm test`) por ser un archivo de configuración.
+- **Push:** menor (archivos nuevos, sin tocar configuración), se sube a `auto/pagos-mercadopago`.
+
+---
+
 ## Tareas 6.1, 6.2 y 6.3: pantalla de compra (`public/evento.html`)
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
