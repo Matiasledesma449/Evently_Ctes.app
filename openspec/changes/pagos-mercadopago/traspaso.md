@@ -70,6 +70,26 @@ Nunca se probó contra Mercado Pago real ni contra Firestore real. Eso es lo que
 - Los correos con tilde o apóstrofe se rechazan a propósito (seguridad).
 - Las compras viejas (de antes de este change) no tienen token: no se pueden abrir con el enlace nuevo.
 
+## 8. Seguir con otra IA a través de OmniRoute (cuando se acaba la cuota de Claude)
+
+OmniRoute es un puente local que permite usar otros proveedores de IA (varios gratuitos). **No toma el control solo**: cuando la cuota de Claude se acaba, la persona tiene que abrir una **sesión nueva** con otro modelo. Esa sesión no tiene la conversación anterior: por eso existe este documento. Según el README del proyecto OmniRoute (no probado aquí).
+
+**Una sola vez (lo hace la persona, porque lleva claves):**
+1. En una terminal: `omniroute setup` y seguir el asistente para conectar uno o más proveedores. **Las claves las escribe la persona en el asistente; nunca en el chat ni en un archivo del repositorio.**
+
+**Cada vez que haya que continuar:**
+2. Abrir una terminal en la carpeta del proyecto (la raíz, donde está `CLAUDE.md`).
+3. Ejecutar `omniroute run claude --model <proveedor/modelo>` (el README da como ejemplo `omniroute run claude --model openai/gpt-5.4`; el nombre exacto depende de lo que se haya conectado, y se ve con `omniroute models`). Eso abre Claude Code usando el modelo elegido.
+4. Pegarle este texto como primer mensaje:
+
+> Estoy retomando un trabajo que otra IA dejó a medias. Leé primero `CLAUDE.md` y después `openspec/changes/pagos-mercadopago/traspaso.md`, y seguí ESAS REGLAS AL PIE DE LA LETRA. Después leé `tasks.md` y las últimas entradas de `registro-automatico.md`, corré `node pruebas/ejecutar-todas.js` y recién ahí decime en español simple qué vas a hacer. No hagas push, no toques `main`, no leas claves ni archivos `.env`, y preguntame antes de instalar o borrar algo. Hacé una sola tarea por vez y anotá todo en el registro.
+
+**Precauciones al usar proveedores gratuitos:**
+- Reciben el código y los mensajes de la conversación. **No pegar claves, tokens ni datos de compradores.** Si una tarea las necesita, no hacerla por este camino.
+- La calidad cambia según el modelo: revisar con más cuidado cada cambio, correr las pruebas siempre y no marcar tareas sin que el criterio se cumpla.
+- Si el agente `revisor` o los complementos de seguridad de Claude no están disponibles en esa sesión, revisar el diff en staging a mano (punto 3 bis).
+- Mientras haya cuota de Claude, conviene seguir con Claude: hace falta menos supervisión.
+
 ## 7. Cómo retomar paso a paso
 
 1. Leer los archivos del punto 2.
