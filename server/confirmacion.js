@@ -30,6 +30,9 @@ function generarEntradas(cantidad, bytesAleatorios = crypto.randomBytes) {
   return [...codigos].map((codigo) => ({ codigo, usado: false }));
 }
 
+// Cuantos pagos repetidos se anotan como maximo en una venta
+const MAX_PAGOS_DUPLICADOS = 20;
+
 const aNumero = (valor) => {
   const n = Number(valor);
   return Number.isFinite(n) ? n : 0;
@@ -69,10 +72,24 @@ async function aplicarPago(db, ventaId, pago) {
 
     const aprobado = clasificarPago(pago.status) === 'aprobado';
 
-    // Una venta confirmada no cambia. Si llega OTRO pago aprobado, el comprador pago dos veces: se avisa.
+    // Una venta confirmada no cambia de estado ni de entradas. Si llega OTRO pago aprobado, el comprador
+    // pago dos veces: se deja marcada con reembolso pendiente y se anota cual fue el pago repetido.
     if (venta.estado === 'confirmada') {
       const otroPago = aprobado && String(venta.mpPaymentId) !== String(pago.id);
-      return otroPago ? { resultado: 'sin_cambio', pagoDuplicado: true } : { resultado: 'sin_cambio' };
+      if (!otroPago) return { resultado: 'sin_cambio' };
+
+      const repetidos = Array.isArray(venta.pagosDuplicados) ? venta.pagosDuplicados : [];
+      const idPago = String(pago.id);
+      // Si este aviso ya se anoto, no se vuelve a escribir (el mismo aviso puede llegar varias veces).
+      // La lista tiene un tope para que no pueda crecer sin limite.
+      if (!repetidos.includes(idPago) && repetidos.length < MAX_PAGOS_DUPLICADOS) {
+        tx.update(ventaRef, {
+          requiereReembolso: true,
+          motivoReembolso: 'pago_duplicado',
+          pagosDuplicados: [...repetidos, idPago],
+        });
+      }
+      return { resultado: 'sin_cambio', pagoDuplicado: true };
     }
 
     // El stock solo importa si hay un pago aprobado que confirmar

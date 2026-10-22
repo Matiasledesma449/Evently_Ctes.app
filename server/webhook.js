@@ -12,9 +12,12 @@ const { requerir, VARIABLES, ConfigError } = require('./config');
 const { verificarFirma } = require('./firma');
 const { obtenerPago, MercadoPagoError } = require('./mercadopago');
 const { ventaIdDelPago, compararPagoConVenta } = require('./pagos');
-const { leerVenta } = require('./ventas');
+const { leerVenta, marcarRevision } = require('./ventas');
 const { aplicarPago } = require('./confirmacion');
 const { obtenerDb } = require('./firestore');
+
+// Motivos de no coincidencia que dejan la venta marcada para revision (los que tienen que ver con el dinero)
+const MOTIVOS_DE_REVISION = ['monto_distinto', 'moneda_distinta', 'monto_invalido'];
 
 const ok = (cuerpo) => ({ status: 200, cuerpo: { ok: true, ...cuerpo } });
 const fallo = (status, codigo, mensaje) => ({ status, cuerpo: { ok: false, error: { codigo, mensaje } } });
@@ -90,6 +93,11 @@ async function procesarAviso(peticion, deps = {}) {
     const comparacion = compararPagoConVenta(pago, ventaId, venta);
     if (!comparacion.ok) {
       registrar('[mp-webhook] El pago no coincide con la venta', { motivo: comparacion.motivo, ventaId, pagoId: dataId.trim() });
+      // Si la venta existe y lo que no coincide es el dinero (monto o moneda), queda marcada para revision.
+      // No se cambia su estado: solo se deja constancia para que una persona la mire.
+      if (venta && MOTIVOS_DE_REVISION.includes(comparacion.motivo) && !venta.requiereRevision) {
+        await marcarRevision(db, ventaId, comparacion.motivo);
+      }
       return ok({ resultado: comparacion.motivo === 'venta_inexistente' ? 'venta_inexistente' : 'no_coincide' });
     }
 

@@ -47,6 +47,7 @@ Se inicia una sola vez por proceso, con tres variables (`FIREBASE_PROJECT_ID`, `
 
 ### 4. Modelo de datos: se amplía `ventas`
 Campos nuevos sobre los actuales (`eventoId`, `eventoNombre`, `loteNombre`, `cantidad`, `correo`, `metodo_pago`, `monto_total`, `estado`, `fecha`, `entradas`): `nombre`, `apellido`, `loteIndex`, `tokenConsulta`, `venceEn`, `motivo`, `mpPreferenceId`, `mpPaymentId`, `requiereReembolso`, `fechaConfirmacion`.
+- **Agregados durante la implementación:** `motivoDetalle` (detalle del rechazo de Mercado Pago), `requiereRevision` y `motivoRevision` (el pago llegó con otro monto o moneda: se marca la venta sin cambiar su estado), y `motivoReembolso` y `pagosDuplicados` (una venta confirmada recibió otro pago aprobado: queda con `requiereReembolso` y se anotan los pagos repetidos).
 - Las `entradas` quedan vacías hasta confirmar, y mantienen el formato `{ codigo, usado }`, así `validador.html` sigue siendo compatible.
 - Se mantienen los nombres de estado `pendiente` y `confirmada` que ya usa el panel. `anulada` se reemplaza por `rechazada`.
 - **Alternativa descartada:** una colección nueva `pedidos`. Obligaría a cambiar todo el panel por una ventaja mínima.

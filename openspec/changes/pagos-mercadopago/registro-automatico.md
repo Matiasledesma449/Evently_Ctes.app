@@ -13,6 +13,18 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Ajustes a 4.3 y 4.4: decisiones que el usuario delegó
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `server/confirmacion.js`, `server/ventas.js` (`marcarRevision`), `server/webhook.js`, `design.md` (campos nuevos del modelo)
+- **Decisión 1, monto o moneda que no coinciden:** además del registro en el servidor, la venta queda marcada con `requiereRevision: true` y `motivoRevision` (`monto_distinto`, `moneda_distinta` o `monto_invalido`). No cambia su estado ni sus entradas. Se escribe una vez aunque el aviso se repita (si dos avisos llegan exactamente a la vez podría escribirse dos veces, lo cual es inofensivo). La marca **no se limpia sola** si después se confirma la venta: un pago con monto raro pudo haber cobrado dinero, y conviene que una persona lo vea. No se marca si la venta no existe o la referencia no es válida. *Motivo:* es lo que pide el spec ("queda marcada para revisión") y no mueve dinero.
+- **Decisión 2, pago duplicado:** si una venta confirmada recibe otro pago aprobado, queda con `requiereReembolso: true`, `motivoReembolso: 'pago_duplicado'` y la lista `pagosDuplicados` (con tope de 20). Sigue `confirmada`, con las mismas entradas y sin descontar stock. Reusa el aviso de "reembolso pendiente" que el panel ya tiene que mostrar para `sin_stock`, sin inventar otro concepto. El aviso repetido del mismo pago duplicado, o del pago original, no vuelve a escribir.
+- **Comprobación:** 10 casos nuevos (revisión por monto y moneda, sin escritura repetida, sin escritura si no hay venta; duplicado con uno, dos y tres pagos, avisos repetidos). Las pruebas de 4.2 a 4.6 se repitieron y siguen pasando.
+- **Panel (8.1):** hay que mostrar `requiereRevision` y `requiereReembolso` también en ventas confirmadas.
+- **Push:** menor, se sube a `auto/pagos-mercadopago`.
+
+---
+
 ## Tarea 4.6: confirmación segura ante avisos repetidos y errores temporales
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
