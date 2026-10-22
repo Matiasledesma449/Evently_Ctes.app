@@ -99,7 +99,7 @@ const consulta = (db, id, token, extra = {}) => consultarVenta({ id, token }, { 
     const fugas = [...['VPend', 'VConf', 'VRech', 'VSinStock'].flatMap((id) => [id])].map(async (id) => sinProhibidos((await consulta(db, id, TOKEN)).cuerpo));
     const todas = (await Promise.all(fugas)).flat();
     verificar('5.2h ninguna respuesta incluye token, ids de pago o preferencia, datos del comprador ni campos internos', todas.length === 0, todas.join(','));
-    verificar('5.2i la respuesta tiene solo los campos previstos', Object.keys(c).sort().join() === 'cantidad,entradas,estado,evento,id,lote,metodoPago,moneda,monto,motivo,reembolsoPendiente', Object.keys(c).sort().join());
+    verificar('5.2i la respuesta tiene solo los campos previstos', Object.keys(c).sort().join() === 'cantidad,entradas,estado,evento,eventoId,id,lote,metodoPago,moneda,monto,motivo,reembolsoPendiente' && c.eventoId === 'Evt1', Object.keys(c).sort().join());
   }
   {
     // Evento borrado: igual se puede ver la compra

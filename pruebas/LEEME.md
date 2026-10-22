@@ -26,6 +26,7 @@ Muestra una línea por archivo (`PASO` o `FALLO`) y, si algo falla, las líneas 
 | `08-revision-y-pago-duplicado.js` | Venta marcada para revisión y pago duplicado |
 | `09-consulta-de-compra.js` | `/api/venta`: token, datos que se devuelven, vencimiento |
 | `10-pantalla-de-compra.js` | `public/evento.html` con un navegador simulado |
+| `11-pantalla-de-confirmacion.js` | `public/confirmacion.html`: estados, QR, consulta cada 3 segundos, guardar el enlace |
 
 ## Cómo funcionan por dentro
 

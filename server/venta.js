@@ -63,6 +63,8 @@ function armarRespuesta(ventaId, venta, evento) {
   const confirmada = venta.estado === 'confirmada';
   const respuesta = {
     id: ventaId,
+    // Para el boton "volver a intentar" de la pantalla de confirmacion (no es un dato de pago)
+    eventoId: typeof venta.eventoId === 'string' ? venta.eventoId : null,
     estado: venta.estado,
     motivo: venta.motivo || null,
     reembolsoPendiente: venta.requiereReembolso === true,

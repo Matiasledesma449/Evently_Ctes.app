@@ -50,7 +50,7 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 
 - [ ] 7.1 Reescribir la carga para usar `/api/venta` con el id y el token de la dirección, sin leer Firestore, y volver a consultar cada 3 segundos hasta 2 minutos mientras esté `pendiente`. Se comprueba abriendo la pantalla con un enlace sin token o con otro token: muestra "compra no encontrada", y con una compra pendiente de prueba se actualiza sola.
 - [ ] 7.2 Mostrar mensajes según el estado, un código QR por cada entrada cuando está `confirmada`, y el motivo con un botón para volver a intentar cuando está `rechazada`. Se comprueba con una compra confirmada de 3 entradas (3 QR distintos), una rechazada (motivo y botón) y una pendiente (sin QR).
-- [ ] 7.3 Quitar el CBU falso, el botón "Descargar PDF" falso y la lectura de Firestore, e indicar al comprador que guarde el enlace de la compra. Se comprueba con una búsqueda de texto: no aparecen `CBU`, `pagos@evently.com` ni `getDoc`, y la pantalla confirmada muestra la indicación de guardar el enlace.
+- [x] 7.3 Quitar el CBU falso, el botón "Descargar PDF" falso y la lectura de Firestore, e indicar al comprador que guarde el enlace de la compra. Se comprueba con una búsqueda de texto: no aparecen `CBU`, `pagos@evently.com` ni `getDoc`, y la pantalla confirmada muestra la indicación de guardar el enlace.
 
 ## 8. Panel de ventas
 

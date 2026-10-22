@@ -13,6 +13,22 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Tareas 7.1, 7.2 y 7.3: pantalla de confirmación (`public/confirmacion.html`)
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `public/confirmacion.html` (reescrito), `server/venta.js` (la respuesta suma `eventoId`), `pruebas/11-pantalla-de-confirmacion.js` (nuevo), `pruebas/09-consulta-de-compra.js` y `pruebas/LEEME.md` (actualizados), `tasks.md` (solo 7.3 marcada)
+- **Qué cambió:** la página ya no se conecta a Firestore ni carga Firebase. Toma `id` y `t` de la dirección y los manda por `POST /api/venta`. Ignora lo que agrega Mercado Pago y limpia la dirección (`?id=…&t=…`). Pendiente: "Estamos confirmando tu pago" y vuelve a consultar cada 3 s, 40 veces (2 minutos); después avisa que el pago tarda más de lo esperado, pide no pagar de nuevo y ofrece "Volver a consultar". Confirmada: un QR por entrada, "Entrada N de M", marca las ya usadas, resumen, "Imprimir entradas" y el bloque para guardar el enlace con botón "Copiar enlace". Rechazada: el motivo en lenguaje simple (tabla de 7 motivos más uno general), botón "Volver a intentar" al mismo evento y "Ya pagué: actualizar".
+- **Qué se eliminó:** el CBU y el correo falsos, el botón "Descargar PDF" falso, las instrucciones de transferencia y efectivo, y toda lectura de Firestore.
+- **Detalles de seguridad:** todo texto se escribe con `textContent` (nada de `innerHTML`): el nombre, lugar y lote los escribe el organizador. `<meta name="referrer" content="no-referrer">` para que el token de la dirección no viaje a otros sitios. Un error temporal del servidor NO se muestra como "compra no encontrada". El botón "Volver a intentar" solo arma la dirección del evento si el id tiene un formato válido.
+- **Cambio en `/api/venta`:** la respuesta suma `eventoId` (para el botón de reintento). No es un dato de pago.
+- **Corregido tras la revisión:** apretar "Volver a consultar" o "Ya pagué: actualizar" varias veces seguidas lanzaba cadenas de consultas en paralelo y se saltaba el tope de 2 minutos. Ahora una bandera ignora los clics mientras hay una consulta en marcha y el botón se deshabilita. La prueba nueva falla contra la versión anterior (44 consultas en vez de 41, 4 esperas acumuladas, 86 en vez de 80) y pasa con el arreglo. El arreglo exacto lo sugirió el revisor; no se volvió a pasar por el revisor.
+- **Comprobación (51 casos, navegador simulado con relojes falsos):** enlace sin datos, sin token o sin id, 404 del servidor; la consulta lleva solo `{ id, t }`; si la dirección dice `approved` pero el servidor dice pendiente, se muestra pendiente y sin entradas; se actualiza sola al confirmarse; 40 consultas exactas y luego "tarda más de lo esperado"; servidor caído o sin conexión sigue intentando; confirmada de 3 entradas con 3 QR distintos y su resumen; entrada usada; copiar enlace (y el caso en que el navegador no deja); sin librería de QR se ven los códigos; pendiente sin QR; cada motivo de rechazo; texto del organizador con HTML mostrado como texto. Búsqueda de texto de 7.3: no aparecen `CBU`, `pagos@evently.com`, `getDoc`, "Descargar PDF" ni Firebase.
+- **Estado de las tareas:** **7.3 marcada.** **7.1 y 7.2 sin marcar**: piden abrir la pantalla con compras reales de prueba (pendiente, confirmada de 3 entradas, rechazada). **Falta que el usuario la mire**: no pude comprobar cómo se ve.
+- **Importante:** con esta pantalla y con `evento.html` el flujo de compra queda completo, pero **depende del servidor desplegado**. Hasta publicar las reglas de Firestore (sección 10), las compras viejas guardadas por el navegador no se pueden abrir con este enlace (no tienen token).
+- **Push:** **NO se sube**. Cambia lo que ve el público.
+
+---
+
 ## Pruebas guardadas en el repo (pedido del usuario, no es una tarea de `tasks.md`)
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
