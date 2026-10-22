@@ -8,7 +8,10 @@ const { MAX_ENTRADAS_POR_COMPRA } = require('./config');
 const ID_EVENTO = /^[A-Za-z0-9_-]{1,128}$/;
 // Letras (con tildes), espacios, apostrofe, punto y guion. Sin numeros ni simbolos raros.
 const NOMBRE = /^[\p{L}\p{M}][\p{L}\p{M}' .-]*$/u;
-const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+// Solo caracteres comunes de un correo (letras, numeros y . _ % + - antes de la @; letras, numeros, puntos y
+// guiones en el dominio). Se rechazan <, >, comillas, : y similares: el correo se muestra en el panel del
+// organizador y nunca debe poder llevar codigo. Quedan afuera los correos con tildes o con apostrofe.
+const CORREO = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
 
 function limpiarTexto(valor) {
   return typeof valor === 'string' ? valor.replace(/\s+/g, ' ').trim() : '';

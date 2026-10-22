@@ -13,6 +13,17 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Ajustes a 3.1 y 4.4: hallazgos al preparar el panel (sección 8)
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `server/validaciones.js`, `server/confirmacion.js`, `pruebas/12-validacion-del-pedido.js` (nuevo), `pruebas/05-confirmar-venta.js`, `pruebas/LEEME.md`
+- **Hallazgo de seguridad (3.1):** la validación del correo aceptaba cualquier símbolo salvo espacios y `@`, por ejemplo `<img/src=x/onerror=alert(1)>@a.bc`. El panel de ventas arma sus tablas con `innerHTML`, así que un comprador podía guardar código como "correo" y ejecutarlo en la sesión de un administrador. Ahora el correo solo admite letras, números y `. _ % + -` antes de la `@`, y letras, números, puntos y guiones en el dominio. **Contrapartida:** quedan rechazados los correos con tilde (`ñandu@…`) o con apóstrofe (`o'brien@…`). El panel además escapa todo lo que muestra (segunda capa).
+- **Hallazgo de reembolsos (4.4):** cuando se cobraba y no se podía entregar (`sin_stock`, `lote_inconsistente`, `evento_inexistente`), la venta quedaba con `requiereReembolso` pero sin guardar cuál fue el pago. Ahora guarda `mpPaymentId` también en esos casos, para devolverlo desde el panel de Mercado Pago sin buscarlo a mano. En un pago rechazado (no se cobró nada) no se guarda.
+- **Comprobación:** 56 casos nuevos de validación (correos con HTML, comillas, `:`, `/`, espacios, saltos de línea, tildes, dominios inválidos, nombres, cantidades, campos extra ignorados, cuerpos raros) y 2 casos nuevos de reembolso. Con la regla anterior, el correo con `<img…>` pasaba. Las 12 pruebas pasan.
+- **Push:** menor, se sube a `auto/pagos-mercadopago`.
+
+---
+
 ## Tareas 7.1, 7.2 y 7.3: pantalla de confirmación (`public/confirmacion.html`)
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`

@@ -79,6 +79,7 @@ const verificar = (nombre, condicion, detalle = '') => {
     const v = datos.ventas.V1;
     verificar('E1 pago rechazado: venta rechazada con motivo y detalle', r.resultado === 'rechazada' && v.estado === 'rechazada' && v.motivo === 'pago_rechazado' && v.motivoDetalle === 'cc_rejected_insufficient_amount');
     verificar('E2 el stock no cambia y no hay entradas', datos.eventos.Evt1.lotes[0].vendidas === 10 && v.entradas.length === 0 && v.requiereReembolso === false);
+    verificar('E2b pago rechazado (no se cobro nada): no se guarda ningun pago a reembolsar', v.mpPaymentId === undefined);
     // F. Reintento aprobado despues del rechazo
     const r2 = await aplicarPago(db, 'V1', pago({ id: 556 }));
     verificar('F reintento aprobado: la rechazada pasa a confirmada con entradas y stock', r2.resultado === 'confirmada' && datos.ventas.V1.estado === 'confirmada' && datos.ventas.V1.entradas.length === 3 && datos.eventos.Evt1.lotes[0].vendidas === 13 && datos.ventas.V1.motivo === null && datos.ventas.V1.motivoDetalle === null);
@@ -94,6 +95,7 @@ const verificar = (nombre, condicion, detalle = '') => {
     const v = datos.ventas.V1;
     verificar('H1 pago aprobado sin stock: rechazada con motivo sin_stock y reembolso pendiente', r.resultado === 'rechazada' && v.estado === 'rechazada' && v.motivo === 'sin_stock' && v.requiereReembolso === true);
     verificar('H2 no se emiten entradas y el lote no vende de mas', v.entradas.length === 0 && datos.eventos.Evt1.lotes[1].vendidas === 0);
+    verificar('H2b se guarda cual fue el pago a reembolsar (mpPaymentId), para devolverlo sin buscarlo a mano', v.mpPaymentId === '555', String(v.mpPaymentId));
     const r2 = await aplicarPago(db, 'V1', pago());
     verificar('H3 el mismo aviso repetido no cambia nada', r2.resultado === 'sin_cambio');
   }

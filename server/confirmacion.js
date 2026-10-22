@@ -129,13 +129,17 @@ async function aplicarPago(db, ventaId, pago) {
     }
 
     if (decision.accion === 'rechazar') {
-      tx.update(ventaRef, {
+      const cambios = {
         estado: 'rechazada',
         motivo: decision.motivo,
         motivoDetalle: decision.motivoDetalle || null,
         requiereReembolso: decision.requiereReembolso === true,
         fechaRechazo: FieldValue.serverTimestamp(),
-      });
+      };
+      // Si ya se cobro y no se puede entregar, se guarda CUAL fue el pago: el organizador lo necesita
+      // para devolverlo desde el panel de Mercado Pago sin tener que buscarlo a mano.
+      if (decision.requiereReembolso === true) cambios.mpPaymentId = String(pago.id);
+      tx.update(ventaRef, cambios);
       return { resultado: 'rechazada', motivo: decision.motivo };
     }
 
