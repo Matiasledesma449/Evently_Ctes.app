@@ -70,6 +70,8 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 - [x] 9.8 Vencimiento: dejar una compra pendiente más de 30 minutos y abrir su enlace. Se comprueba que aparece `rechazada` con motivo `vencida`. **Verificado (2026-10-22) con el vencimiento adelantado, no esperando 30 minutos: la venta de 9.5 guardó `venceEn` exactamente 30 minutos después de crearse; luego se le puso a mano una hora ya pasada solo a esa venta de prueba, y al consultarla por `/api/venta` (igual que lo hace el comprador) pasó a `rechazada` con motivo `vencida`. La respuesta no incluye el token ni datos del comprador.**
 - [ ] 9.9 Confirmar o ajustar los puntos abiertos del diseño con lo observado (`init_point` o `sandbox_init_point`, campo del monto, regla de `data.id`) y anotar el resultado en `design.md`. Se comprueba cuando `design.md` no tiene preguntas abiertas.
 
+> **Estado de la sección 9 (2026-10-22):** hechas 9.4, 9.5 y 9.8. Las pruebas con tarjeta de prueba (9.1, 9.2, 9.3), 9.6, 9.7 y 9.9 **no se probaron por decisión del usuario** (confía en que funcionan); quedan sin marcar porque no están verificadas. Con las credenciales de producción activas, las tarjetas de prueba no funcionan: hacerlas exige volver a las credenciales de prueba en Vercel y luego restaurar las reales.
+
 ## 10. Reglas de Firestore, documentación y cierre
 
 - [x] 10.1 Preparar el texto final de las reglas de `ventas` y `eventos` según el diseño y mostrarlo al usuario antes de publicarlo. Se comprueba cuando el usuario aprueba el texto.
