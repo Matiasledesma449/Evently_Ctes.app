@@ -96,6 +96,7 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onSnapshot, query, collection, where, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { resumenDeVentas, soloConfirmadas } from "../shared/ventas-utils.js";
 
         const kpiContainer = document.getElementById('kpiContainer');
         const tituloDashboard = document.getElementById('tituloDashboard');
@@ -151,7 +152,11 @@
             });
         }
 
-        function actualizarKPIs(evento, ventas) {
+        function actualizarKPIs(evento, todasLasVentas) {
+            // La recaudacion y las entradas vendidas cuentan SOLO ventas confirmadas. Las pendientes se
+            // muestran aparte como "pendientes de pago" y las rechazadas no suman a nada.
+            const pendientesDePago = resumenDeVentas(todasLasVentas).pendientes;
+            const ventas = soloConfirmadas(todasLasVentas);
             const lotes = evento.lotes || [];
             const capacidadTotal = lotes.reduce((sum, l) => sum + (l.disponibles || 0), 0);
             const vendidasPorLote = lotes.reduce((sum, l) => sum + (l.vendidas || 0), 0);
@@ -234,15 +239,24 @@
                         <span class="material-symbols-outlined text-violet-600">payments</span>
                     </div>
                     <p class="text-3xl font-bold text-violet-600 mt-2">$${totalRecaudado.toLocaleString()}</p>
-                    <span class="text-xs text-gray-400">${totalTransacciones} transacciones</span>
+                    <span class="text-xs text-gray-400">${totalTransacciones} ventas confirmadas</span>
                 </div>
 
                 <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
                     <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Total transacciones</span>
+                        <span class="text-sm text-gray-500">Ventas confirmadas</span>
                         <span class="material-symbols-outlined text-violet-600">receipt_long</span>
                     </div>
                     <p class="kpi-value text-gray-800 mt-2">${totalTransacciones}</p>
+                </div>
+
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">Pendientes de pago</span>
+                        <span class="material-symbols-outlined text-yellow-600">hourglass_top</span>
+                    </div>
+                    <p class="kpi-value text-yellow-600 mt-2">${pendientesDePago}</p>
+                    <span class="text-xs text-gray-400">no suman a la recaudación</span>
                 </div>
 
                 <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
