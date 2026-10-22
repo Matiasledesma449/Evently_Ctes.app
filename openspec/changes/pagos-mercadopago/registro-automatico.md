@@ -13,6 +13,23 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Tarea 4.6: confirmación segura ante avisos repetidos y errores temporales
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** solo `tasks.md` (4.6 marcada) y este registro. No hizo falta código nuevo: la idempotencia y el 500 ya salen del diseño de 4.4 (la transacción lee la venta y no hace nada si ya está `confirmada`; cualquier error llega al `catch` del webhook y responde 500).
+- **Comprobación (flujo completo: firma, consulta del pago, venta y transacción, con base de datos falsa que imita el bloqueo optimista de Firestore):**
+  - El mismo pago aprobado tres veces seguidas deja una sola confirmación: mismos códigos, 2 entradas, stock descontado una vez.
+  - Tres avisos del mismo pago al mismo tiempo: uno confirma y dos no cambian nada (la transacción se repitió al chocar).
+  - Dos ventas pagan la última entrada a la vez: una se confirma y la otra queda `rechazada` con `sin_stock`; el lote vende 1 de 1.
+  - Cinco compras simultáneas por 2 entradas: se confirman exactamente 2, las otras 3 quedan `rechazada` con reembolso pendiente, 2 entradas vendidas y códigos distintos.
+  - Error de la base de datos al confirmar: responde 500, la venta sigue `pendiente`, sin entradas ni `mpPaymentId`, stock intacto, nada escrito, y el cuerpo de la respuesta no filtra detalles. El reintento posterior confirma normalmente.
+  - Base caída al leer: 500 y nada escrito.
+- **Límite de esta prueba:** la base falsa imita el comportamiento de Firestore pero no es Firestore. La confirmación real de que no se duplica nada queda para las pruebas 9.6 y 9.7.
+- **Sin verificar:** el spec pide responder a Mercado Pago dentro de 22 segundos. Las llamadas a Mercado Pago cortan a los 10 segundos y la transacción es corta, pero no se configuró ni se verificó el tiempo máximo de la función en Vercel (`vercel.json` no lo define).
+- **Push:** menor, se sube a `auto/pagos-mercadopago`.
+
+---
+
 ## Tarea 4.5: manejar los demás casos de estado
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
@@ -52,7 +69,7 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 - **Archivos:** `server/webhook.js` (nuevo), `api/mp-webhook.js` (nuevo), `server/mercadopago.js` (se agrega `obtenerPago`)
 - **Estado de la tarea:** código listo y probado con Mercado Pago simulado, pero **4.2 queda sin marcar**: su criterio es "Simular notificación" desde el panel de Mercado Pago, que necesita el sitio desplegado (igual que 3.2, 3.3 y 3.5).
 - **Comprobación:** 14 casos con `node -e` y Mercado Pago simulado, sin red ni base de datos. Firma incorrecta, ausente, con `data.id` repetido o de otro pago: 401 y sin consultar a Mercado Pago. Aviso que no es de pago, sin tipo o con id no numérico: 200 y sin consultar. Pago aprobado (formato actual, formato viejo `topic` o tipo en el cuerpo): 200 y una consulta `GET /v1/payments/{id}` con el token. Pago inexistente (404): 200 y nada cambia. Mercado Pago caído o sin conexión: 500 para que reintente. Sin la clave del aviso: 500 y sin consultas. Ningún secreto aparece en los registros ni en las respuestas.
-- **Estado del endpoint:** todavía NO confirma ventas. Solo consulta el pago. No se debe pasar a `main` hasta terminar 4.6.
+- **Estado del endpoint (al momento de esta tarea):** solo consultaba el pago. Desde las tareas 4.4 y 4.5 ya confirma ventas. **No pasar a `main` hasta hacer las pruebas reales** (4.2 con "Simular notificación", 4.4 y la sección 9 con Mercado Pago de prueba): hasta ahora todo se probó con Mercado Pago y base de datos simulados.
 - **Push:** menor (archivos nuevos del change y una función agregada), se sube a `auto/pagos-mercadopago`.
 - **Decisión tomada:** un pago que Mercado Pago dice que no existe devuelve 200 (reintentar no lo arregla). Cualquier otro fallo de consulta devuelve 500.
 

@@ -32,7 +32,7 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 - [x] 4.3 Comparar el pago con la venta (`external_reference`, moneda ARS, monto con tolerancia de un centavo) y registrar el motivo si no coincide. Se comprueba con `node -e` y pagos de ejemplo: monto distinto, moneda distinta y venta inexistente no confirman nada.
 - [ ] 4.4 Confirmar la venta en una transacción: estado `confirmada`, suma de vendidas al lote, método de pago real (Crédito, Débito, Prepaga o Dinero en cuenta), entradas con códigos aleatorios distintos y `mpPaymentId`. Se comprueba con la prueba completa de la tarea 9.1.
 - [x] 4.5 Manejar los demás casos: pendiente o en proceso se queda `pendiente`; rechazado o cancelado pasa a `rechazada` con motivo; una `rechazada` pasa a `confirmada` si llega un aprobado y hay stock; una `confirmada` no cambia; sin stock queda `rechazada` con `sin_stock` y `requiereReembolso`. Se comprueba con `node -e` y una tabla de casos sobre la función que decide el estado.
-- [ ] 4.6 Hacer la confirmación segura ante avisos repetidos y responder 500 en errores temporales para que Mercado Pago reintente. Se comprueba con `node -e`: procesar dos veces el mismo pago aprobado deja una sola confirmación, y un error simulado de base de datos devuelve 500 sin dejar la venta a medias.
+- [x] 4.6 Hacer la confirmación segura ante avisos repetidos y responder 500 en errores temporales para que Mercado Pago reintente. Se comprueba con `node -e`: procesar dos veces el mismo pago aprobado deja una sola confirmación, y un error simulado de base de datos devuelve 500 sin dejar la venta a medias.
 
 ## 5. Función `/api/venta`
 
