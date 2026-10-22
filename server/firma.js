@@ -43,13 +43,22 @@ function verificarFirma({ xSignature, xRequestId, dataId, secreto } = {}) {
   // Mercado Pago pide el id en minusculas si tiene letras; el de un pago es numerico y no cambia
   const id = String(dataId).trim().toLowerCase();
   const manifiesto = `id:${id};request-id:${xRequestId.trim()};ts:${ts};`;
-  const esperada = crypto.createHmac('sha256', secreto).update(manifiesto).digest('hex');
+  // Se quitan espacios y saltos de linea de los bordes: al pegar la clave en Vercel suelen colarse
+  const clave = secreto.trim();
+  const esperada = crypto.createHmac('sha256', clave).update(manifiesto).digest('hex');
 
   // timingSafeEqual exige el mismo largo: si difiere, ya es distinta (el largo del hash no es secreto)
   const recibida = Buffer.from(v1.toLowerCase(), 'utf8');
   const calculada = Buffer.from(esperada, 'utf8');
-  if (recibida.length !== calculada.length) return { ok: false, motivo: 'firma_incorrecta' };
-  if (!crypto.timingSafeEqual(recibida, calculada)) return { ok: false, motivo: 'firma_incorrecta' };
+  // Solo numeros (largos), nunca la clave ni la firma: sirven para ubicar el problema en los registros
+  const diagnostico = {
+    largoClave: clave.length,
+    largoClaveSinRecortar: secreto.length,
+    largoFirmaRecibida: recibida.length,
+    largoIdDelPago: id.length,
+  };
+  if (recibida.length !== calculada.length) return { ok: false, motivo: 'firma_incorrecta', diagnostico };
+  if (!crypto.timingSafeEqual(recibida, calculada)) return { ok: false, motivo: 'firma_incorrecta', diagnostico };
 
   return { ok: true };
 }
