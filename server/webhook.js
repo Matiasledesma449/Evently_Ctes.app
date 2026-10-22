@@ -49,7 +49,7 @@ async function procesarAviso(peticion, deps = {}) {
       secreto: MP_WEBHOOK_SECRET,
     });
     if (!firma.ok) {
-      registrar('[mp-webhook] Aviso rechazado por la firma', { motivo: firma.motivo });
+      registrar('[mp-webhook] Aviso rechazado por la firma', { motivo: firma.motivo, ...firma.diagnostico });
       return fallo(401, 'NO_AUTORIZADO', 'No autorizado.');
     }
 
