@@ -5,90 +5,7 @@
 // 1. SIDEBAR COLAPSABLE (estilo apps de IA)
 // =====================================================
 (function configurarSidebarColapsable() {
-    if (!document.getElementById('sidebar-colapsable-style')) {
-        const style = document.createElement('style');
-        style.id = 'sidebar-colapsable-style';
-        style.textContent = `
-            aside.sidebar-principal {
-                transition: width 0.25s ease;
-                overflow: visible;
-                position: relative;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal {
-                width: 76px !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal > div:first-child {
-                display: none !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal nav a {
-                justify-content: center !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                font-size: 0 !important;
-                position: relative;
-                gap: 0 !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal nav a .material-symbols-outlined {
-                font-size: 24px !important;
-                margin: 0 !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal nav a .badge-no-leidos {
-                font-size: 10px !important;
-                position: absolute !important;
-                top: 6px;
-                right: 8px;
-                margin: 0 !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal .link-logout {
-                justify-content: center !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                font-size: 0 !important;
-                gap: 0 !important;
-            }
-            body.sidebar-colapsado aside.sidebar-principal .link-logout .material-symbols-outlined {
-                font-size: 24px !important;
-                margin: 0 !important;
-            }
-
-            #btnToggleSidebar {
-                position: absolute;
-                top: 12px;
-                right: -14px;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                background: white;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 60;
-                transition: all 0.2s;
-            }
-            #btnToggleSidebar:hover {
-                background: #f5f3ff;
-                border-color: #7c3aed;
-            }
-            #btnToggleSidebar .material-symbols-outlined {
-                font-size: 16px !important;
-                color: #7c3aed;
-            }
-
-            @media (max-width: 1023px) {
-                #btnToggleSidebar { display: none !important; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
+    // Los estilos del menú achicado viven ahora en shared/admin-shell.css (se cargan en el <head>).
 
     function initSidebar() {
         const aside = document.querySelector('aside');
@@ -117,6 +34,9 @@
             localStorage.setItem('sidebarColapsado', estaColapsado);
             btn.querySelector('span').textContent = estaColapsado ? 'chevron_right' : 'chevron_left';
         });
+
+        // Páginas que todavía traen su propio menú: la animación de ancho corre recién después del primer dibujo
+        requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('menu-listo')));
     }
 
     // ✅ Ejecutar cuando el DOM esté listo (o inmediatamente si ya lo está)
@@ -135,9 +55,6 @@ function aplicarRolVisual(rol) {
     const esOrganizacion = rol === 'organizacion';
     document.querySelectorAll('[data-role="superadmin"]').forEach(enlace => enlace.classList.toggle('hidden', !esAdmin));
     document.querySelectorAll('[data-role="organizacion"]').forEach(enlace => enlace.classList.toggle('hidden', !esOrganizacion));
-    document.querySelectorAll('[data-nav-key="superadmin"] > span:last-child').forEach(label => {
-        label.textContent = 'Panel Global';
-    });
 
     const nuevoHref = esAdmin ? 'mensajes.html' : 'soporte.html';
     document.querySelectorAll('.link-soporte, .link-soporte-mobile').forEach(enlace => {

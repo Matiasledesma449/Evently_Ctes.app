@@ -4,8 +4,8 @@ Convención: "se comprueba" dice cómo verificarlo a mano. Las pruebas en Chrome
 
 ## 1. Menú compartido, probado en una sola página (Ventas)
 
-- [ ] 1.1 Crear el archivo compartido del menú (menú lateral y menú de celular con todas las secciones, los roles, los avisos de no leídos y el botón de cerrar sesión) conservando las clases y atributos que hoy usa `menu-rol.js`. Se comprueba abriendo el archivo y viendo que contiene las secciones de la tabla de nombres del diseño y ninguna sección que hoy no exista. El archivo se llama `shared/menu-admin.js`.
-- [ ] 1.2 Mover a `shared/admin-shell.css` los estilos del menú achicado que hoy inyecta `menu-rol.js`, sin cambiar colores ni medidas. Se comprueba comparando los valores del CSS con los del script y que `menu-rol.js` ya no los inyecta.
+- [x] 1.1 Crear el archivo compartido del menú (menú lateral y menú de celular con todas las secciones, los roles, los avisos de no leídos y el botón de cerrar sesión) conservando las clases y atributos que hoy usa `menu-rol.js`. Se comprueba abriendo el archivo y viendo que contiene las secciones de la tabla de nombres del diseño y ninguna sección que hoy no exista. El archivo se llama `shared/menu-admin.js`.
+- [x] 1.2 Mover a `shared/admin-shell.css` los estilos del menú achicado que hoy inyecta `menu-rol.js`, sin cambiar colores ni medidas. Se comprueba comparando los valores del CSS con los del script y que `menu-rol.js` ya no los inyecta.
 - [ ] 1.3 Migrar solo `admin/ventas.html`: sacar su copia del menú y usar el archivo compartido, indicando que su sección es "ventas". Se comprueba en Chrome (con el usuario ya logueado): Ventas se ve igual que antes, con la sección Ventas resaltada y las demás secciones del rol.
 - [ ] 1.4 Probar el parpadeo en esa página: con el menú achicado, navegar entre Ventas y otra página que todavía tiene el menú viejo. Se comprueba que Ventas nace achicada, sin mostrar el menú ancho. Si la transición entre páginas sigue molestando, aplicar la decisión 3 del diseño.
 
