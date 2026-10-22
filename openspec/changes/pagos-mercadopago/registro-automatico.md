@@ -27,7 +27,7 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 - **Comprobación (59 casos):** reglas compartidas (resumen con 2 confirmadas, 1 pendiente, 2 rechazadas y 1 venta vieja; textos de motivos; escape); la pantalla de Ventas real con un navegador simulado (filtros de estado y de método, cifras, aviso de reembolso, detalle de una pendiente sin botón de confirmar, venta vieja, y datos con HTML mostrados como texto); y las funciones reales de cifras de Dashboard, Reportes y Panel Global extraídas de sus páginas. Para comprobar que la prueba sirve, se corrió contra versiones rotas a propósito (sin la regla de "solo confirmadas"): falla en 8 puntos, por ejemplo mostrando $89.999 en vez de $25.000.
 - **Estado de las tareas:** **8.1, 8.2 y 8.3 quedan sin marcar**: sus criterios piden ver el panel real con ventas de prueba de cada estado, y esto se probó con datos y navegador simulados. **Falta que el usuario mire las cuatro pantallas** con roles reales y que verifique cómo se ven.
 - **No se tocó:** las reglas de acceso a `ventas` (sección 10) ni el aislamiento por organización: hoy el panel sigue leyendo todas las ventas.
-- **Push:** **NO se sube** (cambia pantallas del panel).
+- **Push:** primero se dejó solo en local (cambia pantallas del panel). El 2026-10-22 el usuario delegó la decisión y se subió a `auto/pagos-mercadopago` para respaldarlo y poder revisarlo. `main` no se tocó.
 
 ---
 
