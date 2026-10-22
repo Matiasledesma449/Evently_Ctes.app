@@ -42,6 +42,12 @@ async function crearVentaPendiente(db, { eventoId, evento, pedido, calculo, ahor
   return { id: ref.id, token, venceEn };
 }
 
+// Lee una venta. Devuelve sus datos o null si no existe.
+async function leerVenta(db, ventaId) {
+  const snap = await db.collection('ventas').doc(ventaId).get();
+  return snap.exists ? snap.data() : null;
+}
+
 // Guarda el identificador de la preferencia de Mercado Pago en la venta.
 async function guardarPreferencia(db, ventaId, preferenceId) {
   await db.collection('ventas').doc(ventaId).update({ mpPreferenceId: preferenceId });
@@ -56,4 +62,4 @@ async function marcarRechazada(db, ventaId, motivo) {
   });
 }
 
-module.exports = { nuevoToken, crearVentaPendiente, guardarPreferencia, marcarRechazada };
+module.exports = { nuevoToken, crearVentaPendiente, leerVenta, guardarPreferencia, marcarRechazada };

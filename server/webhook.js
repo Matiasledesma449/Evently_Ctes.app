@@ -11,6 +11,9 @@
 const { requerir, VARIABLES, ConfigError } = require('./config');
 const { verificarFirma } = require('./firma');
 const { obtenerPago, MercadoPagoError } = require('./mercadopago');
+const { ventaIdDelPago, compararPagoConVenta } = require('./pagos');
+const { leerVenta } = require('./ventas');
+const { obtenerDb } = require('./firestore');
 
 const ok = (cuerpo) => ({ status: 200, cuerpo: { ok: true, ...cuerpo } });
 const fallo = (status, codigo, mensaje) => ({ status, cuerpo: { ok: false, error: { codigo, mensaje } } });
@@ -28,7 +31,7 @@ function tipoDeAviso(query, body) {
 
 // peticion: { query, headers, body }. Los encabezados llegan en minusculas.
 async function procesarAviso(peticion, deps = {}) {
-  const { fetchFn = fetch, registrar = console.error } = deps;
+  const { db: dbInyectada, fetchFn = fetch, registrar = console.error } = deps;
   const { query = {}, headers = {}, body } = peticion || {};
 
   try {
@@ -72,9 +75,25 @@ async function procesarAviso(peticion, deps = {}) {
       return fallo(500, 'ERROR_TEMPORAL', 'No pudimos procesar el aviso. Reintentá.');
     }
 
-    // 4) (tareas 4.3 en adelante) comparar el pago con la venta y confirmar o rechazar.
-    //    Por ahora solo se consulta el pago: ninguna venta se modifica.
-    return ok({ resultado: 'pago_consultado', estadoPago: pago && pago.status });
+    // 4) A que venta pertenece el pago: la indica `external_reference` (la pusimos al crear la preferencia)
+    const ventaId = ventaIdDelPago(pago);
+    if (!ventaId) {
+      registrar('[mp-webhook] Pago sin referencia de venta valida', { pagoId: dataId.trim() });
+      return ok({ resultado: 'sin_venta' });
+    }
+    const db = dbInyectada || obtenerDb();
+    const venta = await leerVenta(db, ventaId);
+
+    // 5) Debe coincidir TODO (venta existente, moneda y monto). Si no, no se confirma nada:
+    //    se registra el motivo y se responde 200 (reintentar no cambiaria el resultado).
+    const comparacion = compararPagoConVenta(pago, ventaId, venta);
+    if (!comparacion.ok) {
+      registrar('[mp-webhook] El pago no coincide con la venta', { motivo: comparacion.motivo, ventaId, pagoId: dataId.trim() });
+      return ok({ resultado: comparacion.motivo === 'venta_inexistente' ? 'venta_inexistente' : 'no_coincide' });
+    }
+
+    // 6) (tareas 4.4 en adelante) confirmar o rechazar la venta. Por ahora ninguna venta se modifica.
+    return ok({ resultado: 'pago_verificado' });
   } catch (e) {
     if (e instanceof ConfigError) {
       // Se registra QUE variables faltan (nunca sus valores)

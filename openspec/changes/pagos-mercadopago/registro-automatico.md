@@ -13,6 +13,17 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Tarea 4.3: comparar el pago con la venta
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `server/pagos.js` (nuevo), `server/webhook.js` (conecta la comparación), `server/ventas.js` (se agrega `leerVenta`), `tasks.md` (4.3 marcada)
+- **Comprobación:** 21 casos de la función pura con `node -e` (monto con un centavo de diferencia pasa; dos centavos, otra moneda, venta inexistente, referencia de otra venta o con caracteres de ruta no pasan) y 8 casos del flujo completo con una base de datos falsa en memoria: en ningún caso se escribe en la base, el motivo queda en el registro del servidor y una base caída devuelve 500. La prueba de 4.2 se repitió y sigue pasando. Se quitó `estadoPago` de la respuesta (sugerencia del revisor).
+- **Cómo se probó sin instalar nada:** esta carpeta no tiene `node_modules`, así que las pruebas reemplazan `firebase-admin` por un doble en memoria. Las pruebas viven fuera del repo.
+- **Push:** menor, se sube a `auto/pagos-mercadopago`.
+- **Pregunta para el usuario:** el spec dice que si el monto no coincide la venta "queda marcada para revisión". Hoy solo se registra el motivo en el log del servidor. Marcarla en la venta (por ejemplo `requiereRevision: true`) agrega un campo al modelo de datos. ¿Se agrega?
+
+---
+
 ## Tarea 4.2: ignorar avisos que no son de pagos y consultar el pago
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
