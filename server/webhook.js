@@ -13,6 +13,7 @@ const { verificarFirma } = require('./firma');
 const { obtenerPago, MercadoPagoError } = require('./mercadopago');
 const { ventaIdDelPago, compararPagoConVenta } = require('./pagos');
 const { leerVenta } = require('./ventas');
+const { aplicarPago } = require('./confirmacion');
 const { obtenerDb } = require('./firestore');
 
 const ok = (cuerpo) => ({ status: 200, cuerpo: { ok: true, ...cuerpo } });
@@ -92,8 +93,14 @@ async function procesarAviso(peticion, deps = {}) {
       return ok({ resultado: comparacion.motivo === 'venta_inexistente' ? 'venta_inexistente' : 'no_coincide' });
     }
 
-    // 6) (tareas 4.4 en adelante) confirmar o rechazar la venta. Por ahora ninguna venta se modifica.
-    return ok({ resultado: 'pago_verificado' });
+    // 6) Confirmar o rechazar la venta, todo dentro de una transaccion (server/confirmacion.js).
+    //    Si falla, el error llega al catch de abajo y se responde 500 para que Mercado Pago reintente.
+    const aplicado = await aplicarPago(db, ventaId, pago);
+    if (aplicado.pagoDuplicado) {
+      // La venta ya estaba confirmada con otro pago: el comprador pago dos veces y hay que devolverle uno
+      registrar('[mp-webhook] Pago duplicado en una venta ya confirmada: revisar reembolso', { ventaId, pagoId: dataId.trim() });
+    }
+    return ok({ resultado: aplicado.resultado });
   } catch (e) {
     if (e instanceof ConfigError) {
       // Se registra QUE variables faltan (nunca sus valores)
