@@ -44,7 +44,7 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 
 - [ ] 6.1 Reemplazar el paso 2 por nombre, apellido, correo, resumen de la compra, aviso visible de modo de prueba y un botón "Pagar con Mercado Pago". Se comprueba abriendo un evento: no hay campos de tarjeta, billetera ni efectivo.
 - [ ] 6.2 Llamar a `/api/crear-pago`, mostrar los errores en pantalla en lugar de `alert()`, deshabilitar el botón mientras se procesa y redirigir al enlace de pago. Se comprueba con un correo inválido y con más entradas que las disponibles: aparece el mensaje en pantalla, y con datos válidos el navegador va a Mercado Pago.
-- [ ] 6.3 Eliminar de `evento.html` la creación de la venta, el descuento de stock, los recargos y el correo fijo. Se comprueba con una búsqueda de texto en el archivo: no aparecen `addDoc`, `updateDoc`, `sin-correo@evently.com` ni `serverTimestamp`.
+- [x] 6.3 Eliminar de `evento.html` la creación de la venta, el descuento de stock, los recargos y el correo fijo. Se comprueba con una búsqueda de texto en el archivo: no aparecen `addDoc`, `updateDoc`, `sin-correo@evently.com` ni `serverTimestamp`.
 
 ## 7. Pantalla de confirmación (`public/confirmacion.html`)
 

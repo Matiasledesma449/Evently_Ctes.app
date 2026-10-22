@@ -13,6 +13,22 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Tareas 6.1, 6.2 y 6.3: pantalla de compra (`public/evento.html`)
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `public/evento.html` (reescrito casi completo), `tasks.md` (solo 6.3 marcada)
+- **Qué cambió:** el paso 2 ya no pide método de pago, tarjeta, billetera ni efectivo. Pide nombre, apellido y correo, muestra el resumen (evento, lote, cantidad, total), el aviso de modo de prueba (`#avisoModoPrueba`, se puede borrar cuando Mercado Pago pase a modo real) y el botón "Pagar con Mercado Pago". Al enviar llama a `POST /api/crear-pago` y abre el enlace de pago que devuelve el servidor.
+- **Qué se eliminó:** la creación de la venta, el descuento de stock, los recargos por cuotas, el correo fijo `sin-correo@evently.com`, los códigos de entrada hechos en el navegador, los `alert()` y los estilos de los métodos de pago. La página ahora solo **lee** el evento (`getDoc`); no escribe nada en Firestore.
+- **Qué viaja en el pedido:** solo `eventoId`, `loteIndex`, `loteNombre`, `cantidad`, `nombre`, `apellido`, `correo`. Ningún precio, monto ni estado. El total en pantalla es solo informativo: el precio real lo calcula el servidor.
+- **Errores en pantalla (sin `alert`):** un mensaje junto a cada campo inválido (con foco en el primero según el orden de la página) o un mensaje general (sin stock, Mercado Pago no responde, sin conexión, respuesta inválida). Los mensajes se escriben con `textContent`, nunca como HTML. En el paso 1 también hay avisos en pantalla para lote agotado o más entradas de las que quedan.
+- **Protecciones del botón:** se deshabilita mientras procesa (un doble o triple clic no crea más de una compra) y se rehabilita si el comprador vuelve con "atrás" desde Mercado Pago. Solo se abre un enlace `https`.
+- **Comprobación (37 casos):** HTML — solo 3 campos en el paso 2, sin campos de tarjeta/billetera/efectivo, aviso de prueba presente, ninguna de las palabras prohibidas por 6.3 (`addDoc`, `updateDoc`, `sin-correo@evently.com`, `serverTimestamp`). JavaScript real de la página corrido con un navegador simulado, un `fetch` falso y un Firestore falso — el pedido no lleva precio, errores por campo, error de stock, Mercado Pago caído, respuesta no JSON, sin conexión, enlaces `javascript:`/`http:` rechazados, doble clic, botón "atrás", y que el JS solo use ids que existen en el HTML.
+- **Estado de las tareas:** **6.3 marcada.** **6.1 y 6.2 sin marcar**: piden abrir un evento en el navegador y llamar al servidor desplegado. **Falta que el usuario mire la pantalla**: no pude comprobar cómo se ve (estilos y disposición).
+- **Push:** **NO se sube.** Cambia lo que ve el público (no es una acción menor). Queda como commit local, pendiente de que el usuario lo revise.
+- **Visto y no tocado (ya estaba así):** `renderEvento` y `renderLotes` arman el HTML con datos del evento (`nombre`, `descripcion`, `lugar`, `imagen`) sin escapar. Si un organizador guarda texto con HTML, se ejecuta en la página del comprador. Conviene corregirlo en un cambio aparte.
+
+---
+
 ## Tareas 5.1, 5.2 y 5.3: `/api/venta` (consulta de la compra)
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`

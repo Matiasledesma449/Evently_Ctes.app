@@ -12,18 +12,8 @@
         .lote-selected { border-color: #7c3aed; background: #f5f3ff; }
         .step { display: none; }
         .step.active { display: block; }
-        .card-input:focus { border-color: #7c3aed; outline: none; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
-        .metodo-option { cursor: pointer; transition: all 0.2s; }
-        .metodo-option:hover { border-color: #7c3aed; background: #f5f3ff; }
-        .metodo-option.selected { border-color: #7c3aed; background: #f5f3ff; }
-        .billetera-option { cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-        .billetera-option:hover { border-color: #7c3aed; background: #f5f3ff; }
-        .billetera-option.selected { border-color: #7c3aed; background: #f5f3ff; }
-        .tarjeta-option { cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-        .tarjeta-option:hover { border-color: #7c3aed; background: #f5f3ff; }
-        .tarjeta-option.selected { border-color: #7c3aed; background: #f5f3ff; }
-        .recargo-badge { font-size: 0.7rem; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 9999px; }
-        .cuota-info { font-size: 0.8rem; color: #6b7280; }
+        .campo:focus { border-color: #7c3aed; outline: none; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
+        .campo[aria-invalid="true"] { border-color: #dc2626; }
     </style>
 </head>
 <body>
@@ -57,221 +47,73 @@
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
                 <div class="flex items-center border border-gray-300 rounded-lg w-32">
-                    <button id="btnMenos" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg">-</button>
+                    <button type="button" id="btnMenos" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg">-</button>
                     <input id="cantidadInput" type="number" value="1" min="1" max="10" class="w-full text-center border-none focus:ring-0 outline-none" />
-                    <button id="btnMas" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-r-lg">+</button>
+                    <button type="button" id="btnMas" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-r-lg">+</button>
                 </div>
             </div>
-            <button id="btnContinuarPaso1" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-full transition shadow-md">
+            <p id="errorPaso1" role="alert" class="hidden mb-3 text-sm text-red-600"></p>
+            <button type="button" id="btnContinuarPaso1" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-full transition shadow-md">
                 Continuar con el pago
             </button>
         </div>
 
-        <!-- PASO 2: Selección de método de pago y datos -->
+        <!-- PASO 2: Datos del comprador y pago con Mercado Pago.
+             Aca NO se piden datos de tarjeta, billetera ni efectivo: eso se carga solo en la pagina de Mercado Pago. -->
         <div id="step2" class="step mt-8 bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Método de pago</h3>
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Tus datos</h3>
 
-            <!-- Opciones de pago -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="metodosContainer">
-                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center selected" data-metodo="Efectivo">
-                    <span class="material-symbols-outlined text-2xl">payments</span>
-                    <p class="text-sm font-medium">Efectivo</p>
-                </div>
-                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center" data-metodo="Transferencia">
-                    <span class="material-symbols-outlined text-2xl">account_balance</span>
-                    <p class="text-sm font-medium">Transferencia</p>
-                </div>
-                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center" data-metodo="Credito">
-                    <span class="material-symbols-outlined text-2xl">credit_card</span>
-                    <p class="text-sm font-medium">Crédito</p>
-                </div>
-                <div class="metodo-option border border-gray-300 rounded-lg p-3 text-center" data-metodo="Debito">
-                    <span class="material-symbols-outlined text-2xl">credit_card</span>
-                    <p class="text-sm font-medium">Débito</p>
-                </div>
+            <!-- Aviso de modo de prueba: se puede quitar este bloque cuando Mercado Pago pase a modo real -->
+            <div id="avisoModoPrueba" role="note" class="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-5 text-left">
+                <p class="text-sm font-semibold text-yellow-800">Modo de prueba</p>
+                <p class="text-sm text-gray-700 mt-1">Los pagos de este sitio son de prueba: no se cobra dinero real. No uses tus tarjetas ni tus datos reales; usá las tarjetas de prueba de Mercado Pago.</p>
             </div>
 
-            <!-- Formularios dinámicos -->
-            <div id="formularioPago">
-                <!-- 1. EFECTIVO -->
-                <div id="pagoEfectivo" class="pago-detalle">
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-left">
-                        <p class="text-sm text-yellow-800"><strong>Pago en efectivo</strong></p>
-                        <p class="text-sm text-gray-700 mt-1">Puedes pagar en la boletería del evento el día del evento. Presenta tu DNI y el código de reserva.</p>
-                        <p class="text-sm text-gray-700 mt-1">📍 <strong>Punto de pago:</strong> Boletería del evento</p>
-                        <p class="text-sm text-gray-700">⏰ <strong>Horario:</strong> 2 horas antes del inicio</p>
+            <form id="formCompra" novalidate class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="inputNombre" class="block text-sm font-medium text-gray-700">Nombre</label>
+                        <input type="text" id="inputNombre" name="nombre" autocomplete="given-name" maxlength="60" required aria-describedby="errorNombre"
+                               class="campo w-full border border-gray-300 rounded-lg px-4 py-2 mt-1" />
+                        <p id="errorNombre" class="hidden mt-1 text-xs text-red-600"></p>
+                    </div>
+                    <div>
+                        <label for="inputApellido" class="block text-sm font-medium text-gray-700">Apellido</label>
+                        <input type="text" id="inputApellido" name="apellido" autocomplete="family-name" maxlength="60" required aria-describedby="errorApellido"
+                               class="campo w-full border border-gray-300 rounded-lg px-4 py-2 mt-1" />
+                        <p id="errorApellido" class="hidden mt-1 text-xs text-red-600"></p>
                     </div>
                 </div>
-
-                <!-- 2. TRANSFERENCIA (con billeteras virtuales) -->
-                <div id="pagoTransferencia" class="pago-detalle" style="display:none;">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
-                        <p class="text-sm text-blue-800 font-semibold">Selecciona tu billetera virtual</p>
-                        <p class="text-xs text-gray-600 mt-1">Al hacer clic en una billetera, serás redirigido a la aplicación para completar el pago.</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                            <!-- Mercado Pago -->
-                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="mercadopago">
-                                <span class="material-symbols-outlined text-3xl text-blue-500">payments</span>
-                                <p class="text-xs font-medium mt-1">Mercado Pago</p>
-                            </div>
-                            <!-- Ualá -->
-                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="uala">
-                                <span class="material-symbols-outlined text-3xl text-purple-600">account_balance_wallet</span>
-                                <p class="text-xs font-medium mt-1">Ualá</p>
-                            </div>
-                            <!-- Brubank -->
-                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="brubank">
-                                <span class="material-symbols-outlined text-3xl text-orange-500">savings</span>
-                                <p class="text-xs font-medium mt-1">Brubank</p>
-                            </div>
-                            <!-- Tarjeta Naranja -->
-                            <div class="billetera-option border border-gray-300 rounded-lg p-3 text-center" data-billetera="tarjetanaranja">
-                                <span class="material-symbols-outlined text-3xl text-orange-600">credit_card</span>
-                                <p class="text-xs font-medium mt-1">Tarjeta Naranja</p>
-                            </div>
-                        </div>
-                        <div id="mensajeBilletera" class="mt-3 text-sm text-gray-700 hidden">
-                            <span class="font-semibold">Billetera seleccionada:</span> <span id="billeteraSeleccionadaNombre">-</span>
-                            <br>
-                            <span class="text-xs text-gray-500">Monto a pagar: <span id="montoBilletera" class="font-bold text-violet-600">$0</span></span>
-                            <br>
-                            <button id="btnPagarConBilletera" class="mt-2 bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full text-sm font-medium transition">
-                                Pagar con esta billetera
-                            </button>
-                        </div>
-                        <div class="mt-3 text-xs text-gray-500">
-                            * Al hacer clic en "Pagar con esta billetera" se simulará el pago. En producción, se integraría con la API correspondiente.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. CRÉDITO -->
-                <div id="pagoCredito" class="pago-detalle" style="display:none;">
-                    <div class="bg-white border border-gray-200 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">Elige tu tarjeta de crédito</h4>
-                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center selected" data-tarjeta="visa">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Visa</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="mastercard">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Mastercard</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="amex">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Amex</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="cabal">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Cabal</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="naranja">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Naranja</p>
-                            </div>
-                        </div>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Número de tarjeta</label>
-                                <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="19" />
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Fecha exp.</label>
-                                    <input type="text" id="cardExp" placeholder="MM/AA" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="5" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">CVV</label>
-                                    <input type="text" id="cardCvv" placeholder="123" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="4" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Nombre del titular</label>
-                                <input type="text" id="cardName" placeholder="Como aparece en la tarjeta" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Cuotas</label>
-                                <select id="cardCuotas" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
-                                    <option value="1">1 cuota (sin interés)</option>
-                                    <option value="3">3 cuotas (10% de recargo)</option>
-                                    <option value="6">6 cuotas (20% de recargo)</option>
-                                    <option value="12">12 cuotas (35% de recargo)</option>
-                                </select>
-                                <div id="infoRecargo" class="mt-1 text-sm text-gray-500">
-                                    💰 <span id="recargoMostrado">Sin recargo</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 4. DÉBITO -->
-                <div id="pagoDebito" class="pago-detalle" style="display:none;">
-                    <div class="bg-white border border-gray-200 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">Elige tu tarjeta de débito</h4>
-                        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center selected" data-tarjeta="visa">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Visa</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="mastercard">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Mastercard</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="maestro">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Maestro</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="cabal">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Cabal</p>
-                            </div>
-                            <div class="tarjeta-option border border-gray-300 rounded-lg p-2 text-center" data-tarjeta="naranja">
-                                <span class="text-2xl">💳</span>
-                                <p class="text-xs">Naranja</p>
-                            </div>
-                        </div>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Número de tarjeta</label>
-                                <input type="text" id="debitCardNumber" placeholder="1234 5678 9012 3456" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="19" />
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Fecha exp.</label>
-                                    <input type="text" id="debitCardExp" placeholder="MM/AA" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="5" />
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">CVV</label>
-                                    <input type="text" id="debitCardCvv" placeholder="123" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" maxlength="4" />
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Nombre del titular</label>
-                                <input type="text" id="debitCardName" placeholder="Como aparece en la tarjeta" class="w-full border border-gray-300 rounded-lg px-4 py-2 card-input" />
-                            </div>
-                            <div class="text-sm text-gray-500 mt-2">
-                                💳 Sin recargo por pago con débito.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Resumen -->
-            <div class="border-t border-gray-200 pt-4 mt-6 flex justify-between items-center flex-wrap gap-3">
                 <div>
-                    <span class="text-sm text-gray-500">Total a pagar:</span>
-                    <span id="totalMostrado" class="text-2xl font-bold text-violet-600 ml-2">$0</span>
-                    <span id="recargoTotal" class="text-sm text-gray-500 ml-2 hidden">(incluye recargo)</span>
+                    <label for="inputCorreo" class="block text-sm font-medium text-gray-700">Correo electrónico</label>
+                    <input type="email" id="inputCorreo" name="correo" autocomplete="email" maxlength="254" required aria-describedby="errorCorreo"
+                           class="campo w-full border border-gray-300 rounded-lg px-4 py-2 mt-1" placeholder="nombre@correo.com" />
+                    <p id="errorCorreo" class="hidden mt-1 text-xs text-red-600"></p>
                 </div>
-                <button id="btnPagarAhora" class="bg-violet-600 hover:bg-violet-700 text-white px-8 py-3 rounded-full font-semibold transition shadow-md">
-                    Pagar ahora
-                </button>
-            </div>
 
-            <button id="btnVolverPaso1" class="mt-4 text-sm text-violet-600 hover:underline">← Volver a seleccionar entradas</button>
+                <!-- Resumen de la compra -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-left">
+                    <h4 class="font-semibold text-gray-800">Resumen de tu compra</h4>
+                    <div class="mt-2 space-y-1 text-sm">
+                        <p><span class="text-gray-500">Evento:</span> <span id="resumenEvento">-</span></p>
+                        <p><span class="text-gray-500">Lote:</span> <span id="resumenLote">-</span></p>
+                        <p><span class="text-gray-500">Cantidad:</span> <span id="resumenCantidad">-</span></p>
+                    </div>
+                    <div class="border-t border-gray-200 mt-3 pt-3 flex items-center justify-between">
+                        <span class="text-sm text-gray-500">Total a pagar</span>
+                        <span id="totalMostrado" class="text-2xl font-bold text-violet-600">$0</span>
+                    </div>
+                </div>
+
+                <p id="errorCompra" role="alert" class="hidden rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"></p>
+
+                <button type="submit" id="btnPagarAhora" class="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition shadow-md">
+                    Pagar con Mercado Pago
+                </button>
+                <p class="text-xs text-gray-500 text-center">Vas a pasar a la página de Mercado Pago para completar el pago de forma segura. Se puede pagar con tarjeta de crédito, de débito, prepaga o con dinero en tu cuenta de Mercado Pago.</p>
+            </form>
+
+            <button type="button" id="btnVolverPaso1" class="mt-4 text-sm text-violet-600 hover:underline">← Volver a seleccionar entradas</button>
         </div>
 
         <div id="loadingContainer" class="hidden mt-8 text-center py-8">
@@ -287,7 +129,8 @@
     <script type="module" src="../shared/firebase-init.js"></script>
 
     <script type="module">
-        import { doc, getDoc, addDoc, collection, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // Esta pagina solo LEE el evento. La venta, el precio y el stock los maneja el servidor (/api/crear-pago).
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // Elementos
         const container = document.getElementById('eventoContainer');
@@ -298,30 +141,61 @@
         const btnContinuarPaso1 = document.getElementById('btnContinuarPaso1');
         const btnVolverPaso1 = document.getElementById('btnVolverPaso1');
         const btnPagarAhora = document.getElementById('btnPagarAhora');
+        const formCompra = document.getElementById('formCompra');
         const totalMostrado = document.getElementById('totalMostrado');
-        const recargoTotal = document.getElementById('recargoTotal');
-        const recargoMostrado = document.getElementById('recargoMostrado');
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
         const loadingContainer = document.getElementById('loadingContainer');
-        const mensajeBilletera = document.getElementById('mensajeBilletera');
-        const billeteraSeleccionadaNombre = document.getElementById('billeteraSeleccionadaNombre');
-        const montoBilletera = document.getElementById('montoBilletera');
-        const btnPagarConBilletera = document.getElementById('btnPagarConBilletera');
+        const errorPaso1 = document.getElementById('errorPaso1');
+        const errorCompra = document.getElementById('errorCompra');
+        const resumenEvento = document.getElementById('resumenEvento');
+        const resumenLote = document.getElementById('resumenLote');
+        const resumenCantidad = document.getElementById('resumenCantidad');
+
+        // Campos del comprador y donde se muestra el error de cada uno (el nombre coincide con el que usa el servidor)
+        const CAMPOS = {
+            nombre: { input: document.getElementById('inputNombre'), error: document.getElementById('errorNombre') },
+            apellido: { input: document.getElementById('inputApellido'), error: document.getElementById('errorApellido') },
+            correo: { input: document.getElementById('inputCorreo'), error: document.getElementById('errorCorreo') },
+        };
+
+        const MAX_ENTRADAS = 10;
+        const MENSAJE_GENERICO = 'No pudimos iniciar el pago. Intentá de nuevo en unos minutos.';
+        const BOTON_NORMAL = 'Pagar con Mercado Pago';
 
         let eventoActual = null;
         let loteSeleccionado = null;
-        let metodoSeleccionado = 'Efectivo';
-        let billeteraSeleccionada = null;
-        let tarjetaSeleccionada = 'visa';
-        let recargoPorcentaje = 0;
-        let montoBase = 0;
+        let enviando = false;
         const urlParams = new URLSearchParams(window.location.search);
         const eventoId = urlParams.get('id');
 
         if (!eventoId) {
             container.innerHTML = `<p class="text-red-500">Evento no encontrado.</p>`;
             throw new Error('Falta ID de evento');
+        }
+
+        // --- Mensajes en pantalla (en lugar de alert) ---
+        function mostrarTexto(elemento, mensaje) {
+            elemento.textContent = mensaje; // textContent: el mensaje nunca se interpreta como HTML
+            elemento.classList.remove('hidden');
+        }
+
+        function limpiarErrores() {
+            errorCompra.classList.add('hidden');
+            errorCompra.textContent = '';
+            Object.values(CAMPOS).forEach(({ input, error }) => {
+                error.classList.add('hidden');
+                error.textContent = '';
+                input.removeAttribute('aria-invalid');
+            });
+        }
+
+        function marcarCampo(nombre, mensaje) {
+            const campo = CAMPOS[nombre];
+            if (!campo) return false;
+            mostrarTexto(campo.error, mensaje);
+            campo.input.setAttribute('aria-invalid', 'true');
+            return true;
         }
 
         // Cargar evento
@@ -404,6 +278,7 @@
                         });
                         card.classList.add('lote-selected', 'border-2', 'border-violet-600');
                         loteSeleccionado = i;
+                        errorPaso1.classList.add('hidden');
                         actualizarTotal();
                     });
                 });
@@ -412,104 +287,59 @@
             }
         }
 
+        // Cantidad elegida, siempre un entero entre 1 y el maximo
+        function cantidadElegida() {
+            const n = parseInt(cantidadInput.value, 10);
+            if (!Number.isInteger(n) || n < 1) return 1;
+            return Math.min(n, MAX_ENTRADAS);
+        }
+
+        // Muestra el total y el resumen. Es solo informativo: el precio real lo calcula el servidor
+        // con el lote guardado, asi que cambiar este numero en el navegador no cambia lo que se cobra.
         function actualizarTotal() {
-            if (eventoActual && loteSeleccionado !== null) {
-                const lote = eventoActual.lotes[loteSeleccionado];
-                const cantidad = parseInt(cantidadInput.value) || 1;
-                const precio = Number(lote.precio) || 0;
-                montoBase = precio * cantidad;
-                let recargo = 0;
-                let total = montoBase;
-
-                if (metodoSeleccionado === 'Credito') {
-                    const cuotas = parseInt(document.getElementById('cardCuotas').value);
-                    if (cuotas === 3) recargo = 0.10;
-                    else if (cuotas === 6) recargo = 0.20;
-                    else if (cuotas === 12) recargo = 0.35;
-                    total = montoBase * (1 + recargo);
-                    recargoPorcentaje = recargo * 100;
-                    recargoTotal.classList.remove('hidden');
-                    recargoTotal.textContent = `(incluye ${recargoPorcentaje.toFixed(0)}% de recargo)`;
-                    const cuotaInfo = cuotas === 1 ? 'sin interés' : `${cuotas} cuotas de $${(total / cuotas).toFixed(2)}`;
-                    recargoMostrado.textContent = cuotas === 1 ? 'Sin recargo' : `${recargoPorcentaje.toFixed(0)}% de recargo (${cuotaInfo})`;
-                } else {
-                    recargoTotal.classList.add('hidden');
-                    recargoMostrado.textContent = 'Sin recargo';
-                    recargoPorcentaje = 0;
-                }
-
-                totalMostrado.textContent = `$${total.toLocaleString()}`;
-                montoBilletera.textContent = `$${total.toLocaleString()}`;
-            }
+            if (!eventoActual || loteSeleccionado === null) return;
+            const lote = eventoActual.lotes[loteSeleccionado];
+            const cantidad = cantidadElegida();
+            const total = (Number(lote.precio) || 0) * cantidad;
+            totalMostrado.textContent = `$${total.toLocaleString()}`;
+            resumenEvento.textContent = eventoActual.nombre || '-';
+            resumenLote.textContent = lote.nombre || '-';
+            resumenCantidad.textContent = String(cantidad);
         }
 
         // Eventos de cantidad
         btnMenos.addEventListener('click', () => {
-            let val = parseInt(cantidadInput.value) || 1;
+            const val = cantidadElegida();
             if (val > 1) { cantidadInput.value = val - 1; actualizarTotal(); }
         });
         btnMas.addEventListener('click', () => {
-            let val = parseInt(cantidadInput.value) || 1;
-            const max = 10;
-            if (val < max) { cantidadInput.value = val + 1; actualizarTotal(); }
+            const val = cantidadElegida();
+            if (val < MAX_ENTRADAS) { cantidadInput.value = val + 1; actualizarTotal(); }
         });
-        cantidadInput.addEventListener('change', actualizarTotal);
-        document.getElementById('cardCuotas').addEventListener('change', actualizarTotal);
-
-        // Métodos de pago
-        document.querySelectorAll('.metodo-option').forEach(el => {
-            el.addEventListener('click', function() {
-                document.querySelectorAll('.metodo-option').forEach(opt => opt.classList.remove('selected'));
-                this.classList.add('selected');
-                metodoSeleccionado = this.dataset.metodo;
-                document.querySelectorAll('.pago-detalle').forEach(div => div.style.display = 'none');
-                const targetId = `pago${metodoSeleccionado}`;
-                const target = document.getElementById(targetId);
-                if (target) target.style.display = 'block';
-                actualizarTotal();
-            });
+        cantidadInput.addEventListener('change', () => {
+            cantidadInput.value = cantidadElegida();
+            errorPaso1.classList.add('hidden');
+            actualizarTotal();
         });
 
-        // Billeteras
-        document.querySelectorAll('.billetera-option').forEach(el => {
-            el.addEventListener('click', function() {
-                document.querySelectorAll('.billetera-option').forEach(opt => opt.classList.remove('selected'));
-                this.classList.add('selected');
-                billeteraSeleccionada = this.dataset.billetera;
-                const nombre = this.querySelector('p').textContent;
-                billeteraSeleccionadaNombre.textContent = nombre;
-                mensajeBilletera.classList.remove('hidden');
-                actualizarTotal();
-            });
-        });
-
-        // Tarjetas
-        document.querySelectorAll('.tarjeta-option').forEach(el => {
-            el.addEventListener('click', function() {
-                const parent = this.closest('.pago-detalle');
-                parent.querySelectorAll('.tarjeta-option').forEach(opt => opt.classList.remove('selected'));
-                this.classList.add('selected');
-                tarjetaSeleccionada = this.dataset.tarjeta;
-            });
-        });
-
-        // Botón de pago con billetera
-        btnPagarConBilletera.addEventListener('click', () => {
-            if (!billeteraSeleccionada) {
-                alert('Selecciona una billetera virtual primero.');
-                return;
-            }
-            const total = montoBase * (1 + recargoPorcentaje / 100);
-            alert(`🔗 Redirigiendo a ${billeteraSeleccionadaNombre.textContent} para pagar $${total.toFixed(2)}.`);
-            // Simulación de pago exitoso -> procesar
-            procesarPago('Transferencia');
-        });
-
-         btnContinuarPaso1.addEventListener('click', () => {
+        btnContinuarPaso1.addEventListener('click', () => {
             if (loteSeleccionado === null) {
-                alert('Selecciona un lote.');
+                mostrarTexto(errorPaso1, 'Elegí un lote para continuar.');
                 return;
             }
+            // Aviso rapido para no hacer esperar al comprador. El servidor vuelve a controlar el stock.
+            const lote = eventoActual.lotes[loteSeleccionado];
+            const restantes = Math.max(0, (Number(lote.disponibles) || 0) - (Number(lote.vendidas) || 0));
+            if (restantes === 0) {
+                mostrarTexto(errorPaso1, 'Este lote está agotado. Elegí otro.');
+                return;
+            }
+            if (cantidadElegida() > restantes) {
+                mostrarTexto(errorPaso1, `Quedan solo ${restantes} ${restantes === 1 ? 'entrada' : 'entradas'} en este lote.`);
+                return;
+            }
+            errorPaso1.classList.add('hidden');
+            limpiarErrores();
             step1.classList.remove('active');
             step2.classList.add('active');
             actualizarTotal();
@@ -520,100 +350,80 @@
             step1.classList.add('active');
         });
 
-        // Función común para procesar el pago
-        async function procesarPago(metodo) {
-           const email = 'sin-correo@evently.com'; // o el valor que quieras usar por defecto 
-            const cantidad = parseInt(cantidadInput.value) || 1;
-            const lote = eventoActual.lotes[loteSeleccionado];
-            const total = montoBase * (1 + recargoPorcentaje / 100);
-
-            if (metodo === 'Credito' || metodo === 'Debito') {
-                const cardNumber = document.getElementById(metodo === 'Credito' ? 'cardNumber' : 'debitCardNumber').value.trim();
-                const cardExp = document.getElementById(metodo === 'Credito' ? 'cardExp' : 'debitCardExp').value.trim();
-                const cardCvv = document.getElementById(metodo === 'Credito' ? 'cardCvv' : 'debitCardCvv').value.trim();
-                const cardName = document.getElementById(metodo === 'Credito' ? 'cardName' : 'debitCardName').value.trim();
-                if (!cardNumber || !cardExp || !cardCvv || !cardName) {
-                    alert('Completa todos los datos de la tarjeta.');
-                    return;
-                }
-                if (cardNumber.replace(/\s/g, '').length < 16) {
-                    alert('Número de tarjeta inválido.');
-                    return;
-                }
-                if (!cardExp.match(/^\d{2}\/\d{2}$/)) {
-                    alert('Fecha de expiración inválida (MM/AA).');
-                    return;
-                }
-                if (cardCvv.length < 3) {
-                    alert('CVV inválido.');
-                    return;
-                }
-            }
-
-            if (metodo === 'Transferencia' && !billeteraSeleccionada) {
-                alert('Selecciona una billetera virtual para transferencia.');
-                return;
-            }
-
-            let estado = 'confirmada';
-            if (metodo === 'Efectivo' || metodo === 'Transferencia') {
-                estado = 'pendiente';
-            }
-
-            const entradas = [];
-            for (let i = 0; i < cantidad; i++) {
-                const codigo = `ENT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                entradas.push({ codigo, usado: false });
-            }
-
-            const ventaData = {
-                eventoId: eventoActual.id,
-                eventoNombre: eventoActual.nombre,
-                loteNombre: lote.nombre,
-                cantidad: cantidad,
-                correo: email,
-                metodo_pago: metodo,
-                billetera: billeteraSeleccionada || '',
-                tarjeta: tarjetaSeleccionada || '',
-                cuotas: metodo === 'Credito' ? parseInt(document.getElementById('cardCuotas').value) : 1,
-                monto_total: Math.round(total * 100) / 100,
-                recargo: recargoPorcentaje,
-                estado: estado,
-                fecha: serverTimestamp(),
-                entradas: entradas
-            };
-
-            btnPagarAhora.disabled = true;
-            btnPagarAhora.textContent = 'Procesando...';
-            loadingContainer.classList.remove('hidden');
-
-            try {
-                const docRef = await addDoc(collection(db, "ventas"), ventaData);
-                const lotesActualizados = eventoActual.lotes.map((l, i) => {
-                    if (i === loteSeleccionado) {
-                        return { ...l, vendidas: (Number(l.vendidas) || 0) + cantidad };
-                    }
-                    return l;
-                });
-                await updateDoc(doc(db, "eventos", eventoActual.id), { lotes: lotesActualizados });
-                window.location.href = `confirmacion.html?id=${docRef.id}`;
-            } catch (error) {
-                console.error('Error al procesar la compra:', error);
-                alert('Hubo un error al procesar tu compra. Intenta nuevamente.');
-                btnPagarAhora.disabled = false;
-                btnPagarAhora.textContent = 'Pagar ahora';
-                loadingContainer.classList.add('hidden');
-            }
+        // --- Pagar: se manda el pedido al servidor y se abre el enlace de pago de Mercado Pago ---
+        function estadoEnviando(si) {
+            enviando = si;
+            btnPagarAhora.disabled = si;
+            btnPagarAhora.textContent = si ? 'Procesando...' : BOTON_NORMAL;
+            loadingContainer.classList.toggle('hidden', !si);
         }
 
-        // Botón final "Pagar ahora"
-        btnPagarAhora.addEventListener('click', () => {
-            procesarPago(metodoSeleccionado);
+        // Muestra lo que respondio el servidor: un error por campo si lo hay, o el mensaje general
+        function mostrarErrorDelServidor(datos) {
+            const error = datos && datos.error;
+            if (error && Array.isArray(error.errores)) {
+                for (const e of error.errores) {
+                    if (e && typeof e.campo === 'string' && typeof e.mensaje === 'string') marcarCampo(e.campo, e.mensaje);
+                }
+            }
+            // El foco va al primer campo con error segun el orden de la pagina (no el orden en que responde el servidor)
+            const primerCampo = Object.values(CAMPOS).find(({ input }) => input.getAttribute('aria-invalid') === 'true');
+            if (primerCampo) { primerCampo.input.focus(); return; }
+            const mensaje = error && typeof error.mensaje === 'string' && error.mensaje ? error.mensaje : MENSAJE_GENERICO;
+            mostrarTexto(errorCompra, mensaje);
+        }
+
+        // Solo se abre un enlace https (la direccion llega de nuestro servidor, pero se controla igual)
+        function esEnlaceSeguro(valor) {
+            try { return new URL(valor).protocol === 'https:'; } catch (e) { return false; }
+        }
+
+        formCompra.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            if (enviando || !eventoActual || loteSeleccionado === null) return; // evita pagar dos veces con doble clic
+            limpiarErrores();
+
+            const lote = eventoActual.lotes[loteSeleccionado];
+            // Solo viajan el evento, el lote, la cantidad y los datos del comprador. Ningun precio ni estado.
+            const pedido = {
+                eventoId: eventoActual.id,
+                loteIndex: loteSeleccionado,
+                cantidad: cantidadElegida(),
+                nombre: CAMPOS.nombre.input.value,
+                apellido: CAMPOS.apellido.input.value,
+                correo: CAMPOS.correo.input.value,
+            };
+            if (typeof lote.nombre === 'string' && lote.nombre.trim()) pedido.loteNombre = lote.nombre;
+
+            estadoEnviando(true);
+            try {
+                const respuesta = await fetch('/api/crear-pago', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pedido),
+                });
+                let datos = null;
+                try { datos = await respuesta.json(); } catch (e) { datos = null; }
+
+                if (respuesta.ok && datos && datos.ok === true && esEnlaceSeguro(datos.urlPago)) {
+                    // El boton queda deshabilitado mientras el navegador cambia de pagina
+                    window.location.href = datos.urlPago;
+                    return;
+                }
+                mostrarErrorDelServidor(datos);
+            } catch (error) {
+                console.error('Error al iniciar el pago:', error);
+                mostrarTexto(errorCompra, 'No pudimos conectarnos. Revisá tu conexión e intentá de nuevo.');
+            }
+            estadoEnviando(false);
         });
+
+        // Si el comprador vuelve con el boton "atras" desde Mercado Pago, la pagina puede volver tal como estaba
+        // (con el boton bloqueado). Se la deja lista para intentar de nuevo.
+        window.addEventListener('pageshow', (e) => { if (e.persisted) estadoEnviando(false); });
 
         // Iniciar
         cargarEvento(eventoId);
-        document.getElementById('pagoEfectivo').style.display = 'block';
     </script>
     <script type="module" src="contacto-modal.js"></script>
 </body>
