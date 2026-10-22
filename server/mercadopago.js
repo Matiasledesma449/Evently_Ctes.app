@@ -109,6 +109,18 @@ async function crearPreferencia(cuerpo, accessToken, fetchFn = fetch) {
   return { id: String(datos.id), urlPago };
 }
 
+// Consulta un pago por su id. Es la UNICA fuente de verdad sobre el estado de un pago:
+// lo que diga el aviso (webhook) no se usa para confirmar nada.
+// El id viene de la direccion del aviso, asi que se exige que sea solo digitos
+// antes de armar la ruta (evita que un valor raro cambie la direccion consultada).
+async function obtenerPago(pagoId, accessToken, fetchFn = fetch) {
+  const id = String(pagoId);
+  if (!/^\d{1,20}$/.test(id)) {
+    throw new MercadoPagoError('Identificador de pago inválido', { detalle: 'id_no_numerico' });
+  }
+  return llamar('GET', `/v1/payments/${id}`, accessToken, undefined, fetchFn);
+}
+
 // Lista los metodos de pago (solo para la tarea 3.4, que se hace una sola vez).
 async function listarMetodosDePago(accessToken, fetchFn = fetch) {
   return llamar('GET', '/v1/payment_methods', accessToken, undefined, fetchFn);
@@ -121,5 +133,6 @@ module.exports = {
   fechaArgentina,
   armarPreferencia,
   crearPreferencia,
+  obtenerPago,
   listarMetodosDePago,
 };

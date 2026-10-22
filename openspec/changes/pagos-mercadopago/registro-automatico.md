@@ -13,6 +13,18 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Tarea 4.2: ignorar avisos que no son de pagos y consultar el pago
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `server/webhook.js` (nuevo), `api/mp-webhook.js` (nuevo), `server/mercadopago.js` (se agrega `obtenerPago`)
+- **Estado de la tarea:** código listo y probado con Mercado Pago simulado, pero **4.2 queda sin marcar**: su criterio es "Simular notificación" desde el panel de Mercado Pago, que necesita el sitio desplegado (igual que 3.2, 3.3 y 3.5).
+- **Comprobación:** 14 casos con `node -e` y Mercado Pago simulado, sin red ni base de datos. Firma incorrecta, ausente, con `data.id` repetido o de otro pago: 401 y sin consultar a Mercado Pago. Aviso que no es de pago, sin tipo o con id no numérico: 200 y sin consultar. Pago aprobado (formato actual, formato viejo `topic` o tipo en el cuerpo): 200 y una consulta `GET /v1/payments/{id}` con el token. Pago inexistente (404): 200 y nada cambia. Mercado Pago caído o sin conexión: 500 para que reintente. Sin la clave del aviso: 500 y sin consultas. Ningún secreto aparece en los registros ni en las respuestas.
+- **Estado del endpoint:** todavía NO confirma ventas. Solo consulta el pago. No se debe pasar a `main` hasta terminar 4.6.
+- **Push:** menor (archivos nuevos del change y una función agregada), se sube a `auto/pagos-mercadopago`.
+- **Decisión tomada:** un pago que Mercado Pago dice que no existe devuelve 200 (reintentar no lo arregla). Cualquier otro fallo de consulta devuelve 500.
+
+---
+
 ## Tarea 4.1: verificar la firma del aviso
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
