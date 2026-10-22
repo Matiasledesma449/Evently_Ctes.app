@@ -37,7 +37,7 @@ Las tareas marcadas **(Usuario)** las hace la persona dueña del proyecto en las
 ## 5. Función `/api/venta`
 
 - [ ] 5.1 Consultar una venta con su id y su token, devolviendo el mismo mensaje de "no encontrada" si el token es incorrecto o la venta no existe. Se comprueba llamando la función con un token equivocado y con un id inventado: ambas respuestas son idénticas, y con los datos correctos devuelve la venta (también valida la conexión a Firestore de la tarea 2.3).
-- [ ] 5.2 Devolver estado, motivo, datos del evento, lote, cantidad y monto, y las entradas solo si la venta está `confirmada`, sin token ni identificadores internos de pago. Se comprueba con una venta pendiente y una confirmada de prueba: la pendiente no trae códigos y la confirmada trae uno por entrada.
+- [x] 5.2 Devolver estado, motivo, datos del evento, lote, cantidad y monto, y las entradas solo si la venta está `confirmada`, sin token ni identificadores internos de pago. Se comprueba con una venta pendiente y una confirmada de prueba: la pendiente no trae códigos y la confirmada trae uno por entrada.
 - [ ] 5.3 Pasar a `rechazada` con motivo `vencida` una venta pendiente cuyo vencimiento ya pasó, al consultarla. Se comprueba cambiando a mano `venceEn` de una venta de prueba a una hora pasada en la consola de Firestore: la consulta devuelve `rechazada` y el documento queda actualizado.
 
 ## 6. Pantalla de compra (`public/evento.html`)

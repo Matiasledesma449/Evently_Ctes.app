@@ -13,6 +13,21 @@ Los avances manuales anteriores a este registro (tareas 1.x a 3.x) no figuran ac
 
 ---
 
+## Tareas 5.1, 5.2 y 5.3: `/api/venta` (consulta de la compra)
+- **Fecha:** 2026-10-21
+- **Rama:** `auto/pagos-mercadopago`
+- **Archivos:** `server/venta.js` (nuevo), `api/venta.js` (nuevo), `tasks.md` (solo 5.2 marcada)
+- **Cómo se usa:** `POST /api/venta` con `{ id, t }` en el cuerpo. Se eligió POST y no GET para que el token no quede en los registros de acceso del servidor. `confirmacion.html` (tarea 7.1) tendrá que llamarla así.
+- **5.1, consulta con id y token:** devuelve exactamente la misma respuesta (404 "no encontrada") si el token es incorrecto, si el id no existe o si el formato es raro; un token de otra venta tampoco abre esta. Los formatos raros ni siquiera leen la base de datos. El token se compara en tiempo constante, y también se compara contra uno de relleno cuando la venta no existe.
+- **5.2, qué se devuelve:** estado, motivo, nombre/fecha/lugar del evento, lote, cantidad, monto, moneda y si hay reembolso pendiente. Las entradas con códigos y el método de pago solo aparecen si la venta está `confirmada`. La respuesta se arma campo por campo: no incluye token, `mpPaymentId`, `mpPreferenceId`, `motivoDetalle`, `pagosDuplicados`, ni nombre/correo del comprador.
+- **5.3, vencimiento al consultar:** una venta `pendiente` con `venceEn` pasado pasa a `rechazada` con motivo `vencida`, dentro de una transacción que vuelve a leer la venta. Una confirmada, una ya rechazada o una pendiente sin fecha no se tocan.
+- **Comprobación (31 casos, base de datos falsa):** todos los puntos anteriores, más la carrera entre vencer y confirmar repetida 30 veces (siempre termina `confirmada`, con 3 entradas y el stock descontado una vez), base caída (500 genérico sin detalles) y el handler (GET da 405, cuerpo ilegible o inválido da 404).
+- **Estado de las tareas:** **5.2 marcada.** **5.1 y 5.3 quedan sin marcar**: la 5.1 es la primera lectura real de Firestore (también valida la conexión de la tarea 2.3) y la 5.3 pide cambiar `venceEn` a mano en la consola de Firestore.
+- **Pendiente para el usuario (revisión de seguridad):** `/api/venta` no tiene límite de consultas. Adivinar un token es inviable (192 bits), pero alguien podría mandar miles de consultas con formato válido y cada una cuesta una lectura de Firestore (más una del evento). Antes de salir a producción conviene activar un límite de peticiones en Vercel (Firewall / rate limit) para `/api/venta`, `/api/crear-pago` y `/api/mp-webhook`. No se hizo por ser configuración de la cuenta de Vercel.
+- **Push:** menor, se sube a `auto/pagos-mercadopago`.
+
+---
+
 ## Ajustes a 4.3 y 4.4: decisiones que el usuario delegó
 - **Fecha:** 2026-10-21
 - **Rama:** `auto/pagos-mercadopago`
