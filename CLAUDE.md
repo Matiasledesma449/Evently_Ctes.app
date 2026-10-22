@@ -7,19 +7,28 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - `admin/`: panel Admin y SuperAdmin (login, eventos, ventas, reportes, mensajes, soporte, escáner QR).
 - `shared/`: código común (`firebase-init.js`, `menu-rol.js`, `ui-utils.js`, `i18n.js`, estilos).
 - `validador.html`: validación de entradas por QR, en la raíz.
+- `api/`: funciones serverless (Vercel): `crear-pago.js`, `mp-webhook.js`, `venta.js`.
+- `server/`: lógica de los pagos que usan las funciones de `api/` (configuración, Mercado Pago, firma del webhook, Firestore con `firebase-admin`, validaciones).
+- `pruebas/`: pruebas simuladas del flujo de pagos.
 - `BACKLOG_EVENTLY.md`: lista de tareas por fases, con IDs (ADM-, SUP-, USR-, SHR-).
 - `openspec/`: especificaciones y cambios planificados con OpenSpec.
 
 ## Cómo correrlo y probarlo
-- Es un sitio estático: HTML + JavaScript puro, sin `package.json` ni paso de build.
+- El sitio es HTML + JavaScript puro, sin paso de build. Hay un `package.json` por las funciones de `api/` (`firebase-admin`).
 - Los scripts se cargan por CDN (Firebase 10.7.1, Tailwind, jsQR). Hace falta internet.
 - Cómo abrirlo en local: no verificado. Los `<script type="module">` suelen requerir un servidor HTTP y no `file://`.
-- **No hay tests automatizados.** La verificación es manual, por rol (ver SHR-72 en el backlog).
+- Hay pruebas simuladas solo para el flujo de pagos: `node pruebas/ejecutar-todas.js` (ver `pruebas/LEEME.md`). El resto del sitio no tiene tests: la verificación es manual, por rol (ver SHR-72 en el backlog).
+
+## Pagos (Mercado Pago)
+- Flujo: `evento.html` llama a `/api/crear-pago` → crea la venta `pendiente` y la preferencia de pago → Mercado Pago avisa a `/api/mp-webhook` (firma verificada) → la venta pasa a `confirmada` y se descuenta el stock en una transacción → `confirmacion.html` consulta `/api/venta` hasta ver el estado real.
+- Las ventas y el stock solo los escribe el servidor (`firebase-admin`); el navegador no debe escribir en `ventas` (queda garantizado cuando se publiquen las reglas de Firestore, tarea 10.3).
+- Variables de entorno (solo los nombres, los valores van en Vercel): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `SITE_URL`.
+- Detalle del change: `openspec/changes/pagos-mercadopago/`.
 
 ## Datos y roles
 - Backend: Firebase (Auth, Firestore, Storage), inicializado en `shared/firebase-init.js`.
 - Colecciones que se usan en el código: `usuarios`, `eventos`, `ventas`, `mensajes`, `conversaciones`, `consultas_publicas`, `solicitudes_eventos`, `solicitudes_password`.
-- El rol se lee del campo `rol` en `usuarios`. Valores vistos: `superadmin`, `cliente`, `usuario`. El rol "admin" de organizador: no verificado.
+- El rol se lee del campo `rol` en `usuarios`. Valores vistos: `superadmin`, `cliente`, `usuario`, `organizacion` (organizador de eventos; aparece en el menú del panel).
 
 ## Convenciones que se ven en el código
 - Español en nombres, textos y comentarios.

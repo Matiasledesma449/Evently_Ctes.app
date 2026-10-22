@@ -49,7 +49,9 @@ function armarPreferencia({ ventaId, token, eventoId, evento, pedido, calculo, s
     payer: { name: pedido.nombre, surname: pedido.apellido, email: pedido.correo },
     back_urls: { success: volver, pending: volver, failure: volver },
     auto_return: 'approved',
-    notification_url: `${siteUrl}/api/mp-webhook`,
+    // `?source_news=webhooks` pide el formato nuevo del aviso (con `data.id` y firma);
+    // sin eso, Mercado Pago manda el formato viejo (`?id=…&topic=…`) y el webhook lo rechaza.
+    notification_url: `${siteUrl}/api/mp-webhook?source_news=webhooks`,
     external_reference: ventaId,
     expires: true,
     expiration_date_from: fechaArgentina(ahora),
