@@ -47,6 +47,8 @@ const rech = (monto, cant = 1, motivo = 'vencida', extra = {}) => ({ estado: 're
   verificar('T9 "Confirmadas": recaudado $48, 6 entradas, 4 ventas', valor(t, 'Total recaudado') === $(48) && valor(t, 'Entradas vendidas') === '6' && valor(t, 'Ventas confirmadas') === '4');
   verificar('T10 "Confirmadas": las 4 tarjetas, en orden', igual(titulos(t), ['Total recaudado', 'Entradas vendidas', 'Ventas confirmadas', 'Promedio por venta']));
   const vacia = U.tarjetasDelFiltro('confirmada', [], AHORA);
+  const decimal = U.tarjetasDelFiltro('confirmada', [conf(12), conf(24), conf(60), conf(12), conf(0, 2)], AHORA);
+  verificar('T10b un promedio que no es redondo muestra dos decimales ($21,60 y no $21,6)', valor(decimal, 'Promedio por venta') === '$' + (21.6).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), valor(decimal, 'Promedio por venta'));
   verificar('T11 "Confirmadas" sin ventas: promedio "—" y las demas en 0', valor(vacia, 'Promedio por venta') === '—' && valor(vacia, 'Ventas confirmadas') === '0' && valor(vacia, 'Entradas vendidas') === '0');
   const mezcla = U.tarjetasDelFiltro('confirmada', [conf(12), pend(100), rech(100)], AHORA);
   verificar('T12 "Confirmadas" ignora pendientes y rechazadas aunque lleguen en la lista', valor(mezcla, 'Total recaudado') === $(12) && valor(mezcla, 'Ventas confirmadas') === '1');

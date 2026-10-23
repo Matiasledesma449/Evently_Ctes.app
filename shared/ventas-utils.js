@@ -159,6 +159,9 @@ export function tiempoDesde(fecha, ahora = Date.now()) {
 }
 
 const dinero = (n) => `$${aNumero(n).toLocaleString()}`;
+// Para promedios: si no es un número redondo se muestran los dos decimales ("$21,60" y no "$21,6")
+const dineroPromedio = (n) => (Number.isInteger(n) ? dinero(n)
+    : `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 
 // Las 4 tarjetas del filtro de estado elegido: { titulo, valor, ayuda, tono }.
 // `valor` ya viene como texto listo para mostrar. `tono`: 'dinero' (violeta), 'pendiente' (amarillo),
@@ -204,7 +207,7 @@ export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
             { titulo: 'Total recaudado', valor: dinero(r.recaudado), ayuda: 'Solo ventas confirmadas', tono: 'dinero' },
             { titulo: 'Entradas vendidas', valor: String(r.entradas), ayuda: 'De ventas confirmadas', tono: 'normal' },
             { titulo: 'Ventas confirmadas', valor: String(r.confirmadas), ayuda: 'Pagos aprobados', tono: 'normal' },
-            { titulo: 'Promedio por venta', valor: r.confirmadas > 0 ? dinero(r.recaudado / r.confirmadas) : '—', ayuda: 'Recaudado ÷ ventas', tono: 'normal' }
+            { titulo: 'Promedio por venta', valor: r.confirmadas > 0 ? dineroPromedio(r.recaudado / r.confirmadas) : '—', ayuda: 'Recaudado ÷ ventas', tono: 'normal' }
         ];
     }
 

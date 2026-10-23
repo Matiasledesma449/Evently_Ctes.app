@@ -57,33 +57,17 @@
                 <button class="filtro-btn px-3 py-1 rounded-full text-sm" data-filtro="rechazada">❌ Rechazadas</button>
                 <span class="text-sm text-gray-400 mx-2">|</span>
                 <select id="filtroMetodo" class="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                    <!-- Las opciones las arma el JavaScript con los métodos que tienen las ventas del evento -->
                     <option value="todos">Todos los métodos</option>
-                    <option value="Crédito">Crédito</option>
-                    <option value="Débito">Débito</option>
-                    <option value="Prepaga">Prepaga</option>
-                    <option value="Dinero en cuenta">Dinero en cuenta</option>
                 </select>
                 <button id="btnAplicarFiltros" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-full text-sm transition">Aplicar filtros</button>
             </div>
 
-            <!-- Resumen de ventas -->
-            <div id="resumenVentas" class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Total recaudado</p>
-                    <p id="totalRecaudado" class="text-2xl font-bold text-violet-600">$0</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Entradas vendidas</p>
-                    <p id="totalEntradas" class="text-2xl font-bold text-gray-800">0</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Ventas confirmadas</p>
-                    <p id="totalTransacciones" class="text-2xl font-bold text-gray-800">0</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Pendientes de pago</p>
-                    <p id="totalPendientes" class="text-2xl font-bold text-yellow-600">0</p>
-                </div>
+            <!-- Resumen de ventas: las tarjetas cambian según el filtro (las arma el JavaScript) -->
+            <div class="mb-6">
+                <p id="textoFiltro" class="text-sm text-gray-500 mb-2"></p>
+                <div id="resumenVentas" class="grid grid-cols-1 sm:grid-cols-4 gap-4"></div>
+                <p id="avisoMetodo" class="hidden text-xs text-gray-500 mt-2"></p>
             </div>
 
             <!-- Tabla de ventas -->
@@ -163,14 +147,13 @@
         // Esta pantalla solo LEE las ventas: los estados los define el servidor a partir de Mercado Pago,
         // por eso ya no se importa ninguna funcion para escribir ni hay boton para confirmar a mano.
         import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { escaparHtml, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta } from "../shared/ventas-utils.js";
+        import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro } from "../shared/ventas-utils.js";
 
         // Elementos
         const tablaBody = document.getElementById('tablaVentasBody');
-        const totalRecaudado = document.getElementById('totalRecaudado');
-        const totalEntradas = document.getElementById('totalEntradas');
-        const totalTransacciones = document.getElementById('totalTransacciones');
-        const totalPendientes = document.getElementById('totalPendientes');
+        const resumenVentas = document.getElementById('resumenVentas');
+        const textoFiltro = document.getElementById('textoFiltro');
+        const avisoMetodo = document.getElementById('avisoMetodo');
         const filtroMetodo = document.getElementById('filtroMetodo');
         const btnAplicarFiltros = document.getElementById('btnAplicarFiltros');
 
@@ -224,18 +207,20 @@
             });
         }
 
-        // Aplicar filtros y renderizar
+        // El desplegable ofrece solo los métodos que tienen las ventas del evento. Reconstruirlo borra lo elegido,
+        // así que se guarda la selección y se vuelve a poner si ese método todavía existe.
+        function actualizarOpcionesDeMetodo(ventas) {
+            const elegido = filtroMetodo.value;
+            const metodos = metodosDePago(ventas);
+            filtroMetodo.innerHTML = ['<option value="todos">Todos los métodos</option>']
+                .concat(metodos.map(m => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
+            filtroMetodo.value = metodos.includes(elegido) ? elegido : 'todos';
+        }
+
+        // Aplicar filtros y renderizar. La tabla y las tarjetas usan EXACTAMENTE la misma lista filtrada.
         function aplicarFiltrosYRenderizar(ventas) {
-            const metodo = filtroMetodo.value;
-            let filtradas = ventas;
-
-            if (filtroEstado !== 'todos') {
-                filtradas = filtradas.filter(v => v.estado === filtroEstado);
-            }
-            if (metodo !== 'todos') {
-                filtradas = filtradas.filter(v => v.metodo_pago === metodo);
-            }
-
+            actualizarOpcionesDeMetodo(ventas);
+            const filtradas = filtrarVentas(ventas, filtroEstado, filtroMetodo.value);
             renderizarVentas(filtradas);
             actualizarResumen(filtradas);
         }
@@ -320,14 +305,27 @@
             modal.classList.add('flex');
         };
 
-        // Actualizar resumen. Recaudacion y entradas cuentan SOLO ventas confirmadas;
-        // las pendientes se informan aparte y las rechazadas no suman a nada.
+        // Tarjetas de resumen: cambian según el filtro de estado y siempre respetan el de método.
+        // La recaudación cuenta SOLO ventas confirmadas; lo pendiente se muestra "en espera" y lo rechazado "no cobrado".
+        const COLOR_DEL_TONO = { dinero: 'text-violet-600', pendiente: 'text-yellow-600', rechazo: 'text-red-600', normal: 'text-gray-800' };
+        const NOMBRE_DEL_ESTADO = { todos: 'Todas las ventas', confirmada: 'Confirmadas', pendiente: 'Pendientes', rechazada: 'Rechazadas' };
+
         function actualizarResumen(ventas) {
-            const resumen = resumenDeVentas(ventas);
-            totalRecaudado.textContent = `$${resumen.recaudado.toLocaleString()}`;
-            totalEntradas.textContent = resumen.entradas;
-            totalTransacciones.textContent = resumen.confirmadas;
-            totalPendientes.textContent = resumen.pendientes;
+            resumenVentas.innerHTML = tarjetasDelFiltro(filtroEstado, ventas).map(t => `
+                <div class="bg-white rounded-xl border border-gray-200 p-4" title="${escaparHtml(t.titulo + ': ' + t.valor)}">
+                    <p class="text-sm text-gray-500">${escaparHtml(t.titulo)}</p>
+                    <p class="text-2xl font-bold ${COLOR_DEL_TONO[t.tono] || COLOR_DEL_TONO.normal} truncate">${escaparHtml(t.valor)}</p>
+                    <p class="text-xs text-gray-400 mt-1">${escaparHtml(t.ayuda)}</p>
+                </div>`).join('');
+
+            const metodo = filtroMetodo.value;
+            const cantidad = ventas.length;
+            textoFiltro.textContent = `Mostrando: ${NOMBRE_DEL_ESTADO[filtroEstado] || NOMBRE_DEL_ESTADO.todos} · ${metodo === 'todos' ? 'Todos los métodos' : metodo} · ${cantidad} ${cantidad === 1 ? 'venta' : 'ventas'}`;
+
+            // Las ventas pendientes todavía no tienen método de pago: con un método elegido no entran
+            const hayAviso = metodo !== 'todos';
+            avisoMetodo.textContent = hayAviso ? 'Con un método de pago elegido no aparecen las ventas pendientes, porque todavía no tienen método de pago.' : '';
+            if (hayAviso) avisoMetodo.classList.remove('hidden'); else avisoMetodo.classList.add('hidden');
         }
 
         // Filtros de estado (botones)
@@ -336,17 +334,13 @@
                 document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 filtroEstado = this.dataset.filtro;
-                if (eventoSeleccionadoId) {
-                    escucharVentas(eventoSeleccionadoId);
-                }
+                aplicarFiltrosYRenderizar(todasLasVentas); // ya están en memoria: solo se vuelve a filtrar
             });
         });
 
-        btnAplicarFiltros.addEventListener('click', () => {
-            if (eventoSeleccionadoId) {
-                escucharVentas(eventoSeleccionadoId);
-            }
-        });
+        // El método se aplica apenas se cambia; el botón "Aplicar filtros" queda y hace lo mismo
+        filtroMetodo.addEventListener('change', () => aplicarFiltrosYRenderizar(todasLasVentas));
+        btnAplicarFiltros.addEventListener('click', () => aplicarFiltrosYRenderizar(todasLasVentas));
 
         inicializarVentas();
     </script>
