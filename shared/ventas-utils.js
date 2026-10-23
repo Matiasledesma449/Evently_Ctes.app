@@ -219,3 +219,101 @@ export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
         { titulo: 'Pendientes de pago', valor: String(r.pendientes), ayuda: 'No suman a la recaudación', tono: 'pendiente' }
     ];
 }
+
+// ======================================================================================================
+// Evento activo y cifras de Resumen y Reportes (cambio panel-claro-resumen-reportes).
+// Funciones puras: Resumen y Reportes calculan con las MISMAS, así que con el mismo evento los números no pueden diferir.
+// Todo sale de las ventas confirmadas y de los lotes; los contadores "vendidas" guardados en los lotes NO se usan.
+// ======================================================================================================
+
+// Los eventos que una persona puede elegir. Superadmin: todos. Organización: los suyos, con los mismos tres criterios
+// que la lista de Eventos (misma organización, creados por ella o con su correo).
+export function eventosDeLaPersona(eventos, usuario, uid) {
+    const lista = (Array.isArray(eventos) ? eventos : []).filter(Boolean);
+    if (usuario && usuario.rol === 'superadmin') return lista;
+    return lista.filter((ev) =>
+        (ev.organizacionId && usuario && ev.organizacionId === usuario.organizacionId) ||
+        (ev.creadoPor && uid && ev.creadoPor === uid) ||
+        (ev.correo && usuario && usuario.email && ev.correo === usuario.email));
+}
+
+// Las ventas de uno o varios eventos (por id)
+export function ventasDeEventos(ventas, ids) {
+    const buscados = new Set(Array.isArray(ids) ? ids : [ids]);
+    return (Array.isArray(ventas) ? ventas : []).filter((v) => v && v.eventoId && buscados.has(v.eventoId));
+}
+
+// Las cifras de uno o varios eventos. `eventos` es una lista (con sus lotes) y `ventas` las ventas de esos eventos.
+export function cifrasDelEvento(eventos, ventas) {
+    const lista = (Array.isArray(eventos) ? eventos : []).filter(Boolean);
+    const todas = (Array.isArray(ventas) ? ventas : []).filter(Boolean);
+    const confirmadas = soloConfirmadas(todas);
+    const resumen = resumenDeVentas(todas);
+
+    const capacidad = lista.reduce((suma, ev) =>
+        suma + (Array.isArray(ev.lotes) ? ev.lotes.reduce((s, l) => s + aNumero(l && l.disponibles), 0) : 0), 0);
+    const entradas = resumen.entradas;
+    const recaudado = resumen.recaudado;
+
+    const porLote = new Map();
+    const porMetodo = new Map();
+    for (const v of confirmadas) {
+        const lote = v.loteNombre || 'Sin lote';
+        const dato = porLote.get(lote) || { nombre: lote, entradas: 0, dinero: 0 };
+        dato.entradas += aNumero(v.cantidad);
+        dato.dinero += aNumero(v.monto_total);
+        porLote.set(lote, dato);
+        const metodo = v.metodo_pago || 'Desconocido';
+        porMetodo.set(metodo, (porMetodo.get(metodo) || 0) + 1);
+    }
+    let loteMasVendido = null;
+    let loteMasRentable = null;
+    for (const dato of porLote.values()) {
+        if (!loteMasVendido || dato.entradas > loteMasVendido.entradas) loteMasVendido = { nombre: dato.nombre, entradas: dato.entradas };
+        if (!loteMasRentable || dato.dinero > loteMasRentable.dinero) loteMasRentable = { nombre: dato.nombre, dinero: dato.dinero };
+    }
+    let metodoMasUsado = null;
+    for (const [nombre, cantidad] of porMetodo) {
+        if (!metodoMasUsado || cantidad > metodoMasUsado.cantidad) {
+            metodoMasUsado = { nombre, cantidad, porcentaje: Math.round((cantidad / resumen.confirmadas) * 100) };
+        }
+    }
+
+    return {
+        capacidad,
+        entradas,
+        aforoRestante: Math.max(0, capacidad - entradas),
+        ocupacion: capacidad > 0 ? Math.round((entradas / capacidad) * 100) : 0,
+        recaudado,
+        confirmadas: resumen.confirmadas,
+        pendientes: resumen.pendientes,
+        promedioEntradas: resumen.confirmadas > 0 ? entradas / resumen.confirmadas : null,
+        loteMasVendido,
+        loteMasRentable,
+        metodoMasUsado
+    };
+}
+
+const miles = (n) => aNumero(n).toLocaleString();
+const entradasPorCompra = (n) => (Number.isInteger(n) ? String(n) : n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+
+// Las tarjetas de Resumen: { id, titulo, valor, ayuda, tono, icono, ancho (1, 2 o 4 columnas), progreso (solo ocupación) }.
+// Con `cifras = null` (datos que todavía no llegaron) devuelve las MISMAS tarjetas con "—", para que nada salte al cargar.
+// Los títulos que también existen en Ventas son idénticos a los de allá.
+export function tarjetasDeResumen(cifras) {
+    const c = cifras || null;
+    const v = (valor) => (c ? valor : '—');
+    return [
+        { id: 'capacidad', titulo: 'Capacidad total', valor: v(c && miles(c.capacidad)), ayuda: 'Suma de las entradas de todos los lotes', tono: 'normal', icono: 'groups', ancho: 1 },
+        { id: 'entradas', titulo: 'Entradas vendidas', valor: v(c && String(c.entradas)), ayuda: c ? `De ${miles(c.capacidad)} de capacidad · ventas confirmadas` : 'De ventas confirmadas', tono: 'normal', icono: 'confirmation_number', ancho: 1 },
+        { id: 'aforo', titulo: 'Aforo restante', valor: v(c && miles(c.aforoRestante)), ayuda: 'Capacidad menos entradas vendidas', tono: 'normal', icono: 'event_seat', ancho: 1 },
+        { id: 'ocupacion', titulo: 'Tasa de ocupación', valor: v(c && `${c.ocupacion}%`), ayuda: 'Entradas vendidas sobre la capacidad', tono: 'normal', icono: 'pie_chart', ancho: 1, progreso: c ? c.ocupacion : 0 },
+        { id: 'recaudado', titulo: 'Total recaudado', valor: v(c && dinero(c.recaudado)), ayuda: c ? `${c.confirmadas} ${c.confirmadas === 1 ? 'venta confirmada' : 'ventas confirmadas'} · solo ventas confirmadas` : 'Solo ventas confirmadas', tono: 'dinero', icono: 'payments', ancho: 2 },
+        { id: 'confirmadas', titulo: 'Ventas confirmadas', valor: v(c && String(c.confirmadas)), ayuda: 'Pagos aprobados', tono: 'normal', icono: 'receipt_long', ancho: 1 },
+        { id: 'pendientes', titulo: 'Pendientes de pago', valor: v(c && String(c.pendientes)), ayuda: 'No suman a la recaudación', tono: 'pendiente', icono: 'hourglass_top', ancho: 1 },
+        { id: 'promedio', titulo: 'Prom. entradas/compra', valor: v(c && (c.promedioEntradas === null ? '—' : entradasPorCompra(c.promedioEntradas))), ayuda: 'Entradas ÷ ventas confirmadas', tono: 'normal', icono: 'shopping_cart', ancho: 1 },
+        { id: 'loteVendido', titulo: 'Lote más vendido', valor: v(c && (c.loteMasVendido ? c.loteMasVendido.nombre : '—')), ayuda: c && c.loteMasVendido ? `${miles(c.loteMasVendido.entradas)} entradas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'sell', ancho: 2 },
+        { id: 'loteRentable', titulo: 'Lote más rentable', valor: v(c && (c.loteMasRentable ? c.loteMasRentable.nombre : '—')), ayuda: c && c.loteMasRentable ? `${dinero(c.loteMasRentable.dinero)} recaudados` : 'Según las ventas confirmadas', tono: 'normal', icono: 'trending_up', ancho: 2 },
+        { id: 'metodo', titulo: 'Método más usado', valor: v(c && (c.metodoMasUsado ? c.metodoMasUsado.nombre : '—')), ayuda: c && c.metodoMasUsado ? `${c.metodoMasUsado.porcentaje}% de las ventas confirmadas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'account_balance_wallet', ancho: 4 }
+    ];
+}
