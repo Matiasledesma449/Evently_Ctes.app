@@ -28,11 +28,15 @@ function hashDeTexto(texto) {
     return h >>> 0;
 }
 
-// Solo se aceptan direcciones https, sin espacios ni caracteres de control (nada de javascript:, data: ni http:)
+// Se acepta una dirección https (sin espacios ni caracteres de control) o una foto incluida en el propio evento
+// (data:image/jpeg, png o webp en base64, de hasta 400.000 caracteres). Nada de javascript:, http:, SVG ni otros data:.
+const LARGO_MAXIMO_FOTO_INCLUIDA = 400000;
 export function direccionDeImagenValida(valor) {
     if (typeof valor !== 'string') return '';
     const url = valor.trim();
-    return /^https:\/\/[^\s\u0000-\u001f]+$/i.test(url) ? url : '';
+    if (/^https:\/\/[^\s\u0000-\u001f]+$/i.test(url)) return url;
+    if (url.length <= LARGO_MAXIMO_FOTO_INCLUIDA && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(url)) return url;
+    return '';
 }
 
 // El relleno del evento: letra inicial del nombre y color elegido por su id (o por su nombre si no tiene id)

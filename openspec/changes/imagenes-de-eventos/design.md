@@ -26,7 +26,7 @@ Estado de hoy, visto en el código y en Firebase (solo lectura):
 ## Decisions
 
 ### 1. `shared/imagen-evento.js` (módulo, funciones puras)
-- `imagenDelEvento(evento)` → `{ src, relleno }`. `src` es la URL si es una cadena que, ya recortada, empieza con `https://` y no tiene espacios ni caracteres de control; si no, `''`. `relleno` es siempre un objeto `{ letra, fondo, texto }`.
+- `imagenDelEvento(evento)` → `{ src, relleno }`. `src` es la imagen si es una cadena que, ya recortada, empieza con `https://` (sin espacios ni caracteres de control) o es una foto incluida `data:image/(jpeg|png|webp);base64,...` válida; si no, `''`. `relleno` es siempre un objeto `{ letra, fondo, texto }`.
 - `rellenoDelEvento(evento)`: la letra es la primera letra o número del nombre en mayúscula (`?` si no hay nombre); el color sale de una lista fija de 6 violetas/índigos de la paleta, elegido con un hash simple del `id` (si no hay `id`, del nombre). Mismo evento, mismo resultado; ids distintos suelen dar colores o letras distintas.
 - `htmlDeImagenEvento(evento, { clases })` → HTML con `<img>` (si hay `src`) y el relleno detrás, listo para `innerHTML`, con todo escapado y `onerror` que muestra el relleno. Para páginas que arman el DOM con `createElement` (Inicio, solicitudes) se exporta también `crearImagenEvento(evento, documento)` que devuelve el elemento.
 - **Por qué no una foto de relleno distinta por evento:** hacen falta archivos que nadie mantiene y se repiten al haber más eventos que fotos. El relleno por color y letra no necesita archivos, queda dentro de la paleta violeta y no se confunde con una foto real.
@@ -35,31 +35,18 @@ Estado de hoy, visto en el código y en Firebase (solo lectura):
 ### 2. Qué se hace con `Imagen de evento 1.jpg`
 Deja de ser el relleno de todos los eventos. El archivo queda en el repo sin usarse (borrarlo se decide después, como los `data.js` duplicados).
 
-### 3. Subida en `admin/eventos.html`
-- Al elegir el archivo se valida el tipo (JPG, PNG, WebP) y se achica en el navegador con `<canvas>` (lado mayor 1600 px, JPEG calidad 0.85); el archivo achicado es el que se sube y el que se ve en la vista previa. Si el resultado pesa más de 2 MB, se rechaza.
-- La ruta pasa a `eventos_solicitudes/<uid>/<Date.now()>.jpg` (sin usar el nombre original: evita caracteres raros y datos personales en la ruta). Hace falta `auth.currentUser`; sin sesión se explica y no se sube.
-- Los mensajes (éxito, error, "esperá a que termine") van en un `<p role="status">` de la página; se quitan los `alert` de este flujo.
-- Se mantiene el comportamiento actual de bloquear el envío mientras se sube o si hay archivo sin subir, y se conserva el botón "Subir imagen" (decisión mínima: no se pasa a subida automática para no cambiar el flujo que la persona ya conoce).
-- Sin foto, la solicitud se envía con `imagen: ''` (la foto es opcional, como hoy).
+### 3. La foto dentro del evento (cambio decidido el 2026-10-23: sin Storage)
+Habilitar Storage exige el plan de pago de Firebase y el usuario decidió no poner tarjeta. La foto se guarda como texto dentro del evento:
+- Al elegir el archivo (JPG, PNG o WebP) se achica con `<canvas>`: lado mayor 1200 px, JPEG; si pesa más de 200 KB se baja la calidad (0,8 → 0,6) y luego el tamaño (1000, 800, 640 px) hasta lograrlo. Si no se logra o el archivo no se puede leer, se rechaza con un mensaje.
+- El resultado se convierte a `data:image/jpeg;base64,...` y se guarda en el campo oculto `#imagenUrl`; esa misma cadena es la vista previa y lo que se guarda en `solicitud.imagen` y, al aprobar, en `eventos.imagen` (`aprobaciones.js` ya copia el campo tal cual).
+- Ya no hay botón "Subir imagen" ni uso de `window.storage`: elegir la foto la deja lista. Los avisos van en `#mensajeImagen`, sin `alert`.
+- El envío se bloquea mientras se prepara la foto y si hubo error con una foto elegida (hay que quitarla con "Limpiar" o elegir otra).
+- Peso: 200 KB de JPEG son unos 270 KB de texto, muy por debajo del límite de 1 MB de un documento de Firestore. Con pocos eventos, Inicio y la lista cargan un poco más datos; si algún día hay cientos de eventos, conviene pasar a Storage.
+- `shared/imagen-evento.js` acepta, además de `https://`, solo `data:image/(jpeg|png|webp);base64,` con caracteres base64 y hasta 400.000 caracteres (nunca SVG ni otros tipos).
+- **Alternativa descartada:** otro servicio gratis de fotos (por ejemplo, imgbb o Cloudinary) pide cuenta y claves de otro proveedor; Storage con tarjeta es lo más prolijo pero el usuario eligió no pagar.
 
-### 4. `storage.rules` y `firebase.json`
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /eventos_solicitudes/{uid}/{archivo} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == uid
-                   && request.resource != null
-                   && request.resource.contentType.matches('image/(jpeg|png|webp)')
-                   && request.resource.size < 3 * 1024 * 1024;
-    }
-  }
-}
-```
-Todo lo demás queda cerrado. `firebase.json` mínimo con la clave `storage` apuntando a ese archivo, para poder publicar con `firebase deploy --only storage`. La lectura es pública porque las fotos de eventos se muestran a compradores sin sesión. Aceptado: cualquiera con la dirección exacta puede verlas, como en cualquier sitio de eventos. No se permite borrar ni sobrescribir fotos ajenas (solo la dueña de la carpeta puede escribir).
-
-**Publicar:** la acción es del usuario o con su OK explícito en el chat; antes se valida la sintaxis con `firebase_validate_security_rules`. Si Storage no está habilitado en el proyecto, hay que habilitarlo desde la consola de Firebase (lo hace el usuario) y puede pedir un plan de pago: se le avisa antes de seguir.
+### 4. Storage
+Queda sin usar. Se eliminan `storage.rules` y `firebase.json` del repo. No hay nada que publicar.
 
 ### 5. Cómo se prueba
 - `pruebas/16-imagen-de-evento.js` carga `shared/imagen-evento.js` con `vm` (quitando `export`, como en las pruebas 13–15) y cubre cada escenario de la especificación, incluidos nombres con etiquetas, `javascript:`, evento sin nombre y sin id.

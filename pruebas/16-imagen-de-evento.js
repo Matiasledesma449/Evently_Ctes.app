@@ -21,9 +21,18 @@ const ev = (id, nombre, imagen) => ({ id, nombre, imagen });
 // ---------- Foto valida o relleno ----------
 verificar('I1 un evento con foto https valida muestra esa foto', I.imagenDelEvento(ev('a', 'Fiesta', FOTO)).src === FOTO);
 verificar('I2 la foto se recorta (espacios al principio y al final)', I.imagenDelEvento(ev('a', 'Fiesta', '  ' + FOTO + '  ')).src === FOTO);
-const invalidas = ['', '   ', undefined, null, 42, {}, 'javascript:alert(1)', 'http://sitio.test/a.jpg', 'data:image/png;base64,AAAA', '//sitio.test/a.jpg', 'https://sitio.test/a b.jpg', 'https://sitio.test/a\n.jpg', './imag/Imagen de evento 1.jpg', 'https://'];
+const invalidas = ['', '   ', undefined, null, 42, {}, 'javascript:alert(1)', 'http://sitio.test/a.jpg', 'data:image/svg+xml;base64,AAAA', 'data:text/html;base64,AAAA', 'data:image/png;base64,', 'data:image/png;base64,AA<script>', 'data:image/png;charset=x;base64,AAAA', '//sitio.test/a.jpg', 'https://sitio.test/a b.jpg', 'https://sitio.test/a\n.jpg', './imag/Imagen de evento 1.jpg', 'https://'];
 verificar('I3 vacia, ausente, de otro tipo, javascript:, http:, data:, relativa o con espacios: no hay foto', invalidas.every((x) => I.imagenDelEvento(ev('a', 'Fiesta', x)).src === ''), JSON.stringify(invalidas.filter((x) => I.imagenDelEvento(ev('a', 'Fiesta', x)).src !== '')));
 verificar('I4 con cualquier entrada rara no falla y siempre hay relleno', [undefined, null, 0, 'texto', [], {}].every((x) => { const r = I.imagenDelEvento(x); return r.src === '' && !!r.relleno.letra && !!r.relleno.fondo && !!r.relleno.texto; }));
+
+// ---------- Foto incluida en el evento (sin Storage) ----------
+{
+  const foto = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
+  verificar('I3b una foto incluida jpeg, png o webp en base64 es valida', ['jpeg', 'png', 'webp'].every((t) => I.imagenDelEvento(ev('a', 'F', `data:image/${t};base64,AAAA`)).src === `data:image/${t};base64,AAAA`) && I.imagenDelEvento(ev('a', 'F', foto)).src === foto);
+  verificar('I3c una foto incluida de mas de 400.000 caracteres se descarta', I.imagenDelEvento(ev('a', 'F', 'data:image/jpeg;base64,' + 'A'.repeat(400001))).src === '' && I.imagenDelEvento(ev('a', 'F', 'data:image/jpeg;base64,' + 'A'.repeat(399000))).src !== '');
+  const html = I.htmlDeImagenEvento(ev('a', 'F', foto));
+  verificar('I3d con foto incluida el HTML lleva la foto en <img> y se quita si no carga', /<img [^>]*src="data:image\/jpeg;base64,A+"/.test(html) && /onerror="this\.remove\(\)"/.test(html));
+}
 
 // ---------- Relleno propio y estable ----------
 verificar('I5 la letra es la inicial del nombre en mayuscula', I.rellenoDelEvento(ev('a', 'noche de gala')).letra === 'N' && I.rellenoDelEvento(ev('a', '  ¡Fiesta!')).letra === 'F' && I.rellenoDelEvento(ev('a', 'Ñandú')).letra === 'Ñ' && I.rellenoDelEvento(ev('a', '2x1 Jueves')).letra === '2');

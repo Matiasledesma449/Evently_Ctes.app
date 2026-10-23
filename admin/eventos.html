@@ -73,9 +73,6 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Imagen del evento</label>
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                             <input type="file" id="imagenFile" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
-                            <button type="button" id="btnSubirImagen" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap">
-                                Subir imagen
-                            </button>
                         </div>
                         <div id="previewContainer" class="mt-3 hidden">
                             <p class="text-sm text-gray-500">Vista previa:</p>
@@ -84,7 +81,7 @@
                         </div>
                         <input type="hidden" id="imagenUrl" name="imagen" value="" />
                         <p id="mensajeImagen" role="status" class="hidden text-sm mt-2"></p>
-                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP) y tocá "Subir imagen". Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
+                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP); se achica sola. Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
                     </div>
 
                     <div>
@@ -138,7 +135,6 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const form = document.getElementById('formSolicitud');
         const lotesContainer = document.getElementById('lotesContainer');
@@ -148,7 +144,6 @@
         const textoBotonEnviar = document.getElementById('textoBotonEnviar');
         const fileInput = document.getElementById('imagenFile');
         const btnLimpiar = form.querySelector('button[type="reset"]');
-        const btnSubirImagen = document.getElementById('btnSubirImagen');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
         const nombreArchivo = document.getElementById('nombreArchivo');
@@ -163,7 +158,6 @@
         }
 
         let loteIndex = 1;
-        let imagenSubiendo = false;
 
         // ============ AGREGAR LOTE (con scroll correcto) ============
         function agregarLote() {
@@ -223,15 +217,14 @@
         asignarEventosEliminar();
 
         // ============ IMAGEN ============
+        // La foto no se sube a ningún servicio: se achica y queda guardada dentro del propio evento (campo "imagen").
         const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
-        const LADO_MAXIMO = 1600;                  // se achica la foto para que suba rápido
-        const MAXIMO_BYTES = 2 * 1024 * 1024;      // lo que se sube no puede pesar más de 2 MB
-        const ENTRADA_MAXIMA = 25 * 1024 * 1024;   // la foto original, antes de achicarla
+        const MAXIMO_BYTES = 200 * 1024;           // lo que se guarda en el evento
+        const ENTRADA_MAXIMA = 15 * 1024 * 1024;   // la foto original, antes de achicarla
+        const PASOS_DE_ACHICADO = [[1200, 0.8], [1200, 0.7], [1000, 0.7], [1000, 0.6], [800, 0.6], [640, 0.6]]; // [lado mayor en px, calidad]
         const mensajeImagen = document.getElementById('mensajeImagen');
-        let imagenLista = null;                    // la foto ya achicada, lista para subir
         let imagenPreparando = false;
         let versionImagen = 0;                     // cada vez que se elige un archivo sube; un resultado viejo se descarta
-        let vistaPreviaUrl = '';
 
         // Avisos de la foto, dentro de la página y como texto (nunca como HTML)
         function avisoImagen(texto, tipo = 'info') {
@@ -241,45 +234,49 @@
         }
 
         function limpiarImagen() {
-            imagenLista = null;
             imagenUrlInput.value = '';
-            if (vistaPreviaUrl) { URL.revokeObjectURL(vistaPreviaUrl); vistaPreviaUrl = ''; }
             previewContainer.classList.add('hidden');
-            btnSubirImagen.textContent = 'Subir imagen';
         }
 
-        // Achica la foto (lado mayor 1600 px, JPEG). Si el navegador no puede, devuelve null y se usa la original
-        async function achicarImagen(file) {
+        function leerComoTexto(blob) {
+            return new Promise((resolver, rechazar) => {
+                const lector = new FileReader();
+                lector.onload = () => resolver(lector.result);
+                lector.onerror = () => rechazar(new Error('lectura'));
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        // Achica la foto en pasos hasta que pese 200 KB o menos. Devuelve la foto como texto (data:image/jpeg;base64,...)
+        async function prepararFoto(file) {
+            let bitmap;
             try {
-                const bitmap = await createImageBitmap(file);
-                const escala = Math.min(1, LADO_MAXIMO / Math.max(bitmap.width, bitmap.height));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.max(1, Math.round(bitmap.width * escala));
-                canvas.height = Math.max(1, Math.round(bitmap.height * escala));
-                const dibujo = canvas.getContext('2d');
-                dibujo.fillStyle = '#ffffff'; // los PNG con transparencia quedan sobre blanco, no negro
-                dibujo.fillRect(0, 0, canvas.width, canvas.height);
-                dibujo.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-                if (bitmap.close) bitmap.close();
-                return await new Promise((resolver) => canvas.toBlob(resolver, 'image/jpeg', 0.85));
+                bitmap = await createImageBitmap(file);
             } catch (e) {
-                return null;
+                throw new Error('ilegible');
             }
-        }
-
-        function textoDeErrorDeSubida(error) {
-            const codigo = error && error.code;
-            if (codigo === 'storage/unauthorized') return 'No tenés permiso para subir fotos. Cerrá sesión y volvé a entrar; si sigue, avisá al administrador.';
-            if (codigo === 'storage/canceled') return 'Se canceló la subida de la foto. Probá de nuevo.';
-            if (codigo === 'storage/quota-exceeded') return 'No hay lugar para guardar más fotos. Avisá al administrador.';
-            if (codigo === 'storage/retry-limit-exceeded' || codigo === 'storage/network-request-failed' || !navigator.onLine) return 'No se pudo subir la foto: revisá tu conexión e intentá de nuevo.';
-            return 'No se pudo subir la foto. Intentá de nuevo; si sigue fallando, avisá al administrador.';
+            try {
+                for (const [lado, calidad] of PASOS_DE_ACHICADO) {
+                    const escala = Math.min(1, lado / Math.max(bitmap.width, bitmap.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+                    canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+                    const dibujo = canvas.getContext('2d');
+                    dibujo.fillStyle = '#ffffff'; // los PNG con transparencia quedan sobre blanco, no negro
+                    dibujo.fillRect(0, 0, canvas.width, canvas.height);
+                    dibujo.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                    const blob = await new Promise((resolver) => canvas.toBlob(resolver, 'image/jpeg', calidad));
+                    if (blob && blob.size <= MAXIMO_BYTES) return await leerComoTexto(blob);
+                }
+            } finally {
+                if (bitmap.close) bitmap.close();
+            }
+            throw new Error('pesada');
         }
 
         fileInput.addEventListener('change', async () => {
             const miVersion = ++versionImagen;
             imagenPreparando = false;
-            btnSubirImagen.disabled = false;
             limpiarImagen();
             avisoImagen('');
             const file = fileInput.files[0];
@@ -290,62 +287,33 @@
                 return;
             }
             if (file.size > ENTRADA_MAXIMA) {
-                avisoImagen('La foto es demasiado grande (máximo 25 MB). Elegí otra.', 'error');
+                avisoImagen('La foto es demasiado grande (máximo 15 MB). Elegí otra.', 'error');
                 fileInput.value = '';
                 return;
             }
             imagenPreparando = true;
-            btnSubirImagen.disabled = true;
             avisoImagen('Preparando la foto...');
-            const achicada = await achicarImagen(file);
+            let foto = '';
+            let fallo = '';
+            try {
+                foto = await prepararFoto(file);
+            } catch (error) {
+                fallo = error && error.message;
+            }
             if (miVersion !== versionImagen) return; // eligió otra mientras tanto: este resultado ya no sirve
             imagenPreparando = false;
-            btnSubirImagen.disabled = false;
-            const final = achicada || file;
-            if (final.size > MAXIMO_BYTES) {
-                avisoImagen('La foto pesa más de 2 MB incluso achicada. Elegí otra.', 'error');
+            if (!foto) {
+                avisoImagen(fallo === 'pesada'
+                    ? 'No se pudo achicar la foto lo suficiente. Elegí otra.'
+                    : 'No se pudo leer ese archivo como imagen. Elegí otra foto.', 'error');
                 fileInput.value = '';
                 return;
             }
-            imagenLista = final;
-            vistaPreviaUrl = URL.createObjectURL(final);
-            previewImage.src = vistaPreviaUrl;
+            imagenUrlInput.value = foto;
+            previewImage.src = foto;
             previewContainer.classList.remove('hidden');
-            nombreArchivo.textContent = `Foto lista (${Math.max(1, Math.round(final.size / 1024))} KB)`;
-            avisoImagen('Lista. Tocá "Subir imagen" para guardarla.');
-        });
-
-        btnSubirImagen.addEventListener('click', async () => {
-            if (imagenPreparando) { avisoImagen('Esperá un momento: la foto todavía se está preparando.', 'error'); return; }
-            if (!imagenLista) { avisoImagen('Elegí primero una foto.', 'error'); return; }
-            const user = auth.currentUser;
-            if (!user) { avisoImagen('Tu sesión expiró. Volvé a iniciar sesión para subir la foto.', 'error'); return; }
-            try {
-                imagenSubiendo = true;
-                btnSubirImagen.disabled = true;
-                fileInput.disabled = true;
-                btnLimpiar.disabled = true;
-                btnSubirImagen.textContent = 'Subiendo...';
-                avisoImagen('Subiendo la foto...');
-                const extension = imagenLista.type === 'image/png' ? 'png' : imagenLista.type === 'image/webp' ? 'webp' : 'jpg';
-                const storageRef = ref(window.storage, `eventos_solicitudes/${user.uid}/${Date.now()}.${extension}`);
-                const resultado = await uploadBytes(storageRef, imagenLista, { contentType: imagenLista.type });
-                const url = await getDownloadURL(resultado.ref);
-                if (!url) throw new Error('Storage no devolvió una dirección para la foto.');
-                imagenUrlInput.value = url;
-                btnSubirImagen.textContent = 'Foto subida';
-                avisoImagen('La foto se subió correctamente.', 'ok');
-            } catch (error) {
-                console.error('Error al subir imagen:', error);
-                imagenUrlInput.value = '';
-                btnSubirImagen.textContent = 'Subir imagen';
-                avisoImagen(textoDeErrorDeSubida(error), 'error');
-            } finally {
-                imagenSubiendo = false;
-                btnSubirImagen.disabled = false;
-                fileInput.disabled = false;
-                btnLimpiar.disabled = false;
-            }
+            nombreArchivo.textContent = `Foto lista (${Math.max(1, Math.round(foto.length * 0.75 / 1024))} KB)`;
+            avisoImagen('La foto está lista.', 'ok');
         });
 
         // ============ ENVÍO ============
@@ -379,8 +347,8 @@
                 });
 
                 if (!lotesValidos || lotes.length === 0) throw new Error('Todos los lotes deben tener nombre, precio válido y cantidad disponible (mayor a 0).');
-                if (imagenSubiendo || imagenPreparando) throw new Error('La foto todavía se está preparando o subiendo. Esperá a que termine.');
-                if ((imagenLista || fileInput.files.length > 0) && !imagenUrl) throw new Error('Subí la foto (botón "Subir imagen") antes de enviar, o quitala con "Limpiar".');
+                if (imagenPreparando) throw new Error('La foto todavía se está preparando. Esperá a que termine.');
+                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('La foto no está lista. Elegí otra o quitala con "Limpiar".');
 
                 const user = auth.currentUser;
                 if (!user) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
@@ -442,9 +410,8 @@
             mensajeResultado.classList.add('hidden');
             limpiarImagen();
             avisoImagen('');
-            fileInput.disabled = false;
-            btnLimpiar.disabled = false;
-            btnSubirImagen.textContent = 'Subir imagen';
+            versionImagen++;
+            imagenPreparando = false;
         });
     </script>
 
