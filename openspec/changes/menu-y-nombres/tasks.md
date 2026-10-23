@@ -23,9 +23,9 @@ Convención: "se comprueba" dice cómo verificarlo a mano. Las pruebas en Chrome
 
 ## 3. Nombres y títulos
 
-- [ ] 3.1 Aplicar la tabla de nombres del diseño en el archivo compartido (escritorio y celular). Se comprueba en Chrome: ninguna página muestra "Panel Principal", "Dashboard", "Mis Eventos" ni "Super Admin".
-- [ ] 3.2 Actualizar el título de cada página (el `<h1>` y la pestaña del navegador) para usar el mismo nombre que el menú. Se comprueba abriendo las 10 páginas y comparando título y menú; el Resumen muestra el nombre del evento.
-- [ ] 3.3 Confirmar los nombres con el usuario si quiere cambiar alguno (por ejemplo "Resumen"). Se comprueba cuando el usuario aprueba la lista final.
+- [x] 3.1 Aplicar la tabla de nombres del diseño en el archivo compartido (escritorio y celular). Se comprueba en Chrome: ninguna página muestra "Panel Principal", "Dashboard", "Mis Eventos" ni "Super Admin". **Hecho (2026-10-23):** los nombres ya estaban en `shared/menu-admin.js` desde la 1.1; una búsqueda en `admin/` y `shared/` no encuentra "Panel Principal", "Mis Eventos", "Super Admin", "Crear Evento Directo" ni "Solicitar Evento" en textos visibles (queda uno en un comentario interno del código).
+- [x] 3.2 Actualizar el título de cada página (el `<h1>` y la pestaña del navegador) para usar el mismo nombre que el menú. Se comprueba abriendo las 10 páginas y comparando título y menú; el Resumen muestra el nombre del evento. **Hecho (2026-10-23):** se pidió cada una de las 10 páginas al servidor local y el título de la pestaña y el `<h1>` coinciden con el nombre del menú (Eventos, Resumen, Solicitar evento o Crear evento, Reportes, Ventas, Escáner, Soporte, Mensajes, Consultas públicas, Panel global). El nombre del evento junto a "Resumen" sale del código del Dashboard; no lo vi en pantalla. Cambio extra, no pedido por la tarea: el botón "Entrar al Dashboard" de las tarjetas de eventos ahora dice "Ver resumen" para usar el mismo nombre.
+- [x] 3.3 Confirmar los nombres con el usuario si quiere cambiar alguno (por ejemplo "Resumen"). Se comprueba cuando el usuario aprueba la lista final. **Aprobado por el usuario el 2026-10-23: se dejan los nombres de la tabla del diseño, incluido "Resumen".**
 
 ## 4. Menú achicado sin parpadeo, en todas las páginas
 

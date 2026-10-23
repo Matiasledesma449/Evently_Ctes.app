@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Solicitar Evento</title>
+    <title>Evently - Solicitar evento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -50,7 +50,7 @@
         <!-- Contenido principal -->
         <main class="flex-1 min-h-0 overflow-y-auto p-6 pb-24 lg:pb-6">
             <div class="max-w-4xl mx-auto">
-                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar nuevo evento</h1>
+                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar evento</h1>
                 <p id="descripcionFormulario" class="text-gray-500 mb-6">Completa el formulario para solicitar un nuevo evento. Nuestro equipo evaluará la solicitud y se pondrá en contacto contigo.</p>
 
                 <form id="formSolicitud" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
@@ -155,8 +155,8 @@
         const modoDirecto = new URLSearchParams(window.location.search).get('modo') === 'directo';
 
         if (modoDirecto) {
-            document.title = 'Evently - Crear Evento Directo';
-            document.getElementById('tituloFormulario').textContent = 'Crear evento directo';
+            document.title = 'Evently - Crear evento';
+            document.getElementById('tituloFormulario').textContent = 'Crear evento';
             document.getElementById('descripcionFormulario').textContent = 'Publicá un evento directamente en Evently, sin crear una solicitud.';
             document.getElementById('textoBotonEnviar').textContent = 'Publicar evento';
         }
@@ -315,7 +315,7 @@
                 if (!userSnap.exists()) throw new Error('No se encontró el perfil del usuario.');
                 const userData = userSnap.data();
                 if (modoDirecto && userData.rol !== 'superadmin') throw new Error('Solo el superadmin puede publicar eventos directamente.');
-                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear Evento Directo.');
+                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear evento.');
 
                 const evento = {
                     nombre, fecha, lugar,

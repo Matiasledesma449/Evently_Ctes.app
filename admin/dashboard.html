@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Dashboard</title>
+    <title>Evently - Resumen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -42,7 +42,7 @@
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800" id="tituloDashboard">Panel Principal</h1>
+                    <h1 class="text-2xl font-bold text-gray-800" id="tituloDashboard">Resumen</h1>
                     <p class="text-sm text-gray-500" id="subtituloEvento">Cargando evento...</p>
                 </div>
                 <a href="eventos-seleccion.html" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
@@ -89,7 +89,7 @@
                 if (docSnap.exists()) {
                     eventoActual = { id: docSnap.id, ...docSnap.data() };
                     console.log("📌 Evento cargado:", eventoActual.nombre);
-                    tituloDashboard.textContent = `Panel Principal - ${eventoActual.nombre || 'Sin nombre'}`;
+                    tituloDashboard.textContent = `Resumen - ${eventoActual.nombre || 'Sin nombre'}`;
                     subtituloEvento.textContent = `${eventoActual.fecha || ''} - ${eventoActual.lugar || ''}`;
                     escucharVentas(id);
                 } else {
@@ -274,7 +274,7 @@
         escucharEventoEspecifico(eventoId);
     </script>
 
-    <!-- Script para actualizar el enlace "Panel Principal" con el ID guardado -->
+    <!-- Script para actualizar el enlace "Resumen" con el ID guardado -->
     <script>
         (function() {
             const eventoId = localStorage.getItem('eventoId');
