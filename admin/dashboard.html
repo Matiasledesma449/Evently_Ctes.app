@@ -40,238 +40,95 @@
 
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800" id="tituloDashboard">Resumen</h1>
-                    <p class="text-sm text-gray-500" id="subtituloEvento">Cargando evento...</p>
+                    <p class="text-sm text-gray-500 min-h-[1.25rem]" id="subtituloEvento"></p>
                 </div>
-                <a href="eventos-seleccion.html" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">arrow_back</span> Volver a eventos
-                </a>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div id="selectorEvento" class="flex flex-wrap items-center gap-2">
+                        <label for="selectorEventoSelect" class="text-sm font-medium text-gray-500">Evento</label>
+                        <select id="selectorEventoSelect" disabled class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white min-w-[16rem] max-w-full focus:ring-2 focus:ring-violet-500 outline-none"><option>—</option></select>
+                        <p id="selectorEventoAviso" class="hidden w-full text-sm text-gray-500"></p>
+                    </div>
+                    <a href="eventos-seleccion.html" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">arrow_back</span> Volver a eventos
+                    </a>
+                </div>
             </div>
-            
-            <!-- Contenedor de KPIs -->
-            <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <p class="col-span-full text-center text-gray-500">Cargando datos...</p>
-            </div>
+
+            <!-- Tarjetas: las dibuja el JavaScript y arrancan en "—", para que nada salte cuando llegan los datos -->
+            <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
         </main>
     </div>
 
 
     <!-- Firebase y lógica del dashboard -->
     <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module" src="../shared/selector-evento.js"></script>
     <script type="module">
         import { onSnapshot, query, collection, where, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { resumenDeVentas, soloConfirmadas } from "../shared/ventas-utils.js";
+        import { cifrasDelEvento, tarjetasDeResumen, escaparHtml } from "../shared/ventas-utils.js";
 
         const kpiContainer = document.getElementById('kpiContainer');
         const tituloDashboard = document.getElementById('tituloDashboard');
         const subtituloEvento = document.getElementById('subtituloEvento');
 
-        // Obtener ID del evento de la URL o de localStorage
-        const params = new URLSearchParams(window.location.search);
-        let eventoId = params.get('id');
+        // Colores: los mismos de siempre. Las cifras salen de shared/ventas-utils.js, las mismas funciones que usa Reportes
+        const COLOR_DEL_TONO = { dinero: 'text-violet-600', pendiente: 'text-yellow-600', normal: 'text-gray-800' };
+        const COLOR_DEL_ICONO = { pendiente: 'text-yellow-600' };
+        const COLUMNAS = { 1: '', 2: 'sm:col-span-2', 4: 'sm:col-span-2 lg:col-span-4' };
 
-        if (!eventoId) {
-            eventoId = localStorage.getItem('eventoId');
+        function dibujar(cifras) {
+            kpiContainer.innerHTML = tarjetasDeResumen(cifras).map((t) => `
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card ${COLUMNAS[t.ancho] || ''}" title="${escaparHtml(t.titulo + ': ' + t.valor)}">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">${escaparHtml(t.titulo)}</span>
+                        <span class="material-symbols-outlined ${COLOR_DEL_ICONO[t.tono] || 'text-violet-600'}">${escaparHtml(t.icono)}</span>
+                    </div>
+                    <p class="${t.texto ? 'text-xl font-bold break-words' : 'kpi-value truncate'} ${COLOR_DEL_TONO[t.tono] || COLOR_DEL_TONO.normal} mt-2">${escaparHtml(t.valor)}</p>
+                    ${t.progreso === undefined ? '' : `<div class="w-full bg-gray-200 rounded-full h-2 mt-2"><div class="bg-violet-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, Number(t.progreso) || 0))}%"></div></div>`}
+                    <p class="text-xs text-gray-400 mt-1">${escaparHtml(t.ayuda)}</p>
+                </div>`).join('');
         }
+        dibujar(null); // al abrir: las mismas tarjetas con "—"
 
-        if (!eventoId) {
-            window.location.href = 'eventos-seleccion.html';
-        }
+        // El evento de la dirección o, si no hay, el último que se recordó
+        const eventoId = new URLSearchParams(window.location.search).get('id') || localStorage.getItem('eventoId') || '';
 
         let eventoActual = null;
-        let unsubscribeVentas = null;
+        let ventas = null;
 
-        function escucharEventoEspecifico(id) {
-            const docRef = doc(db, "eventos", id);
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    eventoActual = { id: docSnap.id, ...docSnap.data() };
-                    console.log("📌 Evento cargado:", eventoActual.nombre);
-                    tituloDashboard.textContent = `Resumen - ${eventoActual.nombre || 'Sin nombre'}`;
-                    subtituloEvento.textContent = `${eventoActual.fecha || ''} - ${eventoActual.lugar || ''}`;
-                    escucharVentas(id);
-                } else {
-                    console.error("Evento no encontrado");
-                    window.location.href = 'eventos-seleccion.html';
+        // Solo se dibujan cifras cuando llegaron el evento Y sus ventas (así no aparece un 0 que después cambia)
+        function refrescar() {
+            if (eventoActual && ventas) dibujar(cifrasDelEvento([eventoActual], ventas));
+        }
+
+        if (!eventoId) {
+            // Sin evento no se lleva a otra pantalla: el selector de arriba invita a elegir uno
+            subtituloEvento.textContent = 'Elegí un evento para ver sus datos';
+        } else {
+            onSnapshot(doc(db, "eventos", eventoId), (docSnap) => {
+                if (!docSnap.exists()) {
+                    subtituloEvento.textContent = 'Elegí un evento para ver sus datos';
+                    return;
                 }
+                eventoActual = { id: docSnap.id, ...docSnap.data() };
+                tituloDashboard.textContent = `Resumen - ${eventoActual.nombre || 'Sin nombre'}`;
+                subtituloEvento.textContent = [eventoActual.fecha, eventoActual.lugar].filter(Boolean).join(' - ');
+                refrescar();
             }, (error) => {
                 console.error("Error al escuchar evento:", error);
             });
-        }
 
-        function escucharVentas(idEvento) {
-            if (unsubscribeVentas) unsubscribeVentas();
-            const q = query(collection(db, "ventas"), where("eventoId", "==", idEvento));
-            unsubscribeVentas = onSnapshot(q, (querySnapshot) => {
-                const ventas = [];
-                querySnapshot.forEach((doc) => {
-                    ventas.push({ id: doc.id, ...doc.data() });
-                });
-                console.log("📊 Ventas actualizadas:", ventas.length);
-                if (eventoActual) {
-                    actualizarKPIs(eventoActual, ventas);
-                }
+            onSnapshot(query(collection(db, "ventas"), where("eventoId", "==", eventoId)), (querySnapshot) => {
+                ventas = [];
+                querySnapshot.forEach((d) => ventas.push({ id: d.id, ...d.data() }));
+                refrescar();
             }, (error) => {
                 console.error("Error al escuchar ventas:", error);
             });
         }
-
-        function actualizarKPIs(evento, todasLasVentas) {
-            // La recaudacion y las entradas vendidas cuentan SOLO ventas confirmadas. Las pendientes se
-            // muestran aparte como "pendientes de pago" y las rechazadas no suman a nada.
-            const pendientesDePago = resumenDeVentas(todasLasVentas).pendientes;
-            const ventas = soloConfirmadas(todasLasVentas);
-            const lotes = evento.lotes || [];
-            const capacidadTotal = lotes.reduce((sum, l) => sum + (l.disponibles || 0), 0);
-            const vendidasPorLote = lotes.reduce((sum, l) => sum + (l.vendidas || 0), 0);
-            const entradasVendidas = ventas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
-            const totalVendidas = Math.max(vendidasPorLote, entradasVendidas);
-            const aforoRestante = capacidadTotal - totalVendidas;
-            const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalVendidas / capacidadTotal) * 100) : 0;
-            const totalRecaudado = ventas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
-            const totalTransacciones = ventas.length;
-            const promedioEntradas = totalTransacciones > 0 ? (totalVendidas / totalTransacciones).toFixed(1) : 0;
-
-            let loteMasVendido = { nombre: '-', vendidas: 0 };
-            lotes.forEach(l => {
-                if ((l.vendidas || 0) > loteMasVendido.vendidas) {
-                    loteMasVendido = { nombre: l.nombre, vendidas: l.vendidas };
-                }
-            });
-
-            let loteMasRentable = { nombre: '-', subtotal: 0 };
-            lotes.forEach(l => {
-                const subtotal = (l.precio || 0) * (l.vendidas || 0);
-                if (subtotal > loteMasRentable.subtotal) {
-                    loteMasRentable = { nombre: l.nombre, subtotal };
-                }
-            });
-
-            const metodoCount = {};
-            ventas.forEach(v => {
-                const metodo = v.metodo_pago || 'Desconocido';
-                metodoCount[metodo] = (metodoCount[metodo] || 0) + 1;
-            });
-            let metodoMasUsado = { nombre: '-', porcentaje: 0 };
-            let maxCount = 0;
-            for (const [metodo, count] of Object.entries(metodoCount)) {
-                if (count > maxCount) {
-                    maxCount = count;
-                    metodoMasUsado = { nombre: metodo, porcentaje: totalTransacciones > 0 ? Math.round((count / totalTransacciones) * 100) : 0 };
-                }
-            }
-
-            kpiContainer.innerHTML = `
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Capacidad total</span>
-                        <span class="material-symbols-outlined text-violet-600">groups</span>
-                    </div>
-                    <p class="kpi-value text-gray-800 mt-2">${capacidadTotal.toLocaleString()}</p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Entradas vendidas</span>
-                        <span class="material-symbols-outlined text-violet-600">confirmation_number</span>
-                    </div>
-                    <p class="kpi-value text-gray-800 mt-2">${totalVendidas.toLocaleString()} <span class="text-sm font-normal text-gray-400">/ ${capacidadTotal.toLocaleString()}</span></p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Aforo restante</span>
-                        <span class="material-symbols-outlined text-violet-600">event_seat</span>
-                    </div>
-                    <p class="kpi-value text-gray-800 mt-2">${aforoRestante.toLocaleString()}</p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Tasa de ocupación</span>
-                        <span class="material-symbols-outlined text-violet-600">pie_chart</span>
-                    </div>
-                    <p class="kpi-value text-gray-800 mt-2">${tasaOcupacion}%</p>
-                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div class="bg-violet-600 h-2 rounded-full" style="width: ${tasaOcupacion}%"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Recaudación total</span>
-                        <span class="material-symbols-outlined text-violet-600">payments</span>
-                    </div>
-                    <p class="text-3xl font-bold text-violet-600 mt-2">$${totalRecaudado.toLocaleString()}</p>
-                    <span class="text-xs text-gray-400">${totalTransacciones} ventas confirmadas</span>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Ventas confirmadas</span>
-                        <span class="material-symbols-outlined text-violet-600">receipt_long</span>
-                    </div>
-                    <p class="kpi-value text-gray-800 mt-2">${totalTransacciones}</p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Pendientes de pago</span>
-                        <span class="material-symbols-outlined text-yellow-600">hourglass_top</span>
-                    </div>
-                    <p class="kpi-value text-yellow-600 mt-2">${pendientesDePago}</p>
-                    <span class="text-xs text-gray-400">no suman a la recaudación</span>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Prom. entradas/compra</span>
-                        <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
-                    </div>
-                    <p class="kpi-value text-gray-800 mt-2">${promedioEntradas}</p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Lote más vendido</span>
-                        <span class="material-symbols-outlined text-violet-600">sell</span>
-                    </div>
-                    <p class="text-xl font-bold text-gray-800 mt-2">${loteMasVendido.nombre} <span class="text-sm font-normal text-gray-400">${loteMasVendido.vendidas} entradas</span></p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-1 lg:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Lote más rentable</span>
-                        <span class="material-symbols-outlined text-violet-600">trending_up</span>
-                    </div>
-                    <p class="text-xl font-bold text-gray-800 mt-2">${loteMasRentable.nombre} <span class="text-sm font-normal text-gray-400">$${loteMasRentable.subtotal.toLocaleString()}</span></p>
-                </div>
-
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row items-center justify-between">
-                    <div>
-                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-violet-600">account_balance_wallet</span><span class="text-sm text-gray-500">Método más usado</span></div>
-                        <p class="text-2xl font-bold text-gray-800">${metodoMasUsado.nombre}</p>
-                    </div>
-                    <div class="flex items-center gap-4 mt-4 sm:mt-0">
-                        <div class="relative w-16 h-16">
-                            <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
-                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="4" />
-                                <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#7c3aed" stroke-width="4" stroke-dasharray="${metodoMasUsado.porcentaje} 100" />
-                            </svg>
-                            <span class="absolute inset-0 flex items-center justify-center text-sm font-bold">${metodoMasUsado.porcentaje}%</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-violet-600"></span> ${metodoMasUsado.nombre} (${metodoMasUsado.porcentaje}%)</div>
-                            <div class="flex items-center gap-1 text-sm"><span class="w-2 h-2 rounded-full bg-gray-300"></span> Otros (${100 - metodoMasUsado.porcentaje}%)</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        escucharEventoEspecifico(eventoId);
     </script>
 
     <!-- Script para actualizar el enlace "Resumen" con el ID guardado -->

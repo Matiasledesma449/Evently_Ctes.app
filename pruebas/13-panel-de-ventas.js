@@ -15,7 +15,7 @@ const verificar = (nombre, condicion, detalle = '') => {
 
 // ---------- Cargar shared/ventas-utils.js (es un modulo del navegador: se le quitan los "export") ----------
 const codigoUtils = leer('shared', 'ventas-utils.js').replace(/^export /gm, '');
-const NOMBRES = 'escaparHtml, esConfirmada, soloConfirmadas, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta';
+const NOMBRES = 'escaparHtml, esConfirmada, soloConfirmadas, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, cifrasDelEvento, tarjetasDeResumen';
 const U = vm.runInNewContext(codigoUtils + '\n;({ ' + NOMBRES + ' })');
 
 // Extrae el texto de una funcion de una pagina (contando llaves)
@@ -212,24 +212,25 @@ const $ = (n) => '$' + n.toLocaleString();
     verificar('S4 un motivo desconocido o con HTML nunca se muestra tal cual', !/raro/.test(p.els.modalVentaEstadoContainer.textoCompleto) && /Motivo no especificado/.test(p.els.modalVentaEstadoContainer.textoCompleto));
   }
 
-  // ====================== 3. Dashboard (cifras del evento) ======================
+  // ====================== 3. Resumen (cifras del evento) ======================
+  // Resumen arma sus tarjetas con cifrasDelEvento y tarjetasDeResumen (las mismas funciones que usa Reportes)
   {
     const html = leer('admin', 'dashboard.html');
-    const funcion = extraerFuncion(html, 'actualizarKPIs');
-    const kpiContainer = { innerHTML: '' };
-    const contexto = { kpiContainer, console, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas })') };
-    vm.createContext(contexto);
-    vm.runInContext(funcion + ';this.actualizarKPIs = actualizarKPIs;', contexto);
+    const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '');
     const evento = { lotes: [{ nombre: 'General', disponibles: 100, vendidas: 5, precio: 5000 }] };
-    contexto.actualizarKPIs(evento, VENTAS);
-    const h = kpiContainer.innerHTML.replace(/\s+/g, ' ');
-    verificar('D1 dashboard: la recaudacion suma solo las 2 confirmadas ($25.000)', h.includes('$' + (25000).toLocaleString() + '</p>'), h.match(/\$[\d.,]+<\/p>/g) + '');
-    verificar('D2 dashboard: dice "2 ventas confirmadas" y muestra "Ventas confirmadas" = 2', /2 ventas confirmadas/.test(h) && /Ventas confirmadas<\/span>[\s\S]*?>2<\/p>/.test(h));
-    verificar('D3 dashboard: muestra 1 "Pendientes de pago" aparte', /Pendientes de pago<\/span>[\s\S]*?>1<\/p>/.test(h), h.slice(h.indexOf('Pendientes de pago') - 20, h.indexOf('Pendientes de pago') + 220));
-    verificar('D4 dashboard: no suma las rechazadas ni las pendientes (ni 20.000 ni 30.000 ni 5.000 de ellas, ni 9.999 de la vieja)', !h.includes('$' + (45000).toLocaleString()) && !h.includes('$' + (60000).toLocaleString()) && !h.includes('$' + (35000).toLocaleString()));
-    verificar('D5 dashboard: el metodo mas usado sale solo de las confirmadas (no cuenta "Efectivo" de la vieja ni los sin metodo)', !/Efectivo|Desconocido/.test(h));
-    contexto.actualizarKPIs(evento, []);
-    verificar('D6 dashboard: sin ventas no se rompe y muestra $0', kpiContainer.innerHTML.includes('$0'));
+    const tarjetas = U.tarjetasDeResumen(U.cifrasDelEvento([evento], VENTAS));
+    const valor = (titulo) => (tarjetas.find((x) => x.titulo === titulo) || {}).valor;
+    const todo = tarjetas.map((x) => x.titulo + ' ' + x.valor + ' ' + x.ayuda).join(' | ');
+    verificar('D1 resumen: la recaudacion suma solo las 2 confirmadas ($25.000)', valor('Total recaudado') === '$' + (25000).toLocaleString(), valor('Total recaudado'));
+    verificar('D2 resumen: "Ventas confirmadas" = 2 y 5 entradas vendidas (aunque el contador del lote diga 5 por otra razon)', valor('Ventas confirmadas') === '2' && valor('Entradas vendidas') === '5');
+    verificar('D3 resumen: muestra 1 "Pendientes de pago" aparte', valor('Pendientes de pago') === '1');
+    verificar('D4 resumen: no suma las rechazadas ni las pendientes (ni 20.000 ni 30.000 ni 5.000 de ellas, ni 9.999 de la vieja)', !todo.includes('$' + (45000).toLocaleString()) && !todo.includes('$' + (60000).toLocaleString()) && !todo.includes('$' + (35000).toLocaleString()));
+    verificar('D5 resumen: el metodo mas usado sale solo de las confirmadas (no cuenta "Efectivo" de la vieja ni los sin metodo)', !/Efectivo|Desconocido/.test(todo));
+    const vacias = U.tarjetasDeResumen(U.cifrasDelEvento([evento], []));
+    verificar('D6 resumen: sin ventas no se rompe y muestra $0', (vacias.find((x) => x.titulo === 'Total recaudado') || {}).valor === '$0');
+    verificar('D7 resumen: la pagina usa las funciones compartidas y ya no calcula ni usa los contadores "vendidas" de los lotes',
+      /cifrasDelEvento/.test(sinComentarios) && /tarjetasDeResumen/.test(sinComentarios) && !/\.vendidas|actualizarKPIs/.test(sinComentarios));
+    verificar('D8 resumen: no hay un texto "Cargando datos..." que se reemplace de golpe, y no redirige cuando falta el evento', !/Cargando datos/.test(sinComentarios) && !/window\.location\.href\s*=\s*'eventos-seleccion\.html'/.test(sinComentarios));
   }
 
   // ====================== 4. Reportes ======================

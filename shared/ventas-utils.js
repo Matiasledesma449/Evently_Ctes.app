@@ -297,7 +297,7 @@ export function cifrasDelEvento(eventos, ventas) {
 const miles = (n) => aNumero(n).toLocaleString();
 const entradasPorCompra = (n) => (Number.isInteger(n) ? String(n) : n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 
-// Las tarjetas de Resumen: { id, titulo, valor, ayuda, tono, icono, ancho (1, 2 o 4 columnas), progreso (solo ocupación) }.
+// Las tarjetas de Resumen: { id, titulo, valor, ayuda, tono, icono, ancho (1, 2 o 4 columnas), progreso (solo ocupación), texto (el valor es un nombre, no un número) }.
 // Con `cifras = null` (datos que todavía no llegaron) devuelve las MISMAS tarjetas con "—", para que nada salte al cargar.
 // Los títulos que también existen en Ventas son idénticos a los de allá.
 export function tarjetasDeResumen(cifras) {
@@ -308,12 +308,12 @@ export function tarjetasDeResumen(cifras) {
         { id: 'entradas', titulo: 'Entradas vendidas', valor: v(c && String(c.entradas)), ayuda: c ? `De ${miles(c.capacidad)} de capacidad · ventas confirmadas` : 'De ventas confirmadas', tono: 'normal', icono: 'confirmation_number', ancho: 1 },
         { id: 'aforo', titulo: 'Aforo restante', valor: v(c && miles(c.aforoRestante)), ayuda: 'Capacidad menos entradas vendidas', tono: 'normal', icono: 'event_seat', ancho: 1 },
         { id: 'ocupacion', titulo: 'Tasa de ocupación', valor: v(c && `${c.ocupacion}%`), ayuda: 'Entradas vendidas sobre la capacidad', tono: 'normal', icono: 'pie_chart', ancho: 1, progreso: c ? c.ocupacion : 0 },
-        { id: 'recaudado', titulo: 'Total recaudado', valor: v(c && dinero(c.recaudado)), ayuda: c ? `${c.confirmadas} ${c.confirmadas === 1 ? 'venta confirmada' : 'ventas confirmadas'} · solo ventas confirmadas` : 'Solo ventas confirmadas', tono: 'dinero', icono: 'payments', ancho: 2 },
+        { id: 'recaudado', titulo: 'Total recaudado', valor: v(c && dinero(c.recaudado)), ayuda: 'Solo ventas confirmadas', tono: 'dinero', icono: 'payments', ancho: 2 },
         { id: 'confirmadas', titulo: 'Ventas confirmadas', valor: v(c && String(c.confirmadas)), ayuda: 'Pagos aprobados', tono: 'normal', icono: 'receipt_long', ancho: 1 },
         { id: 'pendientes', titulo: 'Pendientes de pago', valor: v(c && String(c.pendientes)), ayuda: 'No suman a la recaudación', tono: 'pendiente', icono: 'hourglass_top', ancho: 1 },
         { id: 'promedio', titulo: 'Prom. entradas/compra', valor: v(c && (c.promedioEntradas === null ? '—' : entradasPorCompra(c.promedioEntradas))), ayuda: 'Entradas ÷ ventas confirmadas', tono: 'normal', icono: 'shopping_cart', ancho: 1 },
-        { id: 'loteVendido', titulo: 'Lote más vendido', valor: v(c && (c.loteMasVendido ? c.loteMasVendido.nombre : '—')), ayuda: c && c.loteMasVendido ? `${miles(c.loteMasVendido.entradas)} entradas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'sell', ancho: 2 },
-        { id: 'loteRentable', titulo: 'Lote más rentable', valor: v(c && (c.loteMasRentable ? c.loteMasRentable.nombre : '—')), ayuda: c && c.loteMasRentable ? `${dinero(c.loteMasRentable.dinero)} recaudados` : 'Según las ventas confirmadas', tono: 'normal', icono: 'trending_up', ancho: 2 },
-        { id: 'metodo', titulo: 'Método más usado', valor: v(c && (c.metodoMasUsado ? c.metodoMasUsado.nombre : '—')), ayuda: c && c.metodoMasUsado ? `${c.metodoMasUsado.porcentaje}% de las ventas confirmadas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'account_balance_wallet', ancho: 4 }
+        { id: 'loteVendido', titulo: 'Lote más vendido', valor: v(c && (c.loteMasVendido ? c.loteMasVendido.nombre : '—')), ayuda: c && c.loteMasVendido ? `${miles(c.loteMasVendido.entradas)} entradas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'sell', ancho: 1, texto: true },
+        { id: 'loteRentable', titulo: 'Lote más rentable', valor: v(c && (c.loteMasRentable ? c.loteMasRentable.nombre : '—')), ayuda: c && c.loteMasRentable ? `${dinero(c.loteMasRentable.dinero)} recaudados` : 'Según las ventas confirmadas', tono: 'normal', icono: 'trending_up', ancho: 1, texto: true },
+        { id: 'metodo', titulo: 'Método más usado', valor: v(c && (c.metodoMasUsado ? c.metodoMasUsado.nombre : '—')), ayuda: c && c.metodoMasUsado ? `${c.metodoMasUsado.porcentaje}% de las ventas confirmadas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'account_balance_wallet', ancho: 1, texto: true }
     ];
 }

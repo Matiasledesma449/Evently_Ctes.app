@@ -114,6 +114,7 @@ const EVENTO = evento('E1', [{ nombre: 'Lote 1', disponibles: 100, vendidas: 7 }
   const sin = U.tarjetasDeResumen(U.cifrasDelEvento([EVENTO], []));
   verificar('T10 sin ventas: promedio, lote mas vendido, lote mas rentable y metodo en "—"; recaudado en $0 y entradas en 0',
     tarjeta(sin, 'promedio').valor === '—' && tarjeta(sin, 'loteVendido').valor === '—' && tarjeta(sin, 'loteRentable').valor === '—' && tarjeta(sin, 'metodo').valor === '—' && tarjeta(sin, 'recaudado').valor === $(0) && tarjeta(sin, 'entradas').valor === '0');
+  verificar('T12 los valores que son nombres (lotes y metodo) se marcan como texto y los numeros no', ['loteVendido', 'loteRentable', 'metodo'].every((id) => tarjeta(t, id).texto === true) && ['capacidad', 'recaudado', 'promedio'].every((id) => !tarjeta(t, id).texto));
   verificar('T11 lote y metodo con datos', tarjeta(t, 'loteVendido').valor === 'Lote 2' && /5 entradas/.test(tarjeta(t, 'loteVendido').ayuda) && tarjeta(t, 'loteRentable').valor === 'Lote 2' && tarjeta(t, 'metodo').valor === 'Crédito');
 }
 
