@@ -37,7 +37,7 @@ Un evento SHALL quedar recordado como activo tanto si se lo eligió en el select
 - **THEN** la otra pantalla muestra el mismo evento
 
 ### Requirement: Sin evento o con un evento que no existe
-Si no hay un evento activo o ya no existe o no corresponde a la persona, la pantalla SHALL mostrar el selector y un texto que invite a elegir un evento, sin cifras, sin errores y sin llevar a otra pantalla.
+Si no hay un evento activo o ya no existe o no corresponde a la persona, la pantalla SHALL mostrar el selector y un texto que invite a elegir un evento, sin cifras de otro evento, sin errores y sin llevar a otra pantalla (las cifras quedan en 0 o "—").
 
 #### Scenario: Evento inexistente
 - **WHEN** se abre una pantalla con un identificador de evento que no existe

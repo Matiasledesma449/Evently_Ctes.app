@@ -47,6 +47,11 @@
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h1 class="text-2xl font-bold text-gray-800">Ventas</h1>
+                <div id="selectorEvento" class="flex flex-wrap items-center gap-2">
+                    <label for="selectorEventoSelect" class="text-sm font-medium text-gray-500">Evento</label>
+                    <select id="selectorEventoSelect" disabled class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white min-w-[16rem] max-w-full focus:ring-2 focus:ring-violet-500 outline-none"><option>—</option></select>
+                    <p id="selectorEventoAviso" class="hidden w-full text-sm text-gray-500"></p>
+                </div>
             </div>
 
             <!-- Filtros de estado y método -->
@@ -143,6 +148,7 @@
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module" src="../shared/selector-evento.js"></script>
     <script type="module">
         // Esta pantalla solo LEE las ventas: los estados los define el servidor a partir de Mercado Pago,
         // por eso ya no se importa ninguna funcion para escribir ni hay boton para confirmar a mano.
@@ -168,8 +174,8 @@
             eventoSeleccionadoId = params.get('id') || localStorage.getItem('eventoId');
             
             if (!eventoSeleccionadoId) {
-                alert('No se ha seleccionado ningún evento.');
-                window.location.href = 'eventos-seleccion.html';
+                // Sin evento no se lleva a otra pantalla: el selector de arriba invita a elegir uno
+                tablaBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">Elegí un evento para ver sus datos</td></tr>`;
                 return;
             }
             
