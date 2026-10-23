@@ -22,18 +22,23 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Reportes
 
-- [ ] 4.1 En `admin/reportes.html`, leer el evento elegido (o todos los de la persona), mostrar el selector con "Todos los eventos", la línea "Mostrando: ..." calcular las tarjetas con `cifrasDelEvento` (incluidas las "Pendientes de pago" aparte, sin sumarlas), arrancar en el evento que se venía mirando (el recordado) y mostrar las tarjetas con "—" mientras cargan, sin saltos. Se comprueba en la skill: con el mismo evento, Reportes coincide con Resumen y Ventas; con "Todos" suma los eventos de la persona y una organización no suma los ajenos; al venir de otra pantalla arranca en el mismo evento; y las pendientes aparecen aparte sin sumarse a la recaudación.
-- [ ] 4.2 Armar el filtro de lote con los lotes de lo elegido y el de método con `metodosDePago` (sin lista fija), y que la capacidad salga de los lotes de lo elegido. Se comprueba en la skill: el filtro de método solo ofrece métodos con ventas y la capacidad cambia con el evento.
-- [ ] 4.3 Hacer que el PDF use el evento, lote y método elegidos. Se comprueba: en la skill se descarga el PDF, se confirma que nombra el evento y el método elegidos y que sus totales coinciden con la pantalla (se lee el texto del PDF con la herramienta de PDF si hace falta).
-- [ ] 4.4 Agregar a `auditar-panel` el chequeo de coincidencia de Reportes con Resumen y Ventas y el de "Todos los eventos". Se comprueba corriendo la skill.
+- [x] 4.1 En `admin/reportes.html`, leer el evento elegido (o todos los de la persona), mostrar el selector con "Todos los eventos", la línea "Mostrando: ..." calcular las tarjetas con `cifrasDelEvento` (incluidas las "Pendientes de pago" aparte, sin sumarlas), arrancar en el evento que se venía mirando (el recordado) y mostrar las tarjetas con "—" mientras cargan, sin saltos. Se comprueba en la skill: con el mismo evento, Reportes coincide con Resumen y Ventas; con "Todos" suma los eventos de la persona y una organización no suma los ajenos; al venir de otra pantalla arranca en el mismo evento; y las pendientes aparecen aparte sin sumarse a la recaudación. (Hecho y verificado con auditar-panel con datos inventados: Reportes lee solo el evento elegido o, con Todos, los de la persona; la organización con Todos ve solo su evento; mismas 11 tarjetas que Resumen; línea "Mostrando"; carga con "—" sin saltos. No lo vio todavía el usuario en su Chrome.)
+- [x] 4.2 Armar el filtro de lote con los lotes de lo elegido y el de método con `metodosDePago` (sin lista fija), y que la capacidad salga de los lotes de lo elegido. Se comprueba en la skill: el filtro de método solo ofrece métodos con ventas y la capacidad cambia con el evento. (Hecho: filtro de método sale de los datos, filtro de lote y capacidad de lo elegido, pendientes aparte; prueba 13 R1–R8b y auditoría sin problemas.)
+- [x] 4.3 Hacer que el PDF use el evento, lote y método elegidos. Se comprueba: en la skill se descarga el PDF, se confirma que nombra el evento y el método elegidos y que sus totales coinciden con la pantalla (se lee el texto del PDF con la herramienta de PDF si hace falta). (Hecho: el PDF recibe el mismo evento, lote, método y total que la pantalla; verificado en la auditoría reemplazando html2pdf para leer lo que se le entrega, y con una mutación que lo detecta. No se descargó ni abrió un PDF real.)
+- [x] 4.4 Agregar a `auditar-panel` el chequeo de coincidencia de Reportes con Resumen y Ventas y el de "Todos los eventos". Se comprueba corriendo la skill. (Hecho: auditar-panel compara Reportes con Resumen y Ventas, "Todos" y selector; auditoría completa: 52 combinaciones, 0 problemas.)
 
 ## 5. Revisión final
 
-- [ ] 5.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas. Se comprueba con la salida; también se miran las capturas de Resumen, Ventas y Reportes del mismo evento, en escritorio y en celular.
-- [ ] 5.2 Confirmar que no cambió nada fuera de lo previsto. Se comprueba con `git diff --stat`: solo `admin/dashboard.html`, `admin/reportes.html`, `admin/ventas.html`, `shared/`, `pruebas/` y este change.
-- [ ] 5.3 Actualizar `CLAUDE.md` (el selector compartido y que las cifras salen de las ventas confirmadas). Se comprueba leyendo el archivo: sin claves, correos ni rutas personales.
+- [x] 5.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas. Se comprueba con la salida; también se miran las capturas de Resumen, Ventas y Reportes del mismo evento, en escritorio y en celular. (node pruebas/ejecutar-todas.js: 15 archivos bien; auditoría completa: 0 problemas.)
+- [x] 5.2 Confirmar que no cambió nada fuera de lo previsto. Se comprueba con `git diff --stat`: solo `admin/dashboard.html`, `admin/reportes.html`, `admin/ventas.html`, `shared/`, `pruebas/` y este change. (git diff --stat: solo dashboard.html, reportes.html, ventas-utils.js, pruebas 13 y 15, CLAUDE.md y tasks.)
+- [x] 5.3 Actualizar `CLAUDE.md` (el selector compartido y que las cifras salen de las ventas confirmadas). Se comprueba leyendo el archivo: sin claves, correos ni rutas personales. (CLAUDE.md actualizado con el selector y el criterio de cifras.)
 
 ## Workflow follow-up
 
 - Archivar el change cuando el usuario lo apruebe.
 - Anotar para el cambio de reglas (SHR-71): una organización puede leer las ventas de todos los eventos.
+
+## Pendiente anotado (revisor)
+- Con "Todos los eventos", el desglose por lote y los indicadores de abajo agrupan por nombre de lote: dos eventos con un lote "General" se juntan y se usa el precio/disponibles del último. Las tarjetas de arriba no tienen el problema. Resolver aparte.
+- La verificación visual en el Chrome del usuario y un PDF real descargado siguen pendientes (las tareas 4.1 y 4.3 se verificaron con datos inventados).
+- Con "Todos", Reportes trae toda la colección `ventas` al navegador y filtra en memoria: depende de las reglas de Firestore (SHR-71).

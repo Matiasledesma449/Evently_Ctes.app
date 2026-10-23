@@ -13,7 +13,7 @@ const verificar = (nombre, condicion, detalle = '') => {
 
 // shared/ventas-utils.js es un modulo del navegador: se le quitan los "export" para cargarlo aca
 const codigo = fs.readFileSync(path.join(RAIZ, 'shared', 'ventas-utils.js'), 'utf8').replace(/^export /gm, '');
-const U = vm.runInNewContext(codigo + '\n;({ eventosDeLaPersona, ventasDeEventos, cifrasDelEvento, tarjetasDeResumen, tarjetasDelFiltro, metodosDePago })');
+const U = vm.runInNewContext(codigo + '\n;({ eventosDeLaPersona, ventasDeEventos, cifrasDelEvento, tarjetasDeResumen, tarjetasDelFiltro, metodosDePago, htmlDeTarjetasResumen })');
 
 const $ = (n) => '$' + n.toLocaleString();
 const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -116,6 +116,19 @@ const EVENTO = evento('E1', [{ nombre: 'Lote 1', disponibles: 100, vendidas: 7 }
     tarjeta(sin, 'promedio').valor === '—' && tarjeta(sin, 'loteVendido').valor === '—' && tarjeta(sin, 'loteRentable').valor === '—' && tarjeta(sin, 'metodo').valor === '—' && tarjeta(sin, 'recaudado').valor === $(0) && tarjeta(sin, 'entradas').valor === '0');
   verificar('T12 los valores que son nombres (lotes y metodo) se marcan como texto y los numeros no', ['loteVendido', 'loteRentable', 'metodo'].every((id) => tarjeta(t, id).texto === true) && ['capacidad', 'recaudado', 'promedio'].every((id) => !tarjeta(t, id).texto));
   verificar('T11 lote y metodo con datos', tarjeta(t, 'loteVendido').valor === 'Lote 2' && /5 entradas/.test(tarjeta(t, 'loteVendido').ayuda) && tarjeta(t, 'loteRentable').valor === 'Lote 2' && tarjeta(t, 'metodo').valor === 'Crédito');
+}
+
+// ---------- El HTML de las tarjetas ----------
+{
+  const hostil = [{ id: 'x', titulo: '<script>alert(1)</script>', valor: '"><img src=x onerror=alert(2)>', ayuda: "<b>a</b>'", tono: 'dinero', icono: '<i>', ancho: 4, progreso: '50%; background:url(x)' }];
+  const html = U.htmlDeTarjetasResumen(hostil);
+  verificar('H1 el HTML escapa titulo, valor, ayuda e icono (nada se interpreta como etiqueta)', !/<script|<img|<b>|<i>/.test(html) && /&lt;script&gt;/.test(html) && /&lt;img/.test(html), html.slice(0, 200));
+  verificar('H2 el ancho de la barra de ocupacion es siempre un numero (nada de estilos inyectados)', /style="width: 0%"/.test(html) && !/background:url/.test(html), (html.match(/style="[^"]*"/) || [''])[0]);
+  verificar('H3 una barra con 250 se limita a 100% y una negativa a 0%', /width: 100%/.test(U.htmlDeTarjetasResumen([{ id: 'o', titulo: 'a', valor: 'b', ayuda: 'c', progreso: 250 }])) && /width: 0%/.test(U.htmlDeTarjetasResumen([{ id: 'o', titulo: 'a', valor: 'b', ayuda: 'c', progreso: -5 }])));
+  const t = U.tarjetasDeResumen(U.cifrasDelEvento([EVENTO], [conf(12, 1)]));
+  const h = U.htmlDeTarjetasResumen(t);
+  verificar('H4 una tarjeta por cada elemento y los 11 titulos aparecen', (h.match(/hover-card/g) || []).length === 11 && t.every((x) => h.includes('>' + x.titulo + '<')));
+  verificar('H5 con listas raras no falla', U.htmlDeTarjetasResumen(null) === '' && U.htmlDeTarjetasResumen([]) === '');
 }
 
 // ---------- Resumen y Ventas dan los mismos numeros con los mismos datos ----------

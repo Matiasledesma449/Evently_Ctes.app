@@ -236,16 +236,18 @@ const $ = (n) => '$' + n.toLocaleString();
   // ====================== 4. Reportes ======================
   {
     const html = leer('admin', 'reportes.html');
-    verificar('R1 reportes: ya no hay ningun "[...ventas]" (todo parte de las confirmadas)', !/\[\.\.\.ventas\]/.test(html) && (html.match(/soloConfirmadas\(ventas\)/g) || []).length === 2);
-    verificar('R2 reportes: filtro de metodo con los nombres reales', /<option value="Prepaga">/.test(html) && /<option value="Dinero en cuenta">/.test(html) && !/value="Efectivo"|value="Transferencia"|value="Mixto"/.test(html));
+    const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '');
+    verificar('R1 reportes: ya no hay ningun "[...ventas]" y soloConfirmadas se aplica en un unico lugar', !/\[\.\.\.ventas\]/.test(html) && (html.match(/soloConfirmadas\(ventas\)/g) || []).length === 1);
+    verificar('R2 reportes: el filtro de metodo sale de los datos (metodosDePago), sin metodos fijos en el HTML', /metodosDePago\(ventas\)/.test(html) && !/<option value="(Crédito|Débito|Prepaga|Dinero en cuenta|Efectivo|Transferencia|Mixto)"/.test(html));
 
-    // aplicarFiltros: se le pasa a cada seccion SOLO lo confirmado
+    // aplicarFiltros: se le pasa a cada seccion SOLO lo confirmado del lote y metodo elegidos
     const capturas = {};
     const nombresRender = ['renderResumen', 'renderDesglose', 'renderTransacciones', 'renderMetodos', 'renderComportamiento', 'renderIndicadores'];
-    const ctx = { ventas: VENTAS, loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas })') };
+    const utils = vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento })');
+    const ctx = { ventas: VENTAS, loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, textoFiltro: {}, datosListos: () => true, textoDeFiltros: () => 'x', ...utils };
     nombresRender.forEach((n) => { ctx[n] = (v) => { capturas[n] = v; }; });
     vm.createContext(ctx);
-    vm.runInContext(extraerFuncion(html, 'aplicarFiltros') + ';this.aplicarFiltros = aplicarFiltros;', ctx);
+    vm.runInContext(extraerFuncion(html, 'ventasFiltradasActuales') + extraerFuncion(html, 'aplicarFiltros') + ';this.aplicarFiltros = aplicarFiltros;', ctx);
     ctx.aplicarFiltros();
     verificar('R3 reportes: todas las secciones reciben solo las 2 confirmadas', nombresRender.every((n) => capturas[n] && capturas[n].map((v) => v.id).join() === 'C1,C2'), JSON.stringify(Object.fromEntries(nombresRender.map((n) => [n, capturas[n] && capturas[n].map((v) => v.id)]))));
     ctx.loteFilter.value = 'VIP';
@@ -255,18 +257,21 @@ const $ = (n) => '$' + n.toLocaleString();
     ctx.aplicarFiltros();
     verificar('R5 reportes: el filtro de metodo sigue funcionando sobre las confirmadas', capturas.renderResumen.map((v) => v.id).join() === 'C1');
 
-    // renderResumen: cifras y pendientes aparte
+    // cifras: las mismas que Resumen (cifrasDelEvento), con la capacidad de los lotes elegidos y los pendientes aparte
     const kpi = { innerHTML: '' };
-    const ctx2 = { ventas: VENTAS, eventos: [{ lotes: [{ nombre: 'General', disponibles: 100 }] }], loteFilter: { value: 'todos' }, document: { getElementById: () => kpi }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas })') };
+    const evento = { id: 'E', lotes: [{ nombre: 'General', disponibles: 100 }, { nombre: 'VIP', disponibles: 50 }] };
+    const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml })') };
     vm.createContext(ctx2);
-    vm.runInContext(extraerFuncion(html, 'renderResumen') + ';this.renderResumen = renderResumen;', ctx2);
+    vm.runInContext(['cifrasActuales', 'dibujarTarjetas', 'renderResumen'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.renderResumen = renderResumen;', ctx2);
     ctx2.renderResumen(U.soloConfirmadas(VENTAS));
     const h = kpi.innerHTML.replace(/\s+/g, ' ');
-    verificar('R6 reportes: recaudacion $25.000, 5 entradas vendidas, 2 ventas confirmadas', h.includes('$' + (25000).toLocaleString() + '</p>') && /Entradas vendidas<\/span>[\s\S]*?>5 </.test(h) && /2 ventas confirmadas/.test(h) && /Ventas confirmadas<\/span>[\s\S]*?>2<\/p>/.test(h));
-    verificar('R7 reportes: muestra 1 "Pendientes de pago" aparte', /Pendientes de pago<\/span>[\s\S]*?>1<\/p>/.test(h));
+    verificar('R6 reportes: recaudacion $25.000, 5 entradas vendidas, 2 ventas confirmadas (como Resumen)', h.includes('$' + (25000).toLocaleString() + '</p>') && /Entradas vendidas<\/span>[\s\S]*?>5</.test(h) && /Ventas confirmadas<\/span>[\s\S]*?>2<\/p>/.test(h));
+    verificar('R7 reportes: muestra 1 "Pendientes de pago" aparte y la capacidad de todos los lotes (150)', /Pendientes de pago<\/span>[\s\S]*?>1<\/p>/.test(h) && /Capacidad total<\/span>[\s\S]*?>150</.test(h));
     ctx2.loteFilter.value = 'VIP';
     ctx2.renderResumen(U.soloConfirmadas(VENTAS).filter((v) => v.loteNombre === 'VIP'));
-    verificar('R8 reportes: los pendientes respetan el filtro de lote (VIP no tiene pendientes)', /Pendientes de pago<\/span>[\s\S]*?>0<\/p>/.test(kpi.innerHTML.replace(/\s+/g, ' ')));
+    const hv = kpi.innerHTML.replace(/\s+/g, ' ');
+    verificar('R8 reportes: con el lote VIP los pendientes respetan el lote (0) y la capacidad es la de VIP (50)', /Pendientes de pago<\/span>[\s\S]*?>0<\/p>/.test(hv) && /Capacidad total<\/span>[\s\S]*?>50</.test(hv));
+    verificar('R8b reportes: lee solo el evento elegido (ya no suscribe a todos los eventos sin filtro) y no redirige si falta el evento', /where\("eventoId", "==", eventoId\)/.test(sinComentarios) && !/window\.location\.href\s*=\s*'eventos-seleccion\.html'/.test(sinComentarios));
   }
 
   // Reportes: la tabla de transacciones y el PDF no deben mostrar sin escapar el correo, el lote ni el metodo
@@ -274,7 +279,8 @@ const $ = (n) => '$' + n.toLocaleString();
     const html = leer('admin', 'reportes.html');
     const sinEscapar = html.match(/\$\{v\.(correo|comprador|loteNombre|metodo_pago)[^}]*\}/g) || [];
     verificar('R9 reportes: ningun correo, lote ni metodo se inserta en el HTML sin escapar', sinEscapar.length === 0, sinEscapar.join(' | '));
-    verificar('R10 reportes: importa y usa escaparHtml', /escaparHtml \} from "\.\.\/shared\/ventas-utils\.js"/.test(html) && (html.match(/escaparHtml\(/g) || []).length >= 13);
+    verificar('R9b reportes: la pestana Indicadores escapa titulo y valor (vienen de nombres de lote y metodo)', /\$\{escaparHtml\(ind\.label\)\}/.test(html) && /\$\{escaparHtml\(ind\.value\)\}/.test(html) && !/\$\{ind\.(label|value)\}/.test(html));
+    verificar('R10 reportes: importa y usa escaparHtml', /import \{[^}]*escaparHtml[^}]*\} from "\.\.\/shared\/ventas-utils\.js"/.test(html) && (html.match(/escaparHtml\(/g) || []).length >= 13);
 
     const contenedor = { innerHTML: '' };
     const ctx = { document: { getElementById: () => contenedor }, ...vm.runInNewContext(codigoUtils + '\n;({ escaparHtml })') };

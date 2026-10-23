@@ -317,3 +317,22 @@ export function tarjetasDeResumen(cifras) {
         { id: 'metodo', titulo: 'Método más usado', valor: v(c && (c.metodoMasUsado ? c.metodoMasUsado.nombre : '—')), ayuda: c && c.metodoMasUsado ? `${c.metodoMasUsado.porcentaje}% de las ventas confirmadas` : 'Según las ventas confirmadas', tono: 'normal', icono: 'account_balance_wallet', ancho: 1, texto: true }
     ];
 }
+
+const CLASE_DEL_TONO = { dinero: 'text-violet-600', pendiente: 'text-yellow-600', normal: 'text-gray-800' };
+const CLASE_DEL_ICONO = { pendiente: 'text-yellow-600' };
+const CLASE_DE_COLUMNAS = { 1: '', 2: 'sm:col-span-2', 4: 'sm:col-span-2 lg:col-span-4' };
+
+// El HTML de las tarjetas de Resumen (el mismo en Resumen y en Reportes). Todo texto pasa por escaparHtml;
+// las clases salen de tablas fijas y el ancho de la barra de ocupación siempre es un número entre 0 y 100.
+export function htmlDeTarjetasResumen(tarjetas) {
+    return (Array.isArray(tarjetas) ? tarjetas : []).map((t) => `
+                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card ${CLASE_DE_COLUMNAS[t.ancho] || ''}" title="${escaparHtml(t.titulo + ': ' + t.valor)}">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm text-gray-500">${escaparHtml(t.titulo)}</span>
+                        <span class="material-symbols-outlined ${CLASE_DEL_ICONO[t.tono] || 'text-violet-600'}">${escaparHtml(t.icono)}</span>
+                    </div>
+                    <p class="${t.texto ? 'text-xl font-bold break-words' : 'kpi-value truncate'} ${CLASE_DEL_TONO[t.tono] || CLASE_DEL_TONO.normal} mt-2">${escaparHtml(t.valor)}</p>
+                    ${t.progreso === undefined ? '' : `<div class="w-full bg-gray-200 rounded-full h-2 mt-2"><div class="bg-violet-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, Number(t.progreso) || 0))}%"></div></div>`}
+                    <p class="text-xs text-gray-400 mt-1">${escaparHtml(t.ayuda)}</p>
+                </div>`).join('');
+}

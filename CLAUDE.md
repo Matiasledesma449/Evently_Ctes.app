@@ -34,6 +34,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Español en nombres, textos y comentarios.
 - Firebase se expone como variables globales en `window` (`db`, `auth`, `getDocs`…). Los demás scripts esperan el evento `firebase-ready`.
 - El menú del panel (escritorio y celular) se dibuja desde `shared/menu-admin.js`: cada página de `admin/` solo lo llama con `<script src="../shared/menu-admin.js" data-pagina="<nombre>">`; no se copia a mano. `menu-rol.js` maneja roles, avisos de no leídos y cierre de sesión. El superadmin puede usar "Ver como organización" (solo cambia lo que se ve; los permisos son los reales).
+- Resumen, Ventas y Reportes miran un evento a la vez (Reportes también "Todos los eventos") con el selector de `shared/selector-evento.js`, que guarda el evento en `localStorage.eventoId`. Todas las cifras salen de las ventas confirmadas con las funciones puras de `shared/ventas-utils.js` (`cifrasDelEvento`, `tarjetasDeResumen`, `htmlDeTarjetasResumen`): no usar los contadores `vendidas` de los lotes.
 - Utilidades de interfaz (toasts, modales, confirmar) en `shared/ui-utils.js`. Textos ES/EN en `shared/i18n.js`, todavía como esqueleto.
 - Cada página HTML lleva su propio JavaScript incrustado; son pocos los archivos `.js` separados.
 

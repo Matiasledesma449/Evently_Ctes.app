@@ -43,7 +43,14 @@
 
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
-            <h1 class="text-2xl font-bold text-gray-800 mb-6">Reportes</h1>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Reportes</h1>
+                <div id="selectorEvento" data-con-todos="1" class="flex flex-wrap items-center gap-2">
+                    <label for="selectorEventoSelect" class="text-sm font-medium text-gray-500">Evento</label>
+                    <select id="selectorEventoSelect" disabled class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white min-w-[16rem] max-w-full focus:ring-2 focus:ring-violet-500 outline-none"><option>—</option></select>
+                    <p id="selectorEventoAviso" class="hidden w-full text-sm text-gray-500"></p>
+                </div>
+            </div>
 
             <!-- Filtros -->
             <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap gap-4 items-end">
@@ -57,16 +64,15 @@
                     <label class="block text-xs font-medium text-gray-500 uppercase">Método de pago</label>
                     <select id="metodoFilter" class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                         <option value="todos">Todos</option>
-                        <option value="Crédito">Crédito</option>
-                        <option value="Débito">Débito</option>
-                        <option value="Prepaga">Prepaga</option>
-                        <option value="Dinero en cuenta">Dinero en cuenta</option>
                     </select>
                 </div>
                 <div class="flex gap-2 ml-auto">
                     <button id="btnExportarPDF" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
                 </div>
             </div>
+
+            <!-- Qué se está mirando: evento, lote y método -->
+            <p id="textoFiltroReportes" class="text-sm text-gray-500 -mt-3 mb-4 min-h-[1.25rem]"></p>
 
             <!-- Pestañas -->
             <div class="flex flex-wrap gap-2 border-b border-gray-200 mb-4" id="tabContainer">
@@ -171,11 +177,13 @@
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module" src="../shared/selector-evento.js"></script>
     <script type="module">
-        import { onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { soloConfirmadas, resumenDeVentas, escaparHtml } from "../shared/ventas-utils.js";
+        import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago } from "../shared/ventas-utils.js";
 
-        // Estado
+        // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
         let eventos = [];
         let ventas = [];
         let lotesUnicos = [];
@@ -183,25 +191,75 @@
         // Referencias DOM
         const loteFilter = document.getElementById('loteFilter');
         const metodoFilter = document.getElementById('metodoFilter');
+        const textoFiltro = document.getElementById('textoFiltroReportes');
+        const kpiContainer = document.getElementById('kpiContainer');
 
-        // 1. Escuchar eventos y ventas
+        // Qué se mira: el evento de la dirección o el último que se recordó; "todos" suma los eventos de la persona
+        const eventoId = new URLSearchParams(window.location.search).get('id') || localStorage.getItem('eventoId') || '';
+        const EN_TODOS = eventoId === 'todos';
+        const TEXTO_ELEGIR = 'Elegí un evento para ver sus datos';
+
+        // Lo que ya llegó de Firestore (con "todos" también hace falta saber quién es la persona)
+        const cargados = { usuario: !EN_TODOS, eventos: false, ventas: false };
+        let eventoNoExiste = false;
+        let eventosDeBase = [];
+        let ventasDeBase = [];
+        let usuarioActual = null;
+        let uidActual = null;
+
+        function datosListos() {
+            return !!eventoId && cargados.usuario && cargados.eventos && cargados.ventas && !eventoNoExiste;
+        }
+
+        // Pone en `eventos` y `ventas` lo que corresponde a lo elegido y vuelve a dibujar
+        function repartirDatos() {
+            if (EN_TODOS) {
+                eventos = eventosDeLaPersona(eventosDeBase, usuarioActual, uidActual);
+                ventas = ventasDeEventos(ventasDeBase, eventos.map((ev) => ev.id));
+            } else {
+                eventos = eventosDeBase;
+                ventas = ventasDeBase;
+            }
+            if (!datosListos()) {
+                if (eventoNoExiste) textoFiltro.textContent = TEXTO_ELEGIR;
+                return;
+            }
+            actualizarFiltroLotes();
+            actualizarFiltroMetodos();
+            aplicarFiltros();
+        }
+
+        // 1. Escuchar el evento elegido y sus ventas (con "todos": todos los eventos y todas las ventas, que se filtran en memoria)
         function escucharDatos() {
-            onSnapshot(collection(db, "eventos"), (snapshot) => {
-                eventos = [];
-                snapshot.forEach(doc => {
-                    eventos.push({ id: doc.id, ...doc.data() });
+            if (!eventoId) {
+                textoFiltro.textContent = TEXTO_ELEGIR; // sin evento no se lleva a otra pantalla: el selector de arriba invita a elegir uno
+                return;
+            }
+            const aLista = (snapshot) => { const lista = []; snapshot.forEach((d) => lista.push({ id: d.id, ...d.data() })); return lista; };
+            if (EN_TODOS) {
+                onAuthStateChanged(auth, async (user) => {
+                    if (!user) return;
+                    uidActual = user.uid;
+                    try {
+                        const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+                        usuarioActual = perfil.exists() ? perfil.data() : null;
+                    } catch (e) {
+                        usuarioActual = null;
+                    }
+                    cargados.usuario = true;
+                    repartirDatos();
                 });
-                actualizarFiltroLotes();
-                aplicarFiltros();
-            });
-
-            onSnapshot(collection(db, "ventas"), (snapshot) => {
-                ventas = [];
-                snapshot.forEach(doc => {
-                    ventas.push({ id: doc.id, ...doc.data() });
+                onSnapshot(collection(db, "eventos"), (snapshot) => { eventosDeBase = aLista(snapshot); cargados.eventos = true; repartirDatos(); });
+                onSnapshot(collection(db, "ventas"), (snapshot) => { ventasDeBase = aLista(snapshot); cargados.ventas = true; repartirDatos(); });
+            } else {
+                onSnapshot(doc(db, "eventos", eventoId), (docSnap) => {
+                    eventoNoExiste = !docSnap.exists();
+                    eventosDeBase = docSnap.exists() ? [{ id: docSnap.id, ...docSnap.data() }] : [];
+                    cargados.eventos = true;
+                    repartirDatos();
                 });
-                aplicarFiltros();
-            });
+                onSnapshot(query(collection(db, "ventas"), where("eventoId", "==", eventoId)), (snapshot) => { ventasDeBase = aLista(snapshot); cargados.ventas = true; repartirDatos(); });
+            }
         }
 
         // 2. Actualizar filtro de lotes
@@ -227,20 +285,57 @@
             });
         }
 
+        // Los métodos que tienen las ventas, sin una lista fija. Reconstruir el desplegable borra lo elegido: se guarda y se vuelve a poner
+        function actualizarFiltroMetodos() {
+            const elegido = metodoFilter.value;
+            const metodos = metodosDePago(ventas);
+            metodoFilter.innerHTML = ['<option value="todos">Todos</option>']
+                .concat(metodos.map((m) => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
+            metodoFilter.value = metodos.includes(elegido) ? elegido : 'todos';
+        }
+
         // 3. Aplicar filtros (función principal)
+        // Las ventas que se ven: solo las confirmadas (son las únicas que suman dinero y entradas) del lote y método elegidos
+        function ventasFiltradasActuales() {
+            let filtradas = soloConfirmadas(ventas);
+            if (loteFilter.value !== 'todos') filtradas = filtradas.filter(v => v.loteNombre === loteFilter.value);
+            if (metodoFilter.value !== 'todos') filtradas = filtradas.filter(v => v.metodo_pago === metodoFilter.value);
+            return filtradas;
+        }
+
+        // Las cifras de lo elegido, calculadas con las MISMAS funciones que usa Resumen. La capacidad sale de los lotes elegidos
+        // y las pendientes de pago se cuentan aparte (respetando el lote; no tienen método todavía) sin sumarlas a nada.
+        function cifrasActuales(ventasFiltradas) {
+            const lote = loteFilter.value;
+            const eventosElegidos = eventos.map((ev) => ({ ...ev, lotes: (Array.isArray(ev.lotes) ? ev.lotes : []).filter((l) => lote === 'todos' || l.nombre === lote) }));
+            const cifras = cifrasDelEvento(eventosElegidos, ventasFiltradas);
+            const pendientes = resumenDeVentas(ventas.filter((v) => lote === 'todos' || v.loteNombre === lote)).pendientes;
+            return { ...cifras, pendientes };
+        }
+
+        function nombreDeLoElegido() {
+            return EN_TODOS ? 'Todos los eventos' : ((eventos[0] && eventos[0].nombre) || 'Evento');
+        }
+
+        // "Evento · Lote · Método", para la línea de arriba de las cifras
+        function textoDeFiltros() {
+            const lote = loteFilter.value === 'todos' ? 'Todos los lotes' : loteFilter.value;
+            const metodo = metodoFilter.value === 'todos' ? 'Todos los métodos' : metodoFilter.value;
+            return `${nombreDeLoElegido()} · ${lote} · ${metodo}`;
+        }
+
+        // El mismo dato, para el encabezado del PDF
+        function filtrosParaPDF() {
+            const lote = loteFilter.value === 'todos' ? 'Todos' : loteFilter.value;
+            const metodo = metodoFilter.value === 'todos' ? 'Todos' : metodoFilter.value;
+            return `Evento: ${nombreDeLoElegido()} | Lote: ${lote} | Método: ${metodo}`;
+        }
+
         function aplicarFiltros() {
-            const loteSeleccionado = loteFilter.value;
-            const metodoSeleccionado = metodoFilter.value;
+            if (!datosListos()) return;
+            const ventasFiltradas = ventasFiltradasActuales();
 
-            let ventasFiltradas = soloConfirmadas(ventas); // solo ventas confirmadas: son las unicas que suman dinero y entradas
-
-            if (loteSeleccionado !== 'todos') {
-                ventasFiltradas = ventasFiltradas.filter(v => v.loteNombre === loteSeleccionado);
-            }
-            if (metodoSeleccionado !== 'todos') {
-                ventasFiltradas = ventasFiltradas.filter(v => v.metodo_pago === metodoSeleccionado);
-            }
-
+            textoFiltro.textContent = `Mostrando: ${textoDeFiltros()}`; // textContent: nunca se interpreta como HTML
             renderResumen(ventasFiltradas);
             renderDesglose(ventasFiltradas);
             renderTransacciones(ventasFiltradas);
@@ -262,24 +357,14 @@
             const loteSeleccionado = loteFilter.value;
             const metodoSeleccionado = metodoFilter.value;
 
-            let ventasFiltradas = soloConfirmadas(ventas); // solo ventas confirmadas: son las unicas que suman dinero y entradas
-            if (loteSeleccionado !== 'todos') {
-                ventasFiltradas = ventasFiltradas.filter(v => v.loteNombre === loteSeleccionado);
-            }
-            if (metodoSeleccionado !== 'todos') {
-                ventasFiltradas = ventasFiltradas.filter(v => v.metodo_pago === metodoSeleccionado);
-            }
+            if (!datosListos()) return;
+            const ventasFiltradas = ventasFiltradasActuales(); // el mismo evento, lote y método que se ven en pantalla
 
             const totalVentas = ventasFiltradas.length;
             const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
             const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
 
-            let capacidadTotal = 0;
-            eventos.forEach(ev => {
-                if (ev.lotes && Array.isArray(ev.lotes)) {
-                    ev.lotes.forEach(l => { capacidadTotal += (l.disponibles || 0); });
-                }
-            });
+            const capacidadTotal = cifrasActuales(ventasFiltradas).capacidad;
 
             const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
             const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalEntradas / capacidadTotal) * 100) : 0;
@@ -353,13 +438,7 @@
                 day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
             });
 
-            let filtrosTexto = 'Todos los lotes y métodos';
-            if (loteSeleccionado !== 'todos' || metodoSeleccionado !== 'todos') {
-                const partes = [];
-                if (loteSeleccionado !== 'todos') partes.push(`Lote: ${loteSeleccionado}`);
-                if (metodoSeleccionado !== 'todos') partes.push(`Método: ${metodoSeleccionado}`);
-                filtrosTexto = partes.join(' | ');
-            }
+            const filtrosTexto = escaparHtml(filtrosParaPDF()); // el nombre del evento lo escribe un organizador: se escapa
 
             const pdfContent = document.getElementById('pdf-content');
 
@@ -577,96 +656,19 @@
         loteFilter.addEventListener('change', aplicarFiltros);
         metodoFilter.addEventListener('change', aplicarFiltros);
 
+        dibujarTarjetas(null); // al abrir: las mismas tarjetas con "—"
         escucharDatos();
 
         // ------------------------------------------------------------
         // FUNCIONES DE RENDERIZADO
         // ------------------------------------------------------------
         function renderResumen(ventasFiltradas) {
-            const totalVentas = ventasFiltradas.length;
-            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
-            const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
-            
-            let capacidadTotal = 0;
-            eventos.forEach(ev => {
-                if (ev.lotes && Array.isArray(ev.lotes)) {
-                    ev.lotes.forEach(l => {
-                        capacidadTotal += (l.disponibles || 0);
-                    });
-                }
-            });
+            dibujarTarjetas(cifrasActuales(ventasFiltradas));
+        }
 
-            const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
-            const tasaOcupacion = capacidadTotal > 0 ? Math.round((totalEntradas / capacidadTotal) * 100) : 0;
-
-            // Las ventas pendientes de pago no suman a ninguna cifra: se informan aparte (respetando el filtro de lote;
-            // el de metodo no aplica porque una venta pendiente todavia no tiene metodo de pago)
-            const pendientesDePago = resumenDeVentas(ventas.filter(v => loteFilter.value === 'todos' || v.loteNombre === loteFilter.value)).pendientes;
-
-            const container = document.getElementById('kpiContainer');
-            container.innerHTML = `
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Capacidad total</span>
-                        <span class="material-symbols-outlined text-violet-600">groups</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">${capacidadTotal.toLocaleString()}</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Entradas vendidas</span>
-                        <span class="material-symbols-outlined text-violet-600">confirmation_number</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">${totalEntradas.toLocaleString()} <span class="text-sm font-normal text-gray-400">/ ${capacidadTotal.toLocaleString()}</span></p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Aforo restante</span>
-                        <span class="material-symbols-outlined text-violet-600">event_seat</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">${aforoRestante.toLocaleString()}</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Tasa de ocupación</span>
-                        <span class="material-symbols-outlined text-violet-600">pie_chart</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">${tasaOcupacion}%</p>
-                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div class="bg-violet-600 h-2 rounded-full" style="width: ${tasaOcupacion}%"></div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card sm:col-span-2">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Recaudación total</span>
-                        <span class="material-symbols-outlined text-violet-600">payments</span>
-                    </div>
-                    <p class="text-3xl font-bold text-violet-600 mt-2">$${totalRecaudado.toLocaleString()}</p>
-                    <span class="text-xs text-gray-400">${totalVentas} ventas confirmadas</span>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Ventas confirmadas</span>
-                        <span class="material-symbols-outlined text-violet-600">receipt_long</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">${totalVentas}</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Prom. entradas/compra</span>
-                        <span class="material-symbols-outlined text-violet-600">shopping_cart</span>
-                    </div>
-                    <p class="text-2xl font-bold text-gray-800 mt-2">${totalVentas > 0 ? (totalEntradas / totalVentas).toFixed(1) : 0}</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-5 hover-card">
-                    <div class="flex justify-between items-start">
-                        <span class="text-sm text-gray-500">Pendientes de pago</span>
-                        <span class="material-symbols-outlined text-yellow-600">hourglass_top</span>
-                    </div>
-                    <p class="text-2xl font-bold text-yellow-600 mt-2">${pendientesDePago}</p>
-                    <span class="text-xs text-gray-400">no suman a las cifras</span>
-                </div>
-            `;
+        // Las tarjetas: las mismas que Resumen. Con null (datos que todavía no llegaron) salen todas en "—", sin saltos
+        function dibujarTarjetas(cifras) {
+            kpiContainer.innerHTML = htmlDeTarjetasResumen(tarjetasDeResumen(cifras));
         }
 
         function renderDesglose(ventasFiltradas) {
@@ -864,14 +866,7 @@
             const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
             const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
             
-            let capacidadTotal = 0;
-            eventos.forEach(ev => {
-                if (ev.lotes && Array.isArray(ev.lotes)) {
-                    ev.lotes.forEach(l => {
-                        capacidadTotal += (l.disponibles || 0);
-                    });
-                }
-            });
+            const capacidadTotal = cifrasActuales(ventasFiltradas).capacidad;
             const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
             const pctAforo = capacidadTotal > 0 ? Math.round((aforoRestante / capacidadTotal) * 100) : 0;
 
@@ -942,8 +937,8 @@
             const grid = document.getElementById('indicadoresGrid');
             grid.innerHTML = indicadores.map(ind => `
                 <div class="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition">
-                    <p class="text-sm text-gray-500">${ind.label}</p>
-                    <p class="text-lg font-bold text-gray-800 mt-1">${ind.value}</p>
+                    <p class="text-sm text-gray-500">${escaparHtml(ind.label)}</p>
+                    <p class="text-lg font-bold text-gray-800 mt-1">${escaparHtml(ind.value)}</p>
                 </div>
             `).join('');
         }
