@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
+        /* Igual que el resto del panel: así el paso al login no deja un error en la consola del navegador */
+        @view-transition { navigation: auto; }
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
     </style>
 </head>
@@ -114,6 +116,8 @@
                 btnLogin.disabled = true;
 
                 await signInWithEmailAndPassword(auth, email, password);
+                // Al entrar de nuevo siempre se empieza en la vista normal (nunca en "Ver como organización")
+                try { localStorage.removeItem('vistaComo'); } catch (e) { /* sin almacenamiento */ }
                 try {
                     const perfil = await getDoc(doc(db, 'usuarios', auth.currentUser.uid));
                     if (perfil.exists()) localStorage.setItem('eventlyRol', perfil.data().rol || '');
