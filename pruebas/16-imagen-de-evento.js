@@ -70,5 +70,17 @@ verificar('I11 dos eventos sin foto con ids distintos se distinguen por letra o 
   verificar('I21 crearImagenEvento con direccion peligrosa: solo relleno, sin <img>', sin.hijos.length === 1 && sin.attrs['data-imagen-evento'].startsWith('relleno:F:'));
 }
 
+// ---------- Las paginas usan la funcion compartida (sin rellenos propios) ----------
+{
+  const leer = (...p) => fs.readFileSync(path.join(RAIZ, ...p), 'utf8');
+  const paginas = { 'public/index.html': leer('public', 'index.html'), 'public/evento.html': leer('public', 'evento.html'), 'admin/eventos-seleccion.html': leer('admin', 'eventos-seleccion.html'), 'admin/aprobaciones.js': leer('admin', 'aprobaciones.js') };
+  const sinUsar = Object.keys(paginas).filter((n) => !/imagen-evento\.js/.test(paginas[n]));
+  verificar('I22 las cuatro paginas que muestran un evento importan shared/imagen-evento.js', sinUsar.length === 0, sinUsar.join(', '));
+  const viejos = Object.keys(paginas).filter((n) => /Imagen de evento 1\.jpg|images\.unsplash\.com/.test(paginas[n]));
+  verificar('I23 ninguna pagina conserva su propio relleno (la foto repetida ni Unsplash)', viejos.length === 0, viejos.join(', '));
+  verificar('I24 aprobar una solicitud sigue copiando su foto al evento', /dataEvento\.imagen\s*=\s*typeof solicitud\.imagen === 'string'/.test(paginas['admin/aprobaciones.js']));
+  verificar('I25 evento.html y la lista de Eventos escapan el nombre del evento', /escaparHtml\(evento\.nombre/.test(paginas['public/evento.html']) && /escaparHtml\(evento\.nombre/.test(paginas['admin/eventos-seleccion.html']));
+}
+
 console.log(mal === 0 ? '\nTodos los casos pasaron.' : `\n${mal} caso(s) con problemas.`);
 process.exit(mal === 0 ? 0 : 1);

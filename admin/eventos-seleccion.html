@@ -94,6 +94,8 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
         const searchInput = document.getElementById('searchInput');
@@ -377,7 +379,6 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${lista.map(evento => {
                         const estado = evento.estado || 'publicado'; // Seguro por defecto
-                        const imagen = evento.imagen || '/public/imag/Imagen de evento 1.jpg';
                         
                         let badgeClass = '';
                         let estadoTexto = '';
@@ -422,19 +423,19 @@
                         return `
                             <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden flex flex-col">
                                 <div class="relative">
-                                    <img src="${imagen}" alt="${evento.nombre}" class="w-full h-40 object-cover bg-gray-100">
+                                    ${htmlDeImagenEvento(evento, { clases: 'h-40' })}
                                     <div class="absolute top-3 right-3">
                                         <span class="text-xs font-bold px-3 py-1 rounded-full shadow-sm ${badgeClass}">${estadoTexto}</span>
                                     </div>
                                 </div>
                                 <div class="p-5 flex-1 flex flex-col">
-                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${evento.nombre}">${evento.nombre || 'Sin nombre'}</h3>
+                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${escaparHtml(evento.nombre)}">${escaparHtml(evento.nombre || 'Sin nombre')}</h3>
                                     
                                     <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
-                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${escaparHtml(evento.fecha || 'Fecha no definida')}
                                     </p>
                                     <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
-                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                                     </p>
                                     
                                     ${motivoHTML}

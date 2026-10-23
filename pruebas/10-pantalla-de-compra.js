@@ -80,7 +80,10 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1' }) {
     fetch: (...a) => contexto._fetch(...a), _fetch: fetchFn,
   };
   vm.createContext(contexto);
-  const js = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*$/m, '');
+  // Los modulos compartidos (escaparHtml, htmlDeImagenEvento) se cargan sin sus "export", como en las otras pruebas
+  const compartido = (archivo) => fs.readFileSync(require('path').join(__dirname, '..', 'shared', archivo), 'utf8').replace(/^export /gm, '');
+  vm.runInContext(compartido('ventas-utils.js') + ';' + compartido('imagen-evento.js'), contexto);
+  const js = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*$/gm, '');
   vm.runInContext(js, contexto);
   return { els, ubicacion, ventana, alertas, contexto };
 }

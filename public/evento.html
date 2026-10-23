@@ -131,6 +131,8 @@
     <script type="module">
         // Esta pagina solo LEE el evento. La venta, el precio y el stock los maneja el servidor (/api/crear-pago).
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
 
         // Elementos
         const container = document.getElementById('eventoContainer');
@@ -218,24 +220,18 @@
         }
 
         function renderEvento(evento) {
-            const imagenUrl = typeof evento.imagen === 'string' && evento.imagen.trim()
-                ? evento.imagen.trim()
-                : './imag/Imagen de evento 1.jpg';
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <img src="${imagenUrl}" alt="${evento.nombre || 'Imagen del evento'}" class="w-full h-64 object-cover" onerror="this.hidden=true; this.nextElementSibling.classList.remove('hidden')">
-                    <div class="hidden w-full h-64 bg-violet-50 text-violet-300 items-center justify-center" aria-label="Imagen no disponible">
-                        <span class="material-symbols-outlined text-6xl">image</span>
-                    </div>
+                    ${htmlDeImagenEvento(evento, { clases: 'h-64' })}
                     <div class="p-6">
-                        <h1 class="text-3xl font-bold text-gray-800">${evento.nombre || 'Evento sin nombre'}</h1>
+                        <h1 class="text-3xl font-bold text-gray-800">${escaparHtml(evento.nombre || 'Evento sin nombre')}</h1>
                         <p class="text-gray-500 flex items-center gap-2 mt-2">
-                            <span class="material-symbols-outlined">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                            <span class="material-symbols-outlined">calendar_month</span> ${escaparHtml(evento.fecha || 'Fecha no definida')}
                         </p>
                         <p class="text-gray-500 flex items-center gap-2">
-                            <span class="material-symbols-outlined">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                            <span class="material-symbols-outlined">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                         </p>
-                        <p class="text-gray-600 mt-4">${evento.descripcion || '¡No te lo pierdas!'}</p>
+                        <p class="text-gray-600 mt-4">${escaparHtml(evento.descripcion || '¡No te lo pierdas!')}</p>
                     </div>
                 </div>
             `;
