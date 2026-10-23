@@ -107,3 +107,112 @@ export function avisosDeVenta(venta) {
     }
     return avisos;
 }
+
+// ======================================================================================================
+// Tarjetas de resumen de la pantalla Ventas: cambian según el filtro de estado y de método de pago.
+// Son funciones puras (sin página ni Firestore) para poder probarlas con node.
+// "Recaudado" cuenta SOLO ventas confirmadas; lo pendiente se muestra como "en espera" y lo rechazado
+// como "no cobrado", nunca como recaudación.
+// ======================================================================================================
+
+// Milisegundos de una fecha de Firestore ({ seconds }), de un Date o de un número. null si no hay fecha válida.
+function fechaEnMs(fecha) {
+    if (fecha === null || fecha === undefined) return null;
+    if (typeof fecha === 'number') return Number.isFinite(fecha) ? fecha : null;
+    if (Object.prototype.toString.call(fecha) === '[object Date]') {
+        const t = fecha.getTime();
+        return Number.isFinite(t) ? t : null;
+    }
+    if (typeof fecha === 'object' && typeof fecha.seconds === 'number' && Number.isFinite(fecha.seconds)) return fecha.seconds * 1000;
+    return null;
+}
+
+// Las ventas que cumplen a la vez el filtro de estado y el de método ('todos' no filtra)
+export function filtrarVentas(ventas, estado = 'todos', metodo = 'todos') {
+    // El método se compara sin espacios sobrantes, igual que en metodosDePago, para que lo que se ofrece siempre filtre
+    const metodoDe = (v) => (typeof v.metodo_pago === 'string' ? v.metodo_pago.trim() : '');
+    return (Array.isArray(ventas) ? ventas : []).filter((v) =>
+        v && (estado === 'todos' || v.estado === estado) && (metodo === 'todos' || metodoDe(v) === metodo));
+}
+
+// Los métodos de pago que tienen las ventas, sin repetir, sin vacíos y ordenados
+export function metodosDePago(ventas) {
+    const vistos = new Set();
+    for (const v of (Array.isArray(ventas) ? ventas : [])) {
+        if (v && typeof v.metodo_pago === 'string' && v.metodo_pago.trim() !== '') vistos.add(v.metodo_pago.trim());
+    }
+    return [...vistos].sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+// "hace 5 min", "hace 3 h", "hace 2 días". `ahora` es un Date o un número (se recibe para poder probarlo).
+export function tiempoDesde(fecha, ahora = Date.now()) {
+    const desde = fechaEnMs(fecha);
+    const hasta = fechaEnMs(ahora);
+    if (desde === null || hasta === null) return '—';
+    const minutos = Math.floor((hasta - desde) / 60000);
+    if (minutos < 1) return 'hace un momento';
+    if (minutos < 60) return `hace ${minutos} min`;
+    const horas = Math.floor(minutos / 60);
+    if (horas < 24) return `hace ${horas} h`;
+    const dias = Math.floor(horas / 24);
+    return dias === 1 ? 'hace 1 día' : `hace ${dias} días`;
+}
+
+const dinero = (n) => `$${aNumero(n).toLocaleString()}`;
+
+// Las 4 tarjetas del filtro de estado elegido: { titulo, valor, ayuda, tono }.
+// `valor` ya viene como texto listo para mostrar. `tono`: 'dinero' (violeta), 'pendiente' (amarillo),
+// 'rechazo' (rojo) o 'normal' (gris), los mismos colores que ya usa el panel.
+export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
+    const lista = Array.isArray(ventas) ? ventas.filter(Boolean) : [];
+
+    if (estado === 'pendiente') {
+        const pendientes = lista.filter((v) => v.estado === 'pendiente');
+        const fechas = pendientes.map((v) => fechaEnMs(v.fecha)).filter((t) => t !== null);
+        const masVieja = fechas.length > 0 ? Math.min(...fechas) : null;
+        return [
+            { titulo: 'Ventas pendientes', valor: String(pendientes.length), ayuda: 'Esperando que se pague', tono: 'pendiente' },
+            { titulo: 'Entradas en espera', valor: String(pendientes.reduce((s, v) => s + aNumero(v.cantidad), 0)), ayuda: 'Todavía no se vendieron', tono: 'pendiente' },
+            { titulo: 'Dinero en espera', valor: dinero(pendientes.reduce((s, v) => s + aNumero(v.monto_total), 0)), ayuda: 'Todavía no se cobró', tono: 'pendiente' },
+            { titulo: 'La más antigua', valor: masVieja === null ? '—' : tiempoDesde(masVieja, ahora), ayuda: 'Venta pendiente más vieja', tono: 'normal' }
+        ];
+    }
+
+    if (estado === 'rechazada') {
+        const rechazadas = lista.filter((v) => v.estado === 'rechazada');
+        const cuenta = new Map();
+        for (const v of rechazadas) {
+            if (v.motivo) cuenta.set(v.motivo, (cuenta.get(v.motivo) || 0) + 1);
+        }
+        let motivo = null;
+        let max = 0;
+        for (const [m, n] of cuenta) {
+            if (n > max) { max = n; motivo = m; }
+        }
+        return [
+            { titulo: 'Ventas rechazadas', valor: String(rechazadas.length), ayuda: 'No se completaron', tono: 'rechazo' },
+            { titulo: 'Entradas que no se vendieron', valor: String(rechazadas.reduce((s, v) => s + aNumero(v.cantidad), 0)), ayuda: 'Volvieron a estar disponibles', tono: 'rechazo' },
+            { titulo: 'Dinero no cobrado', valor: dinero(rechazadas.reduce((s, v) => s + aNumero(v.monto_total), 0)), ayuda: 'No suma a la recaudación', tono: 'rechazo' },
+            { titulo: 'Motivo más frecuente', valor: motivo === null ? '—' : textoDelMotivo(motivo), ayuda: 'Por qué se rechazan más', tono: 'normal' }
+        ];
+    }
+
+    const r = resumenDeVentas(lista);
+
+    if (estado === 'confirmada') {
+        return [
+            { titulo: 'Total recaudado', valor: dinero(r.recaudado), ayuda: 'Solo ventas confirmadas', tono: 'dinero' },
+            { titulo: 'Entradas vendidas', valor: String(r.entradas), ayuda: 'De ventas confirmadas', tono: 'normal' },
+            { titulo: 'Ventas confirmadas', valor: String(r.confirmadas), ayuda: 'Pagos aprobados', tono: 'normal' },
+            { titulo: 'Promedio por venta', valor: r.confirmadas > 0 ? dinero(r.recaudado / r.confirmadas) : '—', ayuda: 'Recaudado ÷ ventas', tono: 'normal' }
+        ];
+    }
+
+    // 'todos' (y cualquier valor desconocido): las cifras generales de siempre
+    return [
+        { titulo: 'Total recaudado', valor: dinero(r.recaudado), ayuda: 'Solo ventas confirmadas', tono: 'dinero' },
+        { titulo: 'Entradas vendidas', valor: String(r.entradas), ayuda: 'De ventas confirmadas', tono: 'normal' },
+        { titulo: 'Ventas confirmadas', valor: String(r.confirmadas), ayuda: 'Pagos aprobados', tono: 'normal' },
+        { titulo: 'Pendientes de pago', valor: String(r.pendientes), ayuda: 'No suman a la recaudación', tono: 'pendiente' }
+    ];
+}
