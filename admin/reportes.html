@@ -313,6 +313,26 @@
             return { ...cifras, pendientes };
         }
 
+        // Un lote se identifica por su nombre; con "Todos los eventos" también por su evento, porque dos eventos pueden tener un "General"
+        function claveDeLote(v) {
+            const nombre = v.loteNombre || 'Sin lote';
+            return EN_TODOS ? `${v.eventoId}\u0001${nombre}` : nombre;
+        }
+        function claveDelLote(ev, l) {
+            return EN_TODOS ? `${ev.id}\u0001${l.nombre}` : l.nombre;
+        }
+        function etiquetaDeLote(clave) {
+            if (!EN_TODOS || !String(clave).includes('\u0001')) return clave;
+            const [id, ...resto] = String(clave).split('\u0001');
+            const ev = eventos.find((e) => e.id === id);
+            return `${(ev && ev.nombre) || 'Evento'} · ${resto.join('\u0001')}`;
+        }
+        function lotesInfoActual() {
+            const info = {};
+            eventos.forEach((ev) => (Array.isArray(ev.lotes) ? ev.lotes : []).forEach((l) => { info[claveDelLote(ev, l)] = { ...l, vendidas: l.vendidas || 0 }; }));
+            return info;
+        }
+
         function nombreDeLoElegido() {
             return EN_TODOS ? 'Todos los eventos' : ((eventos[0] && eventos[0].nombre) || 'Evento');
         }
@@ -374,17 +394,12 @@
 
             const ventasPorLote = {};
             ventasFiltradas.forEach(v => {
-                const key = v.loteNombre || 'Sin lote';
+                const key = claveDeLote(v);
                 if (!ventasPorLote[key]) ventasPorLote[key] = [];
                 ventasPorLote[key].push(v);
             });
 
-            const lotesInfo = {};
-            eventos.forEach(ev => {
-                if (ev.lotes && Array.isArray(ev.lotes)) {
-                    ev.lotes.forEach(l => { lotesInfo[l.nombre] = { ...l, vendidas: l.vendidas || 0 }; });
-                }
-            });
+            const lotesInfo = lotesInfoActual();
 
             const metodos = {};
             ventasFiltradas.forEach(v => {
@@ -396,21 +411,21 @@
 
             const vendidasPorLote = {};
             ventasFiltradas.forEach(v => {
-                const lote = v.loteNombre || 'Sin lote';
+                const lote = claveDeLote(v);
                 vendidasPorLote[lote] = (vendidasPorLote[lote] || 0) + (v.cantidad || 0);
             });
             let loteAgotado = 'Ninguno';
             eventos.forEach(ev => {
                 if (ev.lotes && Array.isArray(ev.lotes)) {
                     ev.lotes.forEach(l => {
-                        if ((vendidasPorLote[l.nombre] || 0) >= l.disponibles) loteAgotado = `${l.nombre} — vendido al 100%`;
+                        if ((vendidasPorLote[claveDelLote(ev, l)] || 0) >= l.disponibles) loteAgotado = `${etiquetaDeLote(claveDelLote(ev, l))} — vendido al 100%`;
                     });
                 }
             });
 
             const recaudacionPorLote = {};
             ventasFiltradas.forEach(v => {
-                const lote = v.loteNombre || 'Sin lote';
+                const lote = claveDeLote(v);
                 recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + (v.monto_total || 0);
             });
             let loteMasRentable = { nombre: 'N/A', monto: 0 };
@@ -511,7 +526,7 @@
                                 const vendidas = ventas.reduce((s, v) => s + (v.cantidad || 0), 0);
                                 const subtotal = ventas.reduce((s, v) => s + (v.monto_total || 0), 0);
                                 return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
-                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(nombreLote)}</td>
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(etiquetaDeLote(nombreLote))}</td>
                                     <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${info.vigencia || 'N/A'}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">$${Number(info.precio||0).toLocaleString()}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${info.disponibles || 0}</td>
@@ -598,7 +613,7 @@
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Lote con mayor recaudación</p>
-                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(loteMasRentable.nombre)} — $${loteMasRentable.monto.toLocaleString()}</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(etiquetaDeLote(loteMasRentable.nombre))} — $${loteMasRentable.monto.toLocaleString()}</p>
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Pico de ventas</p>
@@ -674,22 +689,12 @@
         function renderDesglose(ventasFiltradas) {
             const ventasPorLote = {};
             ventasFiltradas.forEach(v => {
-                const key = v.loteNombre || 'Sin lote';
+                const key = claveDeLote(v);
                 if (!ventasPorLote[key]) ventasPorLote[key] = [];
                 ventasPorLote[key].push(v);
             });
 
-            const lotesInfo = {};
-            eventos.forEach(ev => {
-                if (ev.lotes && Array.isArray(ev.lotes)) {
-                    ev.lotes.forEach(l => {
-                        lotesInfo[l.nombre] = {
-                            ...l,
-                            vendidas: l.vendidas || 0
-                        };
-                    });
-                }
-            });
+            const lotesInfo = lotesInfoActual();
 
             const tbody = document.getElementById('tablaDesgloseBody');
             const tfoot = document.getElementById('tablaDesgloseFoot');
@@ -721,7 +726,7 @@
 
                 html += `
                     <tr class="border-t">
-                        <td class="p-3 font-medium">${escaparHtml(nombreLote)}</td>
+                        <td class="p-3 font-medium">${escaparHtml(etiquetaDeLote(nombreLote))}</td>
                         <td class="p-3">${info.vigencia || 'N/A'}</td>
                         <td class="p-3 text-right">$${precio.toLocaleString()}</td>
                         <td class="p-3 text-right">${disponibles}</td>
@@ -872,16 +877,16 @@
 
             const vendidasPorLote = {};
             ventasFiltradas.forEach(v => {
-                const lote = v.loteNombre || 'Sin lote';
+                const lote = claveDeLote(v);
                 vendidasPorLote[lote] = (vendidasPorLote[lote] || 0) + (v.cantidad || 0);
             });
             let loteAgotado = 'Ninguno';
             eventos.forEach(ev => {
                 if (ev.lotes && Array.isArray(ev.lotes)) {
                     ev.lotes.forEach(l => {
-                        const vendidas = vendidasPorLote[l.nombre] || 0;
+                        const vendidas = vendidasPorLote[claveDelLote(ev, l)] || 0;
                         if (vendidas >= l.disponibles) {
-                            loteAgotado = `${l.nombre} — vendido al 100%`;
+                            loteAgotado = `${etiquetaDeLote(claveDelLote(ev, l))} — vendido al 100%`;
                         }
                     });
                 }
@@ -889,7 +894,7 @@
 
             const recaudacionPorLote = {};
             ventasFiltradas.forEach(v => {
-                const lote = v.loteNombre || 'Sin lote';
+                const lote = claveDeLote(v);
                 recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + (v.monto_total || 0);
             });
             let loteMasRentable = { nombre: 'N/A', monto: 0 };
@@ -927,7 +932,7 @@
             const indicadores = [
                 { label: 'Entradas no vendidas', value: `${aforoRestante} — ${pctAforo}% del aforo` },
                 { label: 'Lote agotado', value: loteAgotado },
-                { label: 'Lote con mayor recaudación', value: `${loteMasRentable.nombre} — $${loteMasRentable.monto.toLocaleString()}` },
+                { label: 'Lote con mayor recaudación', value: `${etiquetaDeLote(loteMasRentable.nombre)} — $${loteMasRentable.monto.toLocaleString()}` },
                 { label: 'Pico de ventas global', value: `${pico.fecha} — ${pico.entradas} entradas` },
                 { label: 'Método de pago más usado', value: `${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%` },
                 { label: 'Promedio de entradas por compra', value: `${promedio} entradas por transacción` },

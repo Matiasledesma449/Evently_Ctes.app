@@ -39,6 +39,6 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 - Anotar para el cambio de reglas (SHR-71): una organización puede leer las ventas de todos los eventos.
 
 ## Pendiente anotado (revisor)
-- Con "Todos los eventos", el desglose por lote y los indicadores de abajo agrupan por nombre de lote: dos eventos con un lote "General" se juntan y se usa el precio/disponibles del último. Las tarjetas de arriba no tienen el problema. Resolver aparte.
+- (Resuelto) Con "Todos los eventos", el desglose por lote y los indicadores agrupan por evento + lote y muestran "Evento · Lote"; prueba R8c y chequeo en auditar-panel.
 - La verificación visual en el Chrome del usuario y un PDF real descargado siguen pendientes (las tareas 4.1 y 4.3 se verificaron con datos inventados).
 - Con "Todos", Reportes trae toda la colección `ventas` al navegador y filtra en memoria: depende de las reglas de Firestore (SHR-71).

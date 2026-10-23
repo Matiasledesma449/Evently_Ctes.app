@@ -271,6 +271,17 @@ const $ = (n) => '$' + n.toLocaleString();
     ctx2.renderResumen(U.soloConfirmadas(VENTAS).filter((v) => v.loteNombre === 'VIP'));
     const hv = kpi.innerHTML.replace(/\s+/g, ' ');
     verificar('R8 reportes: con el lote VIP los pendientes respetan el lote (0) y la capacidad es la de VIP (50)', /Pendientes de pago<\/span>[\s\S]*?>0<\/p>/.test(hv) && /Capacidad total<\/span>[\s\S]*?>50</.test(hv));
+    // "Todos los eventos": dos eventos con un lote "General" no se juntan
+    {
+      const evs = [{ id: 'A', nombre: 'Fiesta A', lotes: [{ nombre: 'General', precio: 10, disponibles: 5 }] }, { id: 'B', nombre: 'Fiesta B', lotes: [{ nombre: 'General', precio: 99, disponibles: 7 }] }];
+      const c = { EN_TODOS: true, eventos: evs };
+      vm.createContext(c);
+      vm.runInContext(['claveDeLote', 'claveDelLote', 'etiquetaDeLote', 'lotesInfoActual'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.api = { claveDeLote, claveDelLote, etiquetaDeLote, lotesInfoActual };', c);
+      const k1 = c.api.claveDeLote({ eventoId: 'A', loteNombre: 'General' });
+      const k2 = c.api.claveDeLote({ eventoId: 'B', loteNombre: 'General' });
+      const info = c.api.lotesInfoActual();
+      verificar('R8c reportes (Todos): el lote "General" de dos eventos son filas distintas, con su propio precio y etiqueta "Evento · Lote"', k1 !== k2 && info[k1].precio === 10 && info[k2].precio === 99 && c.api.etiquetaDeLote(k2) === 'Fiesta B · General' && c.api.etiquetaDeLote('N/A') === 'N/A');
+    }
     verificar('R8b reportes: lee solo el evento elegido (ya no suscribe a todos los eventos sin filtro) y no redirige si falta el evento', /where\("eventoId", "==", eventoId\)/.test(sinComentarios) && !/window\.location\.href\s*=\s*'eventos-seleccion\.html'/.test(sinComentarios));
   }
 
