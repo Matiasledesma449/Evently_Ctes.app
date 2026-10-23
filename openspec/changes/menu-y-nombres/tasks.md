@@ -7,17 +7,19 @@ Convención: "se comprueba" dice cómo verificarlo a mano. Las pruebas en Chrome
 - [x] 1.1 Crear el archivo compartido del menú (menú lateral y menú de celular con todas las secciones, los roles, los avisos de no leídos y el botón de cerrar sesión) conservando las clases y atributos que hoy usa `menu-rol.js`. Se comprueba abriendo el archivo y viendo que contiene las secciones de la tabla de nombres del diseño y ninguna sección que hoy no exista. El archivo se llama `shared/menu-admin.js`.
 - [x] 1.2 Mover a `shared/admin-shell.css` los estilos del menú achicado que hoy inyecta `menu-rol.js`, sin cambiar colores ni medidas. Se comprueba comparando los valores del CSS con los del script y que `menu-rol.js` ya no los inyecta.
 - [x] 1.3 Migrar solo `admin/ventas.html`: sacar su copia del menú y usar el archivo compartido, indicando que su sección es "ventas". Se comprueba en Chrome (con el usuario ya logueado): Ventas se ve igual que antes, con la sección Ventas resaltada y las demás secciones del rol.
-- [ ] 1.4 Probar el parpadeo en esa página: con el menú achicado, navegar entre Ventas y otra página que todavía tiene el menú viejo. Se comprueba que Ventas nace achicada, sin mostrar el menú ancho. Si la transición entre páginas sigue molestando, aplicar la decisión 3 del diseño.
+- [x] 1.4 Probar el parpadeo en esa página: con el menú achicado, navegar entre Ventas y otra página que todavía tiene el menú viejo. Se comprueba que Ventas nace achicada, sin mostrar el menú ancho. Si la transición entre páginas sigue molestando, aplicar la decisión 3 del diseño. **Hecho (2026-10-23): se aplicó la decisión 3 (el menú queda fuera del fundido entre páginas); el usuario confirmó que el menú ya no parpadea. Queda un parpadeo del contenido (el "Cargando..." que se reemplaza por los datos), que corresponde al cambio del panel claro.**
 
 ## 2. Migrar las otras 9 páginas, de a una
 
-- [ ] 2.1 Migrar `admin/dashboard.html` y probarla en Chrome. Se comprueba: mismo menú, sección resaltada, y los KPI del evento siguen cargando igual.
-- [ ] 2.2 Migrar `admin/reportes.html` y probarla. Se comprueba: mismo menú y los números de Reportes no cambian respecto a hoy.
-- [ ] 2.3 Migrar `admin/eventos-seleccion.html` y `admin/eventos.html` y probarlas. Se comprueba: se puede elegir un evento y abrir el formulario de crear/solicitar evento.
-- [ ] 2.4 Migrar `admin/escaner.html`. Se comprueba: el menú es el mismo y el escáner sigue abriendo.
-- [ ] 2.5 Migrar `admin/soporte.html`, `admin/mensajes.html` y `admin/consultas-publicas.html`. Se comprueba: los avisos de no leídos de Mensajes y Consultas públicas siguen mostrando su número.
-- [ ] 2.6 Migrar `admin/superadmin.html` (Panel global). Se comprueba: solo la ve el superadmin y su menú es el mismo que el de las demás páginas.
-- [ ] 2.7 Confirmar que ninguna página de `admin/` conserva su copia del menú. Se comprueba con una búsqueda en el repositorio: la etiqueta `<aside` y la barra inferior solo aparecen en el archivo compartido.
+> **Verificación (2026-10-23):** las 9 páginas se migraron juntas con un script que comprobó que lo quitado estaba bien armado; el usuario las recorrió en Chrome (por `localhost`, con su sesión) y confirmó que todas cargan, con el mismo menú y sin ver el menú ancho al navegar (esto último respalda también la 4.1). La 2.7 se comprobó con una búsqueda en el repositorio. No se anotó una prueba aparte por página: el recorrido fue uno solo.
+
+- [x] 2.1 Migrar `admin/dashboard.html` y probarla en Chrome. Se comprueba: mismo menú, sección resaltada, y los KPI del evento siguen cargando igual.
+- [x] 2.2 Migrar `admin/reportes.html` y probarla. Se comprueba: mismo menú y los números de Reportes no cambian respecto a hoy.
+- [x] 2.3 Migrar `admin/eventos-seleccion.html` y `admin/eventos.html` y probarlas. Se comprueba: se puede elegir un evento y abrir el formulario de crear/solicitar evento.
+- [x] 2.4 Migrar `admin/escaner.html`. Se comprueba: el menú es el mismo y el escáner sigue abriendo.
+- [x] 2.5 Migrar `admin/soporte.html`, `admin/mensajes.html` y `admin/consultas-publicas.html`. Se comprueba: los avisos de no leídos de Mensajes y Consultas públicas siguen mostrando su número.
+- [x] 2.6 Migrar `admin/superadmin.html` (Panel global). Se comprueba: solo la ve el superadmin y su menú es el mismo que el de las demás páginas.
+- [x] 2.7 Confirmar que ninguna página de `admin/` conserva su copia del menú. Se comprueba con una búsqueda en el repositorio: la etiqueta `<aside` y la barra inferior solo aparecen en el archivo compartido.
 
 ## 3. Nombres y títulos
 
@@ -27,7 +29,7 @@ Convención: "se comprueba" dice cómo verificarlo a mano. Las pruebas en Chrome
 
 ## 4. Menú achicado sin parpadeo, en todas las páginas
 
-- [ ] 4.1 Hacer que el estado del menú (achicado o ancho) y el rol guardado se lean antes de armar el menú, y que la animación de ancho se active recién después del primer dibujo. Se comprueba en Chrome: con el menú achicado, navegar entre las 10 páginas del menú y no ver nunca el menú ancho ni la animación al cargar.
+- [x] 4.1 Hacer que el estado del menú (achicado o ancho) y el rol guardado se lean antes de armar el menú, y que la animación de ancho se active recién después del primer dibujo. Se comprueba en Chrome: con el menú achicado, navegar entre las 10 páginas del menú y no ver nunca el menú ancho ni la animación al cargar.
 - [ ] 4.2 Probar el botón de achicar y expandir y que recuerde el último estado al recargar y al volver a entrar. Se comprueba achicando, recargando, cerrando sesión y entrando de nuevo.
 - [ ] 4.3 Probar que el menú no cambia de forma cuando llega el rol desde Firestore (entrar con superadmin y con organización). Se comprueba que no aparecen ni desaparecen secciones después de cargar.
 - [ ] 4.4 Limpiar `shared/menu-rol.js`: sacar lo que ya no se usa (estilos inyectados, armado de la barra) y dejar solo roles, avisos y cierre de sesión. Se comprueba que el archivo ya no contiene los estilos del menú y que los avisos y el cierre de sesión siguen andando.

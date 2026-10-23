@@ -134,3 +134,20 @@ body.sidebar-colapsado aside.sidebar-principal .link-logout .material-symbols-ou
 @media (max-width: 1023px) {
     #btnToggleSidebar { display: none !important; }
 }
+
+/* El menú no participa del fundido entre páginas: queda fijo y no parpadea al navegar.
+   El resto de la página sí se funde, como antes. */
+aside.sidebar-principal {
+    view-transition-name: menu-lateral;
+}
+.admin-bottom-nav {
+    view-transition-name: menu-movil;
+}
+::view-transition-old(menu-lateral),
+::view-transition-old(menu-movil) {
+    display: none;
+}
+::view-transition-new(menu-lateral),
+::view-transition-new(menu-movil) {
+    animation: none;
+}
