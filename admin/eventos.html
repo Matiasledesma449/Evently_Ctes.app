@@ -72,7 +72,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Imagen del evento</label>
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <input type="file" id="imagenFile" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
+                            <input type="file" id="imagenFile" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
                             <button type="button" id="btnSubirImagen" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap">
                                 Subir imagen
                             </button>
@@ -83,7 +83,8 @@
                             <span id="nombreArchivo" class="text-xs text-gray-400 block mt-1"></span>
                         </div>
                         <input type="hidden" id="imagenUrl" name="imagen" value="" />
-                        <p class="text-xs text-gray-400 mt-1">Selecciona una imagen y haz clic en "Subir imagen". Opcional.</p>
+                        <p id="mensajeImagen" role="status" class="hidden text-sm mt-2"></p>
+                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP) y tocá "Subir imagen". Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
                     </div>
 
                     <div>
@@ -222,56 +223,128 @@
         asignarEventosEliminar();
 
         // ============ IMAGEN ============
-        fileInput.addEventListener('change', () => {
+        const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
+        const LADO_MAXIMO = 1600;                  // se achica la foto para que suba rápido
+        const MAXIMO_BYTES = 2 * 1024 * 1024;      // lo que se sube no puede pesar más de 2 MB
+        const ENTRADA_MAXIMA = 25 * 1024 * 1024;   // la foto original, antes de achicarla
+        const mensajeImagen = document.getElementById('mensajeImagen');
+        let imagenLista = null;                    // la foto ya achicada, lista para subir
+        let imagenPreparando = false;
+        let versionImagen = 0;                     // cada vez que se elige un archivo sube; un resultado viejo se descarta
+        let vistaPreviaUrl = '';
+
+        // Avisos de la foto, dentro de la página y como texto (nunca como HTML)
+        function avisoImagen(texto, tipo = 'info') {
+            mensajeImagen.textContent = texto;
+            mensajeImagen.className = 'text-sm mt-2 ' + (tipo === 'error' ? 'text-red-600' : tipo === 'ok' ? 'text-green-600' : 'text-gray-500');
+            mensajeImagen.classList.toggle('hidden', !texto);
+        }
+
+        function limpiarImagen() {
+            imagenLista = null;
             imagenUrlInput.value = '';
+            if (vistaPreviaUrl) { URL.revokeObjectURL(vistaPreviaUrl); vistaPreviaUrl = ''; }
+            previewContainer.classList.add('hidden');
             btnSubirImagen.textContent = 'Subir imagen';
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewImage.src = e.target.result;
-                    previewContainer.classList.remove('hidden');
-                    nombreArchivo.textContent = `Archivo: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewContainer.classList.add('hidden');
+        }
+
+        // Achica la foto (lado mayor 1600 px, JPEG). Si el navegador no puede, devuelve null y se usa la original
+        async function achicarImagen(file) {
+            try {
+                const bitmap = await createImageBitmap(file);
+                const escala = Math.min(1, LADO_MAXIMO / Math.max(bitmap.width, bitmap.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+                canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+                const dibujo = canvas.getContext('2d');
+                dibujo.fillStyle = '#ffffff'; // los PNG con transparencia quedan sobre blanco, no negro
+                dibujo.fillRect(0, 0, canvas.width, canvas.height);
+                dibujo.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                if (bitmap.close) bitmap.close();
+                return await new Promise((resolver) => canvas.toBlob(resolver, 'image/jpeg', 0.85));
+            } catch (e) {
+                return null;
             }
+        }
+
+        function textoDeErrorDeSubida(error) {
+            const codigo = error && error.code;
+            if (codigo === 'storage/unauthorized') return 'No tenés permiso para subir fotos. Cerrá sesión y volvé a entrar; si sigue, avisá al administrador.';
+            if (codigo === 'storage/canceled') return 'Se canceló la subida de la foto. Probá de nuevo.';
+            if (codigo === 'storage/quota-exceeded') return 'No hay lugar para guardar más fotos. Avisá al administrador.';
+            if (codigo === 'storage/retry-limit-exceeded' || codigo === 'storage/network-request-failed' || !navigator.onLine) return 'No se pudo subir la foto: revisá tu conexión e intentá de nuevo.';
+            return 'No se pudo subir la foto. Intentá de nuevo; si sigue fallando, avisá al administrador.';
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const miVersion = ++versionImagen;
+            imagenPreparando = false;
+            btnSubirImagen.disabled = false;
+            limpiarImagen();
+            avisoImagen('');
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (!TIPOS_IMAGEN.includes(file.type)) {
+                avisoImagen('El archivo tiene que ser una imagen (JPG, PNG o WebP).', 'error');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > ENTRADA_MAXIMA) {
+                avisoImagen('La foto es demasiado grande (máximo 25 MB). Elegí otra.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            imagenPreparando = true;
+            btnSubirImagen.disabled = true;
+            avisoImagen('Preparando la foto...');
+            const achicada = await achicarImagen(file);
+            if (miVersion !== versionImagen) return; // eligió otra mientras tanto: este resultado ya no sirve
+            imagenPreparando = false;
+            btnSubirImagen.disabled = false;
+            const final = achicada || file;
+            if (final.size > MAXIMO_BYTES) {
+                avisoImagen('La foto pesa más de 2 MB incluso achicada. Elegí otra.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            imagenLista = final;
+            vistaPreviaUrl = URL.createObjectURL(final);
+            previewImage.src = vistaPreviaUrl;
+            previewContainer.classList.remove('hidden');
+            nombreArchivo.textContent = `Foto lista (${Math.max(1, Math.round(final.size / 1024))} KB)`;
+            avisoImagen('Lista. Tocá "Subir imagen" para guardarla.');
         });
 
         btnSubirImagen.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) { alert('Selecciona un archivo de imagen primero.'); return; }
-            if (file.size > 2 * 1024 * 1024) { alert('La imagen no debe superar los 2MB.'); return; }
-            if (!file.type.startsWith('image/')) { alert('El archivo debe ser una imagen.'); return; }
+            if (imagenPreparando) { avisoImagen('Esperá un momento: la foto todavía se está preparando.', 'error'); return; }
+            if (!imagenLista) { avisoImagen('Elegí primero una foto.', 'error'); return; }
+            const user = auth.currentUser;
+            if (!user) { avisoImagen('Tu sesión expiró. Volvé a iniciar sesión para subir la foto.', 'error'); return; }
             try {
                 imagenSubiendo = true;
                 btnSubirImagen.disabled = true;
                 fileInput.disabled = true;
                 btnLimpiar.disabled = true;
                 btnSubirImagen.textContent = 'Subiendo...';
-                // ✅ USAR storage desde window
-                const storage = window.storage;
-                const path = `eventos_solicitudes/${Date.now()}_${file.name}`;
-                const storageRef = ref(storage, path);
-                const uploadResult = await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(uploadResult.ref);
-                if (!url) throw new Error('Storage no devolvió una URL para la imagen.');
+                avisoImagen('Subiendo la foto...');
+                const extension = imagenLista.type === 'image/png' ? 'png' : imagenLista.type === 'image/webp' ? 'webp' : 'jpg';
+                const storageRef = ref(window.storage, `eventos_solicitudes/${user.uid}/${Date.now()}.${extension}`);
+                const resultado = await uploadBytes(storageRef, imagenLista, { contentType: imagenLista.type });
+                const url = await getDownloadURL(resultado.ref);
+                if (!url) throw new Error('Storage no devolvió una dirección para la foto.');
                 imagenUrlInput.value = url;
-                btnSubirImagen.textContent = '✅ Subida correcta';
-                btnSubirImagen.disabled = false;
-                fileInput.disabled = false;
-                btnLimpiar.disabled = false;
-                imagenSubiendo = false;
-                console.log('Imagen subida:', url);
+                btnSubirImagen.textContent = 'Foto subida';
+                avisoImagen('La foto se subió correctamente.', 'ok');
             } catch (error) {
                 console.error('Error al subir imagen:', error);
-                alert('Error al subir la imagen. Intenta nuevamente.');
+                imagenUrlInput.value = '';
                 btnSubirImagen.textContent = 'Subir imagen';
+                avisoImagen(textoDeErrorDeSubida(error), 'error');
+            } finally {
+                imagenSubiendo = false;
                 btnSubirImagen.disabled = false;
                 fileInput.disabled = false;
                 btnLimpiar.disabled = false;
-                imagenSubiendo = false;
             }
         });
 
@@ -306,8 +379,8 @@
                 });
 
                 if (!lotesValidos || lotes.length === 0) throw new Error('Todos los lotes deben tener nombre, precio válido y cantidad disponible (mayor a 0).');
-                if (imagenSubiendo) throw new Error('La imagen aún se está subiendo. Espera a que termine.');
-                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('Subí la imagen antes de enviar el evento.');
+                if (imagenSubiendo || imagenPreparando) throw new Error('La foto todavía se está preparando o subiendo. Esperá a que termine.');
+                if ((imagenLista || fileInput.files.length > 0) && !imagenUrl) throw new Error('Subí la foto (botón "Subir imagen") antes de enviar, o quitala con "Limpiar".');
 
                 const user = auth.currentUser;
                 if (!user) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
@@ -352,10 +425,12 @@
             } catch (error) {
                 console.error('Error al enviar solicitud:', error);
                 mensajeResultado.className = 'mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200';
-                mensajeResultado.innerHTML = `
-                    <span class="material-symbols-outlined align-middle text-red-600">error</span>
-                    <strong>Error:</strong> ${error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'}
-                `;
+                const iconoError = document.createElement('span');
+                iconoError.className = 'material-symbols-outlined align-middle text-red-600';
+                iconoError.textContent = 'error';
+                const fuerte = document.createElement('strong');
+                fuerte.textContent = 'Error:';
+                mensajeResultado.replaceChildren(iconoError, ' ', fuerte, ' ' + (error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'));
                 mensajeResultado.classList.remove('hidden');
                 
                 btnEnviar.disabled = false;
@@ -365,8 +440,8 @@
 
         form.addEventListener('reset', () => {
             mensajeResultado.classList.add('hidden');
-            previewContainer.classList.add('hidden');
-            imagenUrlInput.value = '';
+            limpiarImagen();
+            avisoImagen('');
             fileInput.disabled = false;
             btnLimpiar.disabled = false;
             btnSubirImagen.textContent = 'Subir imagen';

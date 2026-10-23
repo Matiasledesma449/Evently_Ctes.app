@@ -18,9 +18,9 @@ Convención: "se comprueba" dice cómo verificarlo. Las funciones puras se prueb
 
 ## 3. Subida desde "Solicitar evento"
 
-- [ ] 3.1 En `admin/eventos.html`: validar el tipo, achicar con `<canvas>` (1600 px, JPEG 0.85), mostrar la vista previa del archivo achicado y rechazar lo que siga pasando de 2 MB. Se comprueba en `auditar-panel` con una imagen grande de prueba y un PDF.
-- [ ] 3.2 En `admin/eventos.html`: subir a `eventos_solicitudes/<uid>/<Date.now()>.jpg`, mensajes dentro de la página (sin `alert`) y no enviar la solicitud si la subida falla o sigue en curso. Se comprueba con un Storage falso en `auditar-panel`: subida bien (se envía con la URL), subida con error (mensaje claro y ninguna solicitud creada) y envío durante la subida (bloqueado).
-- [ ] 3.3 Sin foto elegida, la solicitud se envía con `imagen: ''`. Se comprueba en la misma prueba.
+- [x] 3.1 En `admin/eventos.html`: validar el tipo, achicar con `<canvas>` (1600 px, JPEG 0.85), mostrar la vista previa del archivo achicado y rechazar lo que siga pasando de 2 MB. Se comprueba en `auditar-panel` con una imagen grande de prueba y un PDF. (Hecho y verificado con `auditar-panel` (Storage falso): una foto de 4000x3000 se achica a JPEG de hasta 2 MB con vista previa; un PDF se rechaza con aviso. No se probó con una foto real de un celular.)
+- [x] 3.2 En `admin/eventos.html`: subir a `eventos_solicitudes/<uid>/<Date.now()>.jpg`, mensajes dentro de la página (sin `alert`) y no enviar la solicitud si la subida falla o sigue en curso. Se comprueba con un Storage falso en `auditar-panel`: subida bien (se envía con la URL), subida con error (mensaje claro y ninguna solicitud creada) y envío durante la subida (bloqueado). (Hecho y verificado con `auditar-panel`: ruta `eventos_solicitudes/<uid>/<número>.jpg`, avisos dentro de la página sin ventanas emergentes, con subida fallida o en curso no se crea la solicitud; una mutación que quita el bloqueo es detectada. La subida contra Storage real queda para la prueba del usuario.)
+- [x] 3.3 Sin foto elegida, la solicitud se envía con `imagen: ''`. Se comprueba en la misma prueba. (Hecho: sin foto se envía igual y no se sube nada; verificado en `auditar-panel`.)
 
 ## 4. Reglas de Storage
 
