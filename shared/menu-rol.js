@@ -1,51 +1,8 @@
 // shared/menu-rol.js
 // Sin import - usa las variables globales de firebase-init.js
 
-// =====================================================
-// 1. SIDEBAR COLAPSABLE (estilo apps de IA)
-// =====================================================
-(function configurarSidebarColapsable() {
-    // Los estilos del menú achicado viven ahora en shared/admin-shell.css (se cargan en el <head>).
-
-    function initSidebar() {
-        const aside = document.querySelector('aside');
-        if (!aside) return;
-        if (aside.querySelector('#btnToggleSidebar')) return; // ya inicializado
-
-        aside.classList.add('sidebar-principal');
-
-        const linkLogout = aside.querySelector('#btnCerrarSesion');
-        if (linkLogout) linkLogout.classList.add('link-logout');
-
-        const btn = document.createElement('button');
-        btn.id = 'btnToggleSidebar';
-        btn.title = 'Colapsar / expandir menú';
-        btn.innerHTML = '<span class="material-symbols-outlined">chevron_left</span>';
-        aside.appendChild(btn);
-
-        const colapsado = localStorage.getItem('sidebarColapsado') === 'true';
-        if (colapsado) {
-            document.body.classList.add('sidebar-colapsado');
-            btn.querySelector('span').textContent = 'chevron_right';
-        }
-
-        btn.addEventListener('click', () => {
-            const estaColapsado = document.body.classList.toggle('sidebar-colapsado');
-            localStorage.setItem('sidebarColapsado', estaColapsado);
-            btn.querySelector('span').textContent = estaColapsado ? 'chevron_right' : 'chevron_left';
-        });
-
-        // Páginas que todavía traen su propio menú: la animación de ancho corre recién después del primer dibujo
-        requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('menu-listo')));
-    }
-
-    // ✅ Ejecutar cuando el DOM esté listo (o inmediatamente si ya lo está)
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSidebar);
-    } else {
-        initSidebar();
-    }
-})();
+// Este archivo maneja los roles (qué secciones se muestran), los avisos de no leídos y el cierre de sesión.
+// El menú en sí (dibujo, botón de achicar y estado) vive en shared/menu-admin.js.
 
 // =====================================================
 // 2. LÓGICA DE ROLES Y BADGE DE MENSAJES

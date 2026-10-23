@@ -71,6 +71,16 @@ body.sidebar-colapsado aside.sidebar-principal > div:first-child {
     display: none !important;
 }
 
+/* Menú achicado: la flecha de achicar queda arriba (sin tocar ningún botón) y cada botón
+   ocupa toda la columna, para que un clic corrido hacia un costado no caiga en el vacío ni en la flecha */
+body.sidebar-colapsado aside.sidebar-principal nav {
+    padding: 52px 8px 12px !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal > div.border-t {
+    padding: 12px 8px !important;
+}
+
 body.sidebar-colapsado aside.sidebar-principal nav a {
     justify-content: center !important;
     padding-left: 0 !important;

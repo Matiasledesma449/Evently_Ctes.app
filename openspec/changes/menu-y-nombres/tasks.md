@@ -33,6 +33,7 @@ Convención: "se comprueba" dice cómo verificarlo a mano. Las pruebas en Chrome
 - [ ] 4.2 Probar el botón de achicar y expandir y que recuerde el último estado al recargar y al volver a entrar. Se comprueba achicando, recargando, cerrando sesión y entrando de nuevo.
 - [ ] 4.3 Probar que el menú no cambia de forma cuando llega el rol desde Firestore (entrar con superadmin y con organización). Se comprueba que no aparecen ni desaparecen secciones después de cargar.
 - [ ] 4.4 Limpiar `shared/menu-rol.js`: sacar lo que ya no se usa (estilos inyectados, armado de la barra) y dejar solo roles, avisos y cierre de sesión. Se comprueba que el archivo ya no contiene los estilos del menú y que los avisos y el cierre de sesión siguen andando.
+- [x] 4.5 Arreglar el menú achicado (problema que reportó el usuario el 2026-10-23: al tocar un botón de arriba a veces se abre el menú y otros botones no responden): los botones ocupaban solo 43 px de una columna de 76 px y la flecha de achicar quedaba a 2 px del primer botón. Se ensanchan los botones a toda la columna y se baja el menú para que la flecha quede arriba sin tocar ninguno. **Hecho (2026-10-23), medido en Chrome:** cada botón queda de 8 a 67 px de ancho, los puntos de prueba dentro de esa zona dan clic en el botón y la flecha no toca ningún botón. El usuario todavía no lo probó con la mano.
 
 ## 5. Ver como organización
 
