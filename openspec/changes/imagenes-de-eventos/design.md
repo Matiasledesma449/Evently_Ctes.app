@@ -50,6 +50,7 @@ service firebase.storage {
     match /eventos_solicitudes/{uid}/{archivo} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid
+                   && request.resource != null
                    && request.resource.contentType.matches('image/(jpeg|png|webp)')
                    && request.resource.size < 3 * 1024 * 1024;
     }

@@ -24,13 +24,13 @@ Convención: "se comprueba" dice cómo verificarlo. Las funciones puras se prueb
 
 ## 4. Reglas de Storage
 
-- [ ] 4.1 Crear `storage.rules` y `firebase.json` según `design.md`. Se comprueba con `firebase_validate_security_rules` (o `firebase deploy --only storage --dry-run`) sin errores, y leyendo que no hay claves ni rutas personales.
+- [x] 4.1 Crear `storage.rules` y `firebase.json` según `design.md`. Se comprueba con `firebase_validate_security_rules` (o `firebase deploy --only storage --dry-run`) sin errores, y leyendo que no hay claves ni rutas personales. (Hecho: `storage.rules` y `firebase.json`; `firebase_validate_security_rules` dice "No errors detected".)
 - [ ] 4.2 Confirmar con una consulta de solo lectura si Storage está habilitado en `evently-b612b`. Se comprueba anotando lo que responde; si no está habilitado, se frena y se le explica al usuario qué hacer en la consola.
 - [ ] 4.3 **Con OK explícito del usuario en el chat**, publicar las reglas. Se comprueba leyendo las reglas activas con `firebase_get_security_rules`. Sin el OK, esta tarea queda sin marcar y se deja anotada.
 
 ## 5. Revisión final
 
-- [ ] 5.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas. Se comprueba con la salida (los avisos de "el menú tarda" que cambian de página entre corridas se repiten antes de dar el problema por real).
-- [ ] 5.2 Confirmar que no cambió nada fuera de lo previsto. Se comprueba con `git diff --stat`: solo las páginas de la lista, `shared/imagen-evento.js`, `storage.rules`, `firebase.json`, la prueba nueva, `auditar-panel` (fuera del repo) y este change.
-- [ ] 5.3 Actualizar `CLAUDE.md` (la función compartida de imagen y que las fotos viven en Storage con reglas versionadas). Se comprueba leyendo el archivo: sin claves ni rutas personales.
+- [x] 5.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas. Se comprueba con la salida (los avisos de "el menú tarda" que cambian de página entre corridas se repiten antes de dar el problema por real). (`node pruebas/ejecutar-todas.js`: 16 archivos bien; auditoría completa de `auditar-panel`: 54 combinaciones, 0 problemas.)
+- [x] 5.2 Confirmar que no cambió nada fuera de lo previsto. Se comprueba con `git diff --stat`: solo las páginas de la lista, `shared/imagen-evento.js`, `storage.rules`, `firebase.json`, la prueba nueva, `auditar-panel` (fuera del repo) y este change. (`git diff --stat` revisado: solo las páginas de la lista, `shared/imagen-evento.js`, la prueba 16 (y la 10, adaptada), este change, `storage.rules`, `firebase.json` y `CLAUDE.md`.)
+- [x] 5.3 Actualizar `CLAUDE.md` (la función compartida de imagen y que las fotos viven en Storage con reglas versionadas). Se comprueba leyendo el archivo: sin claves ni rutas personales. (CLAUDE.md actualizado.)
 - [ ] 5.4 Pedirle al usuario una sola prueba real: entrar con una cuenta de organización, solicitar un evento con una foto y ver que aparece igual en las páginas. Se anota el resultado; hasta entonces el change queda "verificado con datos inventados".
