@@ -8,6 +8,8 @@
 // 2. LÓGICA DE ROLES Y BADGE DE MENSAJES
 // =====================================================
 function aplicarRolVisual(rol) {
+    // En la vista "Ver como organización" un superadmin se muestra como organización (solo lo que se ve)
+    rol = window.rolEfectivo ? window.rolEfectivo(rol) : rol;
     const esAdmin = rol === 'superadmin';
     const esOrganizacion = rol === 'organizacion';
     document.querySelectorAll('[data-role="superadmin"]').forEach(enlace => enlace.classList.toggle('hidden', !esAdmin));
@@ -63,7 +65,7 @@ function initRoles() {
 
     window.onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            localStorage.removeItem('eventlyRol');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
             aplicarRolVisual(null);
             mostrarNavegacion();
             return;
@@ -71,15 +73,20 @@ function initRoles() {
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (!userDoc.exists()) {
-                localStorage.removeItem('eventlyRol');
+                localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
                 aplicarRolVisual(null);
                 mostrarNavegacion();
                 return;
             }
 
             const rol = userDoc.data().rol;
-            const esAdmin = rol === 'superadmin';
             localStorage.setItem('eventlyRol', rol);
+            // La vista "Ver como organización" solo vale para un superadmin real
+            if (rol !== 'superadmin' && localStorage.getItem('vistaComo')) {
+                localStorage.removeItem('vistaComo');
+                if (document.getElementById('avisoVistaOrganizacion')) { location.reload(); return; }
+            }
+            const esAdmin = (window.rolEfectivo ? window.rolEfectivo(rol) : rol) === 'superadmin';
             aplicarRolVisual(rol);
             actualizarBadgeConsultasPublicas(esAdmin);
 
@@ -88,7 +95,7 @@ function initRoles() {
             mostrarNavegacion();
         } catch (e) {
             console.error('Error al verificar rol:', e);
-            localStorage.removeItem('eventlyRol');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
             aplicarRolVisual(null);
             mostrarNavegacion();
         }
@@ -262,7 +269,7 @@ document.addEventListener('click', async (e) => {
         e.preventDefault();
         try {
             await window.signOut(auth);
-            localStorage.removeItem('eventlyRol');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
             // ✅ replace: elimina la página actual del historial
             window.location.replace('login.html');
         } catch (err) {

@@ -5,7 +5,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 ## Estructura
 - `public/`: sitio del usuario final (inicio, evento, confirmación, soporte, validación de entradas).
 - `admin/`: panel Admin y SuperAdmin (login, eventos, ventas, reportes, mensajes, soporte, escáner QR).
-- `shared/`: código común (`firebase-init.js`, `menu-rol.js`, `ui-utils.js`, `i18n.js`, estilos).
+- `shared/`: código común (`firebase-init.js`, `menu-admin.js` y `menu-rol.js` del menú del panel, `ventas-utils.js`, `ui-utils.js`, `i18n.js`, estilos).
 - `validador.html`: validación de entradas por QR, en la raíz.
 - `api/`: funciones serverless (Vercel): `crear-pago.js`, `mp-webhook.js`, `venta.js`.
 - `server/`: lógica de los pagos que usan las funciones de `api/` (configuración, Mercado Pago, firma del webhook, Firestore con `firebase-admin`, validaciones).
@@ -33,6 +33,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 ## Convenciones que se ven en el código
 - Español en nombres, textos y comentarios.
 - Firebase se expone como variables globales en `window` (`db`, `auth`, `getDocs`…). Los demás scripts esperan el evento `firebase-ready`.
+- El menú del panel (escritorio y celular) se dibuja desde `shared/menu-admin.js`: cada página de `admin/` solo lo llama con `<script src="../shared/menu-admin.js" data-pagina="<nombre>">`; no se copia a mano. `menu-rol.js` maneja roles, avisos de no leídos y cierre de sesión. El superadmin puede usar "Ver como organización" (solo cambia lo que se ve; los permisos son los reales).
 - Utilidades de interfaz (toasts, modales, confirmar) en `shared/ui-utils.js`. Textos ES/EN en `shared/i18n.js`, todavía como esqueleto.
 - Cada página HTML lleva su propio JavaScript incrustado; son pocos los archivos `.js` separados.
 

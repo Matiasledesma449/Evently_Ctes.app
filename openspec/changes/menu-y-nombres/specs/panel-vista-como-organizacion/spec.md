@@ -37,6 +37,10 @@ Mientras la vista de organización esté activa, el panel SHALL mostrar un aviso
 - **WHEN** un superadmin en la vista de organización abre "Solicitar evento"
 - **THEN** el panel le avisa con un texto corto que las solicitudes las envía una cuenta de organización, y no crea ninguna solicitud
 
+#### Scenario: Soporte también es de organizaciones
+- **WHEN** un superadmin en la vista de organización toca "Soporte"
+- **THEN** el panel le avisa con un texto corto que Soporte lo usa una cuenta de organización, y no abre ninguna conversación
+
 #### Scenario: Páginas propias de superadmin
 - **WHEN** un superadmin en la vista de organización abre una página solo de superadmin (por ejemplo Panel global)
 - **THEN** el panel lo lleva a la lista de Eventos y no muestra esa sección

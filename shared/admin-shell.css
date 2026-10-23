@@ -161,3 +161,12 @@ aside.sidebar-principal {
 ::view-transition-new(menu-movil) {
     animation: none;
 }
+
+/* Vista "Ver como organización": el aviso fijo de arriba mide 40 px; el resto del panel baja para no quedar tapado */
+body.vista-organizacion > .flex.min-h-screen {
+    margin-top: 40px;
+    height: calc(100dvh - 40px) !important;
+}
+body.vista-organizacion > .flex.min-h-screen > aside {
+    height: 100% !important;
+}
