@@ -20,7 +20,7 @@ El sitio es HTML y JavaScript puros, sin build (ver `CLAUDE.md`). Este change no
 ## Decisions
 
 ### 1. Lista de formas de pago en `shared/`
-Un archivo nuevo `shared/formas-de-pago.js` (módulo, como `ventas-utils.js`) con la lista (según la pregunta 2) y una función que devuelve el texto para mostrar. El texto de `public/evento.html` se arma desde ahí. Como `evento.html` es una página pública y el módulo no depende de Firebase, se importa igual que los demás módulos de `shared/`.
+Un archivo nuevo `shared/formas-de-pago.js` (módulo, como `ventas-utils.js`) con la lista (respuesta 2D: Transferencia, Débito, Crédito; cómo se relaciona "Transferencia" con lo que guarda el servidor depende de la pregunta 5, todavía sin responder) y una función que devuelve el texto para mostrar. El texto de `public/evento.html` se arma desde ahí. Como `evento.html` es una página pública y el módulo no depende de Firebase, se importa igual que los demás módulos de `shared/`.
 - **Alternativa descartada:** dejar el texto escrito a mano. Ya se desfasó una vez con el "Efectivo".
 
 ### 2. Elección de secciones del PDF como función pura
@@ -29,7 +29,7 @@ Un archivo nuevo `shared/formas-de-pago.js` (módulo, como `ventas-utils.js`) co
 - Seguridad: las claves vienen de casillas fijas del HTML; el nombre del evento sigue pasando por `escaparHtml`.
 
 ### 3. "Efectivo" en los datos viejos
-Según la pregunta 1. Pase lo que pase, una prueba en `pruebas/` recorre las pantallas (`public/*.html`, `admin/*.html`, `shared/*.js`) y falla si encuentra "Efectivo" como opción para elegir (se permite en comentarios que explican por qué se excluye).
+Respuesta 1B: se borran `public/assets/js/data.js` y `public/assets/css/js/data.js` (nadie los carga). Además, una prueba en `pruebas/` recorre las pantallas (`public/*.html`, `admin/*.html`, `shared/*.js`) y falla si encuentra "Efectivo" como opción para elegir (se permite en comentarios que explican por qué se excluye).
 
 ## Risks / Trade-offs
 
@@ -39,4 +39,4 @@ Según la pregunta 1. Pase lo que pase, una prueba en `pruebas/` recorre las pan
 
 ## Open Questions
 
-- Las 4 preguntas de `proposal.md`.
+- La pregunta 5 de `proposal.md` (qué es "Transferencia" frente a "Dinero en cuenta" y "Prepaga"). Las preguntas 1, 3 y 4 están respondidas (1B, 3A, 4A).

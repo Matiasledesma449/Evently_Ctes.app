@@ -61,6 +61,22 @@ Importante: no se pudo comprobar si hay eventos ya cargados en Firestore con alg
 - B: solo agregar la opción de elegir una o varias formas de pago a incluir (hoy se elige una sola o todas), sin elegir secciones.
 - C: las dos cosas (A y B). Es más trabajo en la pantalla de Reportes.
 
+## Respuestas de la persona
+
+Respuesta del 2026-10-25 en el PR de este plan: `1B 2D (transferencia, débito y crédito) 3A 4A`.
+
+- **1B**: se borran los dos `data.js` (nadie los carga; se comprobó con una búsqueda en el repo). Eso resuelve también la decisión pendiente de `CLAUDE.md` sobre esos archivos.
+- **2D** (texto libre): las formas que se muestran son **Transferencia, Débito y Crédito**. Es una opción que no estaba en la lista; queda abierta la pregunta 5 de abajo, porque "Transferencia" no es un nombre que hoy guarde el servidor y no se nombró a Prepaga.
+- **3A**: la misma lista para todos los eventos.
+- **4A**: casillas para elegir las secciones del PDF.
+
+## Preguntas para la persona (segunda vuelta)
+
+**5. Hoy el servidor no tiene "Transferencia": guarda "Dinero en cuenta" (pagar con saldo de Mercado Pago) y "Prepaga". ¿Cómo lo resolvemos?**
+- A (recomendado): "Transferencia" es el nombre que ve quien compra para lo que hoy se guarda como "Dinero en cuenta". Se cambia solo el texto (en el sitio y en el panel); lo que guarda el servidor no cambia y las ventas viejas se siguen contando bien. "Prepaga" sigue contándose en los reportes si aparece, pero no se nombra al comprador.
+- B: cambiar también lo que guarda el servidor a "Transferencia". Las ventas viejas dirían "Dinero en cuenta" y los reportes tendrían que juntar los dos nombres.
+- C: me equivoqué al leer: querías transferencia bancaria real (cuenta propia, sin Mercado Pago). Es otro change grande y necesita cuenta y pruebas reales; no lo hace la nube.
+
 ## Por qué esta opción y no otra
 
 - **Una lista compartida** en vez de nombres escritos a mano en cada página: igual que con el menú y el selector de evento, tres copias terminan distintas.
