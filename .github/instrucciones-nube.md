@@ -9,7 +9,7 @@ Sos el trabajo automático del proyecto Evently. Corrés en GitHub Actions, sin 
    - Si hay PRs abiertos de ramas `claude/nube-*` de este mismo repo (`gh pr list --state open --json number,headRefName,isCrossRepository,createdAt`, y descartá los que tengan `isCrossRepository: true`, que vienen de forks), la base es la rama del más reciente: así seguís desde tu último trabajo.
    - Si no, y el PR #4 (rama `auto/menu-y-nombres`) no está mergeado a `main`, la base es `origin/auto/menu-y-nombres`. Comprobalo con `git merge-base --is-ancestor origin/auto/menu-y-nombres origin/main`.
    - Si no, la base es `origin/main`.
-3. Creá una rama nueva desde la base: `claude/nube-AAAA-MM-DD-HHMM` (fecha y hora UTC de ahora).
+3. Creá una rama nueva desde la base con `git switch -c claude/nube-AAAA-MM-DD-HHMM <base>` (fecha y hora UTC de ahora). Al final la subís con `git push -u origin claude/nube-...`: son los únicos comandos de rama y push que tenés permitidos.
 
 ## Paso 0: leer las respuestas de la persona
 

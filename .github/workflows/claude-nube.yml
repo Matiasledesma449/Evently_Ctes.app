@@ -47,4 +47,4 @@ jobs:
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 80
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr create:*),Bash(node pruebas/ejecutar-todas.js),Bash(date:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git fetch:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git branch:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git switch -c claude/nube-:*),Bash(git add:*),Bash(git commit:*),Bash(git push -u origin claude/nube-:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr create:*),Bash(node pruebas/ejecutar-todas.js),Bash(date:*)"
