@@ -20,7 +20,15 @@ Las formas de pago nombradas al comprador SHALL salir de una lista compartida ú
 
 #### Scenario: Nombres iguales en el sitio y el panel
 - **WHEN** se compara el texto del paso de pago con los métodos que muestra el panel
-- **THEN** los nombres coinciden (por ejemplo "Crédito" y "Débito"; la forma "Transferencia" queda sujeta a la pregunta 5 del proposal)
+- **THEN** los nombres coinciden ("Crédito", "Débito" y "Transferencia")
+
+#### Scenario: Transferencia es el nombre de "Dinero en cuenta"
+- **WHEN** una venta está guardada con el método "Dinero en cuenta"
+- **THEN** el sitio y el panel la muestran como "Transferencia", y lo guardado no cambia
+
+#### Scenario: Prepaga
+- **WHEN** una venta está guardada con el método "Prepaga"
+- **THEN** el panel la sigue mostrando y contando como "Prepaga", pero el paso de pago no la nombra al comprador
 
 ### Requirement: Una prueba avisa si vuelve el efectivo
 Una prueba automática SHALL fallar si alguna pantalla vuelve a ofrecer "Efectivo" como opción.
