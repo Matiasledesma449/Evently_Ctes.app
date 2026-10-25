@@ -14,7 +14,8 @@ const verificar = (nombre, condicion, detalle = '') => {
 };
 
 // ---------- Cargar shared/ventas-utils.js (es un modulo del navegador: se le quitan los "export") ----------
-const codigoUtils = leer('shared', 'ventas-utils.js').replace(/^export /gm, '');
+// También se carga shared/formas-de-pago.js (las pantallas lo importan para mostrar "Transferencia")
+const codigoUtils = leer('shared', 'ventas-utils.js').replace(/^export /gm, '') + '\n' + leer('shared', 'formas-de-pago.js').replace(/^export /gm, '');
 const NOMBRES = 'escaparHtml, esConfirmada, soloConfirmadas, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, cifrasDelEvento, tarjetasDeResumen';
 const U = vm.runInNewContext(codigoUtils + '\n;({ ' + NOMBRES + ' })');
 
@@ -260,7 +261,7 @@ const $ = (n) => '$' + n.toLocaleString();
     // cifras: las mismas que Resumen (cifrasDelEvento), con la capacidad de los lotes elegidos y los pendientes aparte
     const kpi = { innerHTML: '' };
     const evento = { id: 'E', lotes: [{ nombre: 'General', disponibles: 100 }, { nombre: 'VIP', disponibles: 50 }] };
-    const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml })') };
+    const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar })') };
     vm.createContext(ctx2);
     vm.runInContext(['cifrasActuales', 'dibujarTarjetas', 'renderResumen'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.renderResumen = renderResumen;', ctx2);
     ctx2.renderResumen(U.soloConfirmadas(VENTAS));
@@ -294,7 +295,7 @@ const $ = (n) => '$' + n.toLocaleString();
     verificar('R10 reportes: importa y usa escaparHtml', /import \{[^}]*escaparHtml[^}]*\} from "\.\.\/shared\/ventas-utils\.js"/.test(html) && (html.match(/escaparHtml\(/g) || []).length >= 13);
 
     const contenedor = { innerHTML: '' };
-    const ctx = { document: { getElementById: () => contenedor }, ...vm.runInNewContext(codigoUtils + '\n;({ escaparHtml })') };
+    const ctx = { document: { getElementById: () => contenedor }, ...vm.runInNewContext(codigoUtils + '\n;({ escaparHtml, nombreParaMostrar })') };
     vm.createContext(ctx);
     vm.runInContext(extraerFuncion(html, 'renderTransacciones') + ';this.renderTransacciones = renderTransacciones;', ctx);
     ctx.renderTransacciones([{ id: 'M1', estado: 'confirmada', cantidad: 1, monto_total: 100, metodo_pago: '<i>m</i>', correo: '<img/src=x/onerror=alert(1)>@a.bc', loteNombre: '<script>alert(2)</script>', fecha: { seconds: 1760000000 } }]);

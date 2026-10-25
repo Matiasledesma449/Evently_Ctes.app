@@ -182,6 +182,7 @@
         import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago } from "../shared/ventas-utils.js";
+        import { nombreParaMostrar } from "../shared/formas-de-pago.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
         let eventos = [];
@@ -290,7 +291,7 @@
             const elegido = metodoFilter.value;
             const metodos = metodosDePago(ventas);
             metodoFilter.innerHTML = ['<option value="todos">Todos</option>']
-                .concat(metodos.map((m) => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
+                .concat(metodos.map((m) => `<option value="${escaparHtml(m)}">${escaparHtml(nombreParaMostrar(m))}</option>`)).join('');
             metodoFilter.value = metodos.includes(elegido) ? elegido : 'todos';
         }
 
@@ -340,14 +341,14 @@
         // "Evento · Lote · Método", para la línea de arriba de las cifras
         function textoDeFiltros() {
             const lote = loteFilter.value === 'todos' ? 'Todos los lotes' : loteFilter.value;
-            const metodo = metodoFilter.value === 'todos' ? 'Todos los métodos' : metodoFilter.value;
+            const metodo = metodoFilter.value === 'todos' ? 'Todos los métodos' : nombreParaMostrar(metodoFilter.value);
             return `${nombreDeLoElegido()} · ${lote} · ${metodo}`;
         }
 
         // El mismo dato, para el encabezado del PDF
         function filtrosParaPDF() {
             const lote = loteFilter.value === 'todos' ? 'Todos' : loteFilter.value;
-            const metodo = metodoFilter.value === 'todos' ? 'Todos' : metodoFilter.value;
+            const metodo = metodoFilter.value === 'todos' ? 'Todos' : nombreParaMostrar(metodoFilter.value);
             return `Evento: ${nombreDeLoElegido()} | Lote: ${lote} | Método: ${metodo}`;
         }
 
@@ -564,7 +565,7 @@
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.correo || v.comprador || 'N/A')}</td>
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.loteNombre || 'N/A')}</td>
                                 <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${v.cantidad || 0}</td>
-                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.metodo_pago || 'N/A')}</td>
+                                <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(nombreParaMostrar(v.metodo_pago) || 'N/A')}</td>
                                 <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">$${(v.monto_total||0).toLocaleString()}</td>
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">
                                     <span style="padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;
@@ -592,7 +593,7 @@
                             Object.entries(metodos).map(([nombre, data], i) => {
                                 const pct = totalVentas > 0 ? Math.round((data.transacciones / totalVentas) * 100) : 0;
                                 return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
-                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(nombre)}</td>
+                                    <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(nombreParaMostrar(nombre))}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${data.transacciones}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">$${data.monto.toLocaleString()}</td>
                                     <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">${pct}%</td>
@@ -621,7 +622,7 @@
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Método más usado</p>
-                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(metodoMasUsado.nombre)} — ${metodoMasUsado.porcentaje}%</p>
+                            <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">${escaparHtml(nombreParaMostrar(metodoMasUsado.nombre))} — ${metodoMasUsado.porcentaje}%</p>
                         </div>
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Recaudación por entrada</p>
@@ -683,7 +684,7 @@
 
         // Las tarjetas: las mismas que Resumen. Con null (datos que todavía no llegaron) salen todas en "—", sin saltos
         function dibujarTarjetas(cifras) {
-            kpiContainer.innerHTML = htmlDeTarjetasResumen(tarjetasDeResumen(cifras));
+            kpiContainer.innerHTML = htmlDeTarjetasResumen(tarjetasDeResumen(cifras, nombreParaMostrar));
         }
 
         function renderDesglose(ventasFiltradas) {
@@ -767,7 +768,7 @@
                         <td class="p-3">${v.fecha || 'N/A'}</td>
                         <td class="p-3">${escaparHtml(v.correo || v.comprador || 'N/A')}</td>
                         <td class="p-3 text-right">${v.cantidad || 0}</td>
-                        <td class="p-3">${escaparHtml(v.metodo_pago || 'N/A')}</td>
+                        <td class="p-3">${escaparHtml(nombreParaMostrar(v.metodo_pago) || 'N/A')}</td>
                         <td class="p-3 text-right font-semibold">$${(v.monto_total || 0).toLocaleString()}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">${escaparHtml(estado)}</span></td>
                     </tr>
@@ -796,7 +797,7 @@
                 const pct = totalTrans > 0 ? Math.round((data.transacciones / totalTrans) * 100) : 0;
                 return `
                     <tr class="border-t">
-                        <td class="p-3 font-medium">${escaparHtml(nombre)}</td>
+                        <td class="p-3 font-medium">${escaparHtml(nombreParaMostrar(nombre))}</td>
                         <td class="p-3 text-right">${data.transacciones}</td>
                         <td class="p-3 text-right">$${data.monto.toLocaleString()}</td>
                         <td class="p-3 text-right font-semibold">${pct}%</td>
@@ -934,7 +935,7 @@
                 { label: 'Lote agotado', value: loteAgotado },
                 { label: 'Lote con mayor recaudación', value: `${etiquetaDeLote(loteMasRentable.nombre)} — $${loteMasRentable.monto.toLocaleString()}` },
                 { label: 'Pico de ventas global', value: `${pico.fecha} — ${pico.entradas} entradas` },
-                { label: 'Método de pago más usado', value: `${metodoMasUsado.nombre} — ${metodoMasUsado.porcentaje}%` },
+                { label: 'Método de pago más usado', value: `${nombreParaMostrar(metodoMasUsado.nombre)} — ${metodoMasUsado.porcentaje}%` },
                 { label: 'Promedio de entradas por compra', value: `${promedio} entradas por transacción` },
                 { label: 'Recaudación por entrada vendida', value: `$${recaudacionPorEntrada.toFixed(0)} por entrada` }
             ];
