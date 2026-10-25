@@ -23,6 +23,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Flujo: `evento.html` llama a `/api/crear-pago` → crea la venta `pendiente` y la preferencia de pago → Mercado Pago avisa a `/api/mp-webhook` (firma verificada) → la venta pasa a `confirmada` y se descuenta el stock en una transacción → `confirmacion.html` consulta `/api/venta` hasta ver el estado real.
 - Las ventas y el stock solo los escribe el servidor (`firebase-admin`); el navegador no debe escribir en `ventas` (queda garantizado cuando se publiquen las reglas de Firestore, tarea 10.3).
 - Variables de entorno (solo los nombres, los valores van en Vercel): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `SITE_URL`.
+- Formas de pago que se nombran en el sitio (Transferencia, Débito, Crédito; sin efectivo): lista en `shared/formas-de-pago.js`, probada en `pruebas/18-formas-de-pago.js`. Es solo texto para mostrar; lo que guarda el servidor no cambia.
 - Detalle del change: `openspec/changes/pagos-mercadopago/`.
 
 ## Datos y roles

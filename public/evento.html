@@ -110,7 +110,7 @@
                 <button type="submit" id="btnPagarAhora" class="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition shadow-md">
                     Pagar con Mercado Pago
                 </button>
-                <p class="text-xs text-gray-500 text-center">Vas a pasar a la página de Mercado Pago para completar el pago de forma segura. Se puede pagar con tarjeta de crédito, de débito, prepaga o con dinero en tu cuenta de Mercado Pago.</p>
+                <p class="text-xs text-gray-500 text-center">Vas a pasar a la página de Mercado Pago para completar el pago de forma segura. Se puede pagar con <span id="formasDePago"></span>.</p>
             </form>
 
             <button type="button" id="btnVolverPaso1" class="mt-4 text-sm text-violet-600 hover:underline">← Volver a seleccionar entradas</button>
@@ -133,6 +133,10 @@
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
+        import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
+
+        // El aviso del paso de pago nombra las formas de pago desde la lista compartida
+        document.getElementById('formasDePago').textContent = textoDeFormasDePago();
 
         // Elementos
         const container = document.getElementById('eventoContainer');
