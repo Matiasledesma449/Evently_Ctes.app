@@ -6,7 +6,7 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 - [x] 1.1 Crear `shared/formas-de-pago.js` con la lista (Transferencia, Débito, Crédito) y una función que devuelve el texto para el comprador. Se comprueba con `node -e`: la lista no contiene "Efectivo" y el texto nombra cada forma una vez.
 - [x] 1.2 Usar esa función en el aviso del paso de pago de `public/evento.html`. Se comprueba leyendo el archivo: el texto sale de la función y no queda ninguna lista escrita a mano.
-- [ ] 1.3 (La equivalencia ya está en `shared/formas-de-pago.js` como `nombreParaMostrar`, con prueba; falta usarla en Ventas y Reportes.) Dejar en la lista compartida la equivalencia "Transferencia" = lo que guarda el servidor como "Dinero en cuenta" (respuesta 5A), y usarla en Ventas y Reportes solo para mostrar el nombre. "Prepaga" se sigue mostrando en el panel si aparece. No se toca `server/`. Se comprueba con `node -e` y con `node pruebas/ejecutar-todas.js`.
+- [x] 1.3 (Hecha con `SIGUE A`: Ventas, Reportes y las tarjetas del Dashboard usan `nombreParaMostrar`; los desplegables guardan el nombre del servidor y muestran el otro; pruebas T1 a T7 en `pruebas/18-formas-de-pago.js`.) Dejar en la lista compartida la equivalencia "Transferencia" = lo que guarda el servidor como "Dinero en cuenta" (respuesta 5A), y usarla en Ventas y Reportes solo para mostrar el nombre. "Prepaga" se sigue mostrando en el panel si aparece. No se toca `server/`. Se comprueba con `node -e` y con `node pruebas/ejecutar-todas.js`.
 
 ## 2. Sin efectivo
 

@@ -154,6 +154,7 @@
         // por eso ya no se importa ninguna funcion para escribir ni hay boton para confirmar a mano.
         import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro } from "../shared/ventas-utils.js";
+        import { nombreParaMostrar } from "../shared/formas-de-pago.js";
 
         // Elementos
         const tablaBody = document.getElementById('tablaVentasBody');
@@ -219,7 +220,7 @@
             const elegido = filtroMetodo.value;
             const metodos = metodosDePago(ventas);
             filtroMetodo.innerHTML = ['<option value="todos">Todos los métodos</option>']
-                .concat(metodos.map(m => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
+                .concat(metodos.map(m => `<option value="${escaparHtml(m)}">${escaparHtml(nombreParaMostrar(m))}</option>`)).join('');
             filtroMetodo.value = metodos.includes(elegido) ? elegido : 'todos';
         }
 
@@ -254,7 +255,7 @@
                         <td class="p-3 text-sm">${escaparHtml(v.loteNombre || 'N/A')}</td>
                         <td class="p-3 text-right text-sm">${escaparHtml(v.cantidad || 0)}</td>
                         <td class="p-3 text-right text-sm font-semibold">$${escaparHtml(monto)}</td>
-                        <td class="p-3 text-sm"><span class="metodo-badge">${escaparHtml(v.metodo_pago || 'N/A')}</span></td>
+                        <td class="p-3 text-sm"><span class="metodo-badge">${escaparHtml(nombreParaMostrar(v.metodo_pago) || 'N/A')}</span></td>
                         <td class="p-3 text-sm">
                             <span class="px-2 py-1 rounded-full text-xs font-semibold ${claseDeEstado(v.estado)}">${escaparHtml(etiquetaDeEstado(v.estado))}</span>
                             ${motivo ? `<p class="text-xs text-gray-500 mt-1">${escaparHtml(motivo)}</p>` : ''}
@@ -277,7 +278,7 @@
             document.getElementById('modalVentaFecha').textContent = fecha;
             document.getElementById('modalVentaCorreo').textContent = nombre ? `${nombre} · ${venta.correo || 'N/A'}` : (venta.correo || 'N/A');
             document.getElementById('modalVentaLote').textContent = `${venta.loteNombre || 'N/A'} (${venta.cantidad || 0} u.)`;
-            document.getElementById('modalVentaMonto').textContent = `$${venta.monto_total ? Number(venta.monto_total).toLocaleString() : '0'} - ${venta.metodo_pago || 'N/A'}`;
+            document.getElementById('modalVentaMonto').textContent = `$${venta.monto_total ? Number(venta.monto_total).toLocaleString() : '0'} - ${nombreParaMostrar(venta.metodo_pago) || 'N/A'}`;
 
             // Estado y motivo (se arman como nodos de texto, sin innerHTML)
             const contenedorEstado = document.getElementById('modalVentaEstadoContainer');
@@ -326,7 +327,7 @@
 
             const metodo = filtroMetodo.value;
             const cantidad = ventas.length;
-            textoFiltro.textContent = `Mostrando: ${NOMBRE_DEL_ESTADO[filtroEstado] || NOMBRE_DEL_ESTADO.todos} · ${metodo === 'todos' ? 'Todos los métodos' : metodo} · ${cantidad} ${cantidad === 1 ? 'venta' : 'ventas'}`;
+            textoFiltro.textContent = `Mostrando: ${NOMBRE_DEL_ESTADO[filtroEstado] || NOMBRE_DEL_ESTADO.todos} · ${metodo === 'todos' ? 'Todos los métodos' : nombreParaMostrar(metodo)} · ${cantidad} ${cantidad === 1 ? 'venta' : 'ventas'}`;
 
             // Las ventas pendientes todavía no tienen método de pago: con un método elegido no entran
             const hayAviso = metodo !== 'todos';

@@ -102,6 +102,10 @@ La respuesta al PR de la vuelta anterior fue solo `A`, sin `SIGUE`, y ese PR no 
 - A (recomendado): era para "Qué sigue": usar el nombre "Transferencia" en Ventas y Reportes en lugar de "Dinero en cuenta" (solo cambia lo que se ve). Para que yo lo haga, comentá `SIGUE A`.
 - B: era una respuesta de más y no querés que haga nada. Dejo todo como está.
 
+Respuesta del 2026-10-25 en el PR de la cuarta vuelta: `7. SIGUE A`.
+
+- **7A**: Ventas y Reportes muestran "Transferencia" en lugar de "Dinero en cuenta" (solo el texto). Hecho en la tarea 1.3; también las tarjetas del Dashboard, para que no digan otro nombre.
+
 ## Por qué esta opción y no otra
 
 - **Una lista compartida** en vez de nombres escritos a mano en cada página: igual que con el menú y el selector de evento, tres copias terminan distintas.

@@ -28,6 +28,23 @@ verificar('F6 los demás nombres guardados se muestran igual (Crédito, Débito,
 verificar('F7 entradas raras no fallan y dan texto vacío', [undefined, null, 0, {}, []].every((x) => F.nombreParaMostrar(x) === ''));
 verificar('F8 nombres del objeto base no se confunden con equivalencias', F.nombreParaMostrar('constructor') === 'constructor' && F.nombreParaMostrar('toString') === 'toString');
 
+// ---------- Ventas, Reportes y Dashboard muestran "Transferencia" (tarea 1.3) ----------
+const leer = (a) => fs.readFileSync(path.join(RAIZ, a), 'utf8');
+const sinExport = leer('shared/ventas-utils.js').replace(/^export /gm, '');
+const VU = vm.runInNewContext(sinExport + '\n;({ tarjetasDeResumen, cifrasDelEvento })');
+const cifrasConMetodo = { capacidad: 10, entradas: 1, aforoRestante: 9, ocupacion: 10, recaudado: 1, confirmadas: 1, pendientes: 0, promedioEntradas: 1, loteMasVendido: null, loteMasRentable: null, metodoMasUsado: { nombre: 'Dinero en cuenta', cantidad: 1, porcentaje: 100 } };
+const valorMetodo = (tarjetas) => tarjetas.find((t) => t.id === 'metodo').valor;
+verificar('T1 la tarjeta "Método más usado" muestra "Transferencia" con la equivalencia', valorMetodo(VU.tarjetasDeResumen(cifrasConMetodo, F.nombreParaMostrar)) === 'Transferencia');
+verificar('T2 sin equivalencia la tarjeta muestra el nombre guardado', valorMetodo(VU.tarjetasDeResumen(cifrasConMetodo)) === 'Dinero en cuenta');
+verificar('T3 sin datos la tarjeta sigue mostrando "—"', valorMetodo(VU.tarjetasDeResumen(null, F.nombreParaMostrar)) === '—');
+for (const pantalla of ['admin/ventas.html', 'admin/reportes.html', 'admin/dashboard.html']) {
+  const html = leer(pantalla);
+  verificar(`T4 ${pantalla} importa nombreParaMostrar de formas-de-pago.js`, /import \{ nombreParaMostrar \} from "\.\.\/shared\/formas-de-pago\.js"/.test(html));
+}
+verificar('T5 Ventas y Reportes no muestran metodo_pago sin pasar por nombreParaMostrar', !/escaparHtml\(v\.metodo_pago \|\|/.test(leer('admin/ventas.html') + leer('admin/reportes.html')));
+verificar('T6 los desplegables guardan el nombre del servidor y muestran el otro', /<option value="\$\{escaparHtml\(m\)\}">\$\{escaparHtml\(nombreParaMostrar\(m\)\)\}<\/option>/.test(leer('admin/ventas.html')) && /<option value="\$\{escaparHtml\(m\)\}">\$\{escaparHtml\(nombreParaMostrar\(m\)\)\}<\/option>/.test(leer('admin/reportes.html')));
+verificar('T7 Dashboard y Reportes pasan nombreParaMostrar a las tarjetas', /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/dashboard.html')) && /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/reportes.html')));
+
 // ---------- Ninguna pantalla ofrece "Efectivo" ----------
 // Se miran public/*.html, admin/*.html, validador.html y shared/*.js, sin los comentarios (ahí se puede explicar por qué se excluye).
 function sinComentarios(texto) {
