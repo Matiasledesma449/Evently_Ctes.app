@@ -44,6 +44,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true
           prompt: |
             Leé .github/instrucciones-nube.md y seguilo al pie de la letra.
             Repositorio: ${{ github.repository }}
