@@ -94,6 +94,14 @@ Respuesta del 2026-10-25 en el PR de la tercera vuelta: `1A` (la pregunta de ese
 
 - **6A**: el `B` era para los `data.js`: se dejan como están por ahora. Reemplaza a la respuesta 1B: no se borran los dos `data.js` y se saltean las tareas 2.1 y 2.2. La decisión pendiente de `CLAUDE.md` sobre esos archivos sigue abierta. La prueba que avisa si alguna pantalla ofrece "Efectivo" se mantiene. Esto no pide hacer ahora el plan de evento activo.
 
+## Preguntas para la persona (cuarta vuelta)
+
+La respuesta al PR de la vuelta anterior fue solo `A`, sin `SIGUE`, y ese PR no tenía preguntas (solo la lista de "Qué sigue"). No adivino: no cambio ningún nombre en Ventas ni Reportes por ahora.
+
+**7. ¿Qué quisiste decir con tu `A`?**
+- A (recomendado): era para "Qué sigue": usar el nombre "Transferencia" en Ventas y Reportes en lugar de "Dinero en cuenta" (solo cambia lo que se ve). Para que yo lo haga, comentá `SIGUE A`.
+- B: era una respuesta de más y no querés que haga nada. Dejo todo como está.
+
 ## Por qué esta opción y no otra
 
 - **Una lista compartida** en vez de nombres escritos a mano en cada página: igual que con el menú y el selector de evento, tres copias terminan distintas.
