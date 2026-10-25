@@ -77,6 +77,10 @@ Respuesta del 2026-10-25 en el PR de este plan: `1B 2D (transferencia, débito y
 - B: cambiar también lo que guarda el servidor a "Transferencia". Las ventas viejas dirían "Dinero en cuenta" y los reportes tendrían que juntar los dos nombres.
 - C: me equivoqué al leer: querías transferencia bancaria real (cuenta propia, sin Mercado Pago). Es otro change grande y necesita cuenta y pruebas reales; no lo hace la nube.
 
+Respuesta del 2026-10-25 en el PR de la segunda vuelta: `5A`.
+
+- **5A**: "Transferencia" es solo el nombre que ve quien compra para lo que el servidor guarda como "Dinero en cuenta". No cambia `server/` ni las ventas viejas. "Prepaga" se sigue contando en los reportes si aparece, pero no se nombra al comprador.
+
 ## Por qué esta opción y no otra
 
 - **Una lista compartida** en vez de nombres escritos a mano en cada página: igual que con el menú y el selector de evento, tres copias terminan distintas.

@@ -20,7 +20,7 @@ El sitio es HTML y JavaScript puros, sin build (ver `CLAUDE.md`). Este change no
 ## Decisions
 
 ### 1. Lista de formas de pago en `shared/`
-Un archivo nuevo `shared/formas-de-pago.js` (módulo, como `ventas-utils.js`) con la lista (respuesta 2D: Transferencia, Débito, Crédito; cómo se relaciona "Transferencia" con lo que guarda el servidor depende de la pregunta 5, todavía sin responder) y una función que devuelve el texto para mostrar. El texto de `public/evento.html` se arma desde ahí. Como `evento.html` es una página pública y el módulo no depende de Firebase, se importa igual que los demás módulos de `shared/`.
+Un archivo nuevo `shared/formas-de-pago.js` (módulo, como `ventas-utils.js`) con la lista (respuesta 2D: Transferencia, Débito, Crédito), la equivalencia de nombres (respuesta 5A: "Transferencia" es el nombre para mostrar de lo que el servidor guarda como "Dinero en cuenta"; "Prepaga" no se nombra al comprador pero se sigue contando) y una función que devuelve el texto para mostrar y otra que traduce el nombre guardado al nombre para mostrar. Lo que guarda el servidor no cambia. El texto de `public/evento.html` se arma desde ahí. Como `evento.html` es una página pública y el módulo no depende de Firebase, se importa igual que los demás módulos de `shared/`.
 - **Alternativa descartada:** dejar el texto escrito a mano. Ya se desfasó una vez con el "Efectivo".
 
 ### 2. Elección de secciones del PDF como función pura
@@ -39,4 +39,4 @@ Respuesta 1B: se borran `public/assets/js/data.js` y `public/assets/css/js/data.
 
 ## Open Questions
 
-- La pregunta 5 de `proposal.md` (qué es "Transferencia" frente a "Dinero en cuenta" y "Prepaga"). Las preguntas 1, 3 y 4 están respondidas (1B, 3A, 4A).
+- Ninguna: todas las preguntas de `proposal.md` están respondidas (1B, 2D, 3A, 4A, 5A).

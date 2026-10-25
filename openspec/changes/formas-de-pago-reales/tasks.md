@@ -1,12 +1,12 @@
 # Tasks
 
-Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con `node` (sin navegador ni Firebase). Ajustadas a las respuestas de la persona (1B, 2D, 3A, 4A); la sección 1 espera la pregunta 5 de `proposal.md`.
+Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con `node` (sin navegador ni Firebase). Ajustadas a las respuestas de la persona (1B, 2D, 3A, 4A, 5A).
 
-## 1. Lista compartida de formas de pago (espera la pregunta 5)
+## 1. Lista compartida de formas de pago
 
-- [ ] 1.1 Crear `shared/formas-de-pago.js` con la lista (Transferencia, Débito, Crédito; ajustar según la pregunta 5) y una función que devuelve el texto para el comprador. Se comprueba con `node -e`: la lista no contiene "Efectivo" y el texto nombra cada forma una vez.
+- [ ] 1.1 Crear `shared/formas-de-pago.js` con la lista (Transferencia, Débito, Crédito) y una función que devuelve el texto para el comprador. Se comprueba con `node -e`: la lista no contiene "Efectivo" y el texto nombra cada forma una vez.
 - [ ] 1.2 Usar esa función en el aviso del paso de pago de `public/evento.html`. Se comprueba leyendo el archivo: el texto sale de la función y no queda ninguna lista escrita a mano.
-- [ ] 1.3 Si la pregunta 5 es A: dejar en la lista compartida la equivalencia "Transferencia" = lo que guarda el servidor como "Dinero en cuenta", y usarla en Ventas y Reportes solo para mostrar el nombre. Se comprueba con `node -e` y con `node pruebas/ejecutar-todas.js`.
+- [ ] 1.3 Dejar en la lista compartida la equivalencia "Transferencia" = lo que guarda el servidor como "Dinero en cuenta" (respuesta 5A), y usarla en Ventas y Reportes solo para mostrar el nombre. "Prepaga" se sigue mostrando en el panel si aparece. No se toca `server/`. Se comprueba con `node -e` y con `node pruebas/ejecutar-todas.js`.
 
 ## 2. Sin efectivo
 
@@ -28,6 +28,5 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## Workflow follow-up
 
-- Si la persona responde 5B, agregar tareas en `server/confirmacion.js` y en los reportes para juntar "Dinero en cuenta" y "Transferencia".
-- Si la persona responde 5C, sacar este change de la lista de la nube y abrir otro para la transferencia bancaria real.
+- La transferencia bancaria real (cuenta propia, sin Mercado Pago) queda fuera de este change; si se quiere, es otro change.
 - Archivar el change cuando la persona lo apruebe.
