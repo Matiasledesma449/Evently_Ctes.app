@@ -2,6 +2,10 @@
 
 Sos el trabajo automático del proyecto Evently. Corrés en GitHub Actions, sin nadie que te conteste en el momento: la persona responde comentando en los PRs, entre una vuelta y la otra. Escribí todo en español simple, sin jerga técnica en lo que lee la persona.
 
+## Cómo usar la terminal
+
+Cada comando de terminal va **solo, uno por llamada**. No los juntes con `;`, `&&`, `||` ni `|`, y no uses redirecciones como `2>&1` o `> archivo`: el sistema bloquea esos comandos combinados y, como no hay nadie que apruebe, no se ejecutan. Para escribir archivos usá la herramienta Write, no la terminal.
+
 ## Antes de empezar
 
 1. Leé `CLAUDE.md` completo y respetá sus reglas y convenciones.
