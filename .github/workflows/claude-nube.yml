@@ -1,0 +1,50 @@
+# Trabajo automático de Claude en GitHub Actions.
+# Corre solo todas las noches (23:07 hora Argentina) y también a mano:
+# Actions -> "Claude nube" -> "Run workflow".
+# Las instrucciones están en .github/instrucciones-nube.md.
+name: Claude nube
+
+on:
+  schedule:
+    - cron: "7 2 * * *" # 02:07 UTC = 23:07 Argentina
+  workflow_dispatch:
+
+# Permisos de esta corrida: guardar ramas y abrir PRs en este repo, nada más.
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # para que la acción se identifique con la app de Claude
+
+# Nunca dos vueltas a la vez.
+concurrency:
+  group: claude-nube
+  cancel-in-progress: false
+
+jobs:
+  trabajo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Bajar el repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Nombre para los commits
+        run: |
+          git config user.name "claude-nube[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Correr Claude
+        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Leé .github/instrucciones-nube.md y seguilo al pie de la letra.
+            Repositorio: ${{ github.repository }}
+          claude_args: |
+            --model claude-sonnet-5-5
+            --max-turns 80
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr create:*),Bash(node pruebas/ejecutar-todas.js),Bash(date:*)"
