@@ -1,6 +1,6 @@
 # Tasks
 
-Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con `node` (sin navegador ni Firebase). Escritas para la opción A de cada pregunta de `proposal.md`; se ajustan según la respuesta de la persona.
+Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con `node` (sin navegador ni Firebase). Escritas para las respuestas de la persona (1A 2A 3A, 2026-10-25; ver `proposal.md`).
 
 ## 1. Funciones puras y su prueba
 
@@ -26,5 +26,5 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## Workflow follow-up
 
-- Si la persona responde 3B, agregar una sección "Exportación de Ventas" con sus propias tareas y especificación.
+- La persona respondió 3A: no hay exportación en Ventas, no se agrega esa sección.
 - Archivar el change cuando la persona lo apruebe.

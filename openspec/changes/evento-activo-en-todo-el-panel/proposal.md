@@ -14,7 +14,7 @@ Parte de eso ya está hecho por el change `panel-claro-resumen-reportes`: Resume
 
 - **Franja de "Evento activo"** compartida, que se dibuja igual en todas las pantallas del panel donde el evento importa. Dice el nombre del evento (o "Todos los eventos" en Reportes) y tiene un enlace "Cambiar" que lleva a la lista de Eventos. En Resumen, Ventas y Reportes se mantiene el selector que ya existe; la franja no lo reemplaza.
 - **El PDF de Reportes** lleva el evento en el nombre del archivo (ver pregunta 2) y el evento bien visible arriba del documento.
-- **Si se aprueba la pregunta 3:** un botón de exportar en Ventas que también dice de qué evento es.
+- Ventas no suma exportación (respuesta 3A).
 - Los cálculos de texto (nombre de archivo, título de la exportación) pasan a funciones puras de `shared/ventas-utils.js`, con una prueba nueva en `pruebas/`.
 
 ## Capabilities
@@ -52,6 +52,13 @@ Parte de eso ya está hecho por el change `panel-claro-resumen-reportes`: Resume
 **3. ¿Se agrega una exportación en Ventas?**
 - A (recomendado): no. Hoy Ventas no exporta y nadie lo pidió; se arregla solo lo que ya existe (el PDF de Reportes).
 - B: sí, un botón "Exportar" en Ventas con la lista de ventas confirmadas del evento, que diga el evento en el nombre y arriba del archivo. Es más trabajo y es una función nueva que antes no estaba.
+
+## Respuestas de la persona
+
+2026-10-25: respondió `1A 2A 3A`.
+- 1A: la franja va en las páginas que trabajan sobre un evento (Escáner, y junto al selector en Resumen, Ventas y Reportes). Mensajes, Soporte, Consultas públicas, Panel global y Eventos quedan como están.
+- 2A: el archivo del PDF lleva el nombre del evento y la fecha.
+- 3A: no se agrega exportación en Ventas.
 
 ## Por qué esta opción y no otra
 
