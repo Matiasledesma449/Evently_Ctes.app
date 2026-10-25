@@ -66,8 +66,17 @@
                         <option value="todos">Todos</option>
                     </select>
                 </div>
-                <div class="flex gap-2 ml-auto">
-                    <button id="btnExportarPDF" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
+                <div class="ml-auto">
+                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Secciones del PDF</p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2" id="seccionesPdf">
+                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="resumen" checked class="accent-violet-600"> Resumen</label>
+                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="lotes" checked class="accent-violet-600"> Lotes</label>
+                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="detalle" checked class="accent-violet-600"> Detalle</label>
+                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="metodos" checked class="accent-violet-600"> Métodos de pago</label>
+                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="indicadores" checked class="accent-violet-600"> Indicadores</label>
+                        <button id="btnExportarPDF" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Exportar PDF</button>
+                    </div>
+                    <p id="avisoPdf" class="text-xs text-red-600 mt-1 min-h-[1rem]"></p>
                 </div>
             </div>
 
@@ -181,7 +190,7 @@
     <script type="module">
         import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago } from "../shared/ventas-utils.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago, seccionesDelPdf } from "../shared/ventas-utils.js";
         import { nombreParaMostrar } from "../shared/formas-de-pago.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
@@ -375,8 +384,18 @@
 
         // --- Exportar PDF ---
         function exportarPDF() {
-            const loteSeleccionado = loteFilter.value;
-            const metodoSeleccionado = metodoFilter.value;
+            const avisoPdf = document.getElementById('avisoPdf');
+            avisoPdf.textContent = '';
+            const elegidas = Array.from(document.querySelectorAll('#seccionesPdf input:checked')).map(i => i.value);
+            const secciones = seccionesDelPdf(elegidas);
+            if (secciones.length === 0) {
+                avisoPdf.textContent = 'Marcá al menos una sección para armar el PDF.';
+                return;
+            }
+            const tituloDe = (clave) => { // "1. Resumen general", numerado sin saltos según lo elegido
+                const s = secciones.find(x => x.clave === clave);
+                return s ? `${s.numero}. ${s.titulo}` : '';
+            };
 
             if (!datosListos()) return;
             const ventasFiltradas = ventasFiltradasActuales(); // el mismo evento, lote y método que se ven en pantalla
@@ -458,7 +477,8 @@
 
             const pdfContent = document.getElementById('pdf-content');
 
-            pdfContent.innerHTML = `
+            const bloques = {};
+            const encabezado = `
                 <div style="font-family: Arial, sans-serif; color: #1f2937; padding: 30px; background: white; width: 800px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
@@ -473,8 +493,10 @@
                             <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;"><strong>Filtros:</strong> ${filtrosTexto}</p>
                         </div>
                     </div>
+            `;
 
-                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">1. Resumen general</h2>
+            bloques.resumen = `
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">${tituloDe('resumen')}</h2>
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
                         <div style="background: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; border-radius: 8px;">
                             <p style="margin: 0; font-size: 10px; color: #6b7280; text-transform: uppercase;">Capacidad total</p>
@@ -506,8 +528,10 @@
                             <p style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">${promedio}</p>
                         </div>
                     </div>
+            `;
 
-                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">2. Desglose por Lote</h2>
+            bloques.lotes = `
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">${tituloDe('lotes')}</h2>
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
                         <thead>
                             <tr style="background: #ede9fe;">
@@ -544,8 +568,10 @@
                             </tr>
                         </tfoot>
                     </table>
+            `;
 
-                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">3. Detalle de transacciones</h2>
+            bloques.detalle = `
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">${tituloDe('detalle')}</h2>
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
                         <thead>
                             <tr style="background:#ede9fe;">
@@ -577,8 +603,10 @@
                             </tr>`).join('')}
                         </tbody>
                     </table>
+            `;
 
-                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">4. Métodos de pago</h2>
+            bloques.metodos = `
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">${tituloDe('metodos')}</h2>
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px;">
                         <thead>
                             <tr style="background:#ede9fe;">
@@ -601,8 +629,10 @@
                             }).join('')}
                         </tbody>
                     </table>
+            `;
 
-                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">5. Indicadores clave</h2>
+            bloques.indicadores = `
+                    <h2 style="font-size: 16px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">${tituloDe('indicadores')}</h2>
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px;">
                         <div style="background:#f9fafb;padding:10px;border-radius:8px;border-left:3px solid #7c3aed;">
                             <p style="margin:0;font-size:10px;color:#6b7280;">Entradas no vendidas</p>
@@ -629,13 +659,18 @@
                             <p style="margin:4px 0 0 0;font-size:13px;font-weight:700;">$${recaudacionPorEntrada.toFixed(0)}</p>
                         </div>
                     </div>
+            `;
 
+            const pie = `
                     <div style="border-top: 1px solid #e5e7eb; padding-top: 12px; margin-top: 24px; text-align: center;">
                         <p style="margin: 0; font-size: 10px; color: #9ca3af;">Evently © 2024 — Documento generado automáticamente por el sistema de gestión de eventos.</p>
                         <p style="margin: 4px 0 0 0; font-size: 9px; color: #d1d5db;">Este documento es de uso interno y confidencial. Bali Group.</p>
                     </div>
                 </div>
             `;
+
+            // El encabezado abre el <div> contenedor y el pie lo cierra; en el medio, solo las secciones elegidas
+            pdfContent.innerHTML = encabezado + secciones.map(s => bloques[s.clave]).join('') + pie;
 
             pdfContent.style.display = 'block';
 
