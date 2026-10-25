@@ -1,0 +1,81 @@
+# Trabajo automático de Claude en GitHub Actions.
+# Corre solo todas las noches (23:07 hora Argentina) y también a mano:
+# Actions -> "Claude nube" -> "Run workflow".
+# Las instrucciones están en .github/instrucciones-nube.md.
+name: Claude nube
+
+on:
+  schedule:
+    - cron: "7 2 * * *" # 02:07 UTC = 23:07 Argentina
+  workflow_dispatch:
+
+# Permisos de esta corrida: guardar ramas y abrir PRs en este repo, nada más.
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # para que la acción se identifique con la app de Claude
+
+# Nunca dos vueltas a la vez.
+concurrency:
+  group: claude-nube
+  cancel-in-progress: false
+
+jobs:
+  trabajo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Bajar el repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false # Claude no queda con permiso de subir
+
+      - name: Nombre para los commits
+        run: |
+          git config user.name "claude-nube[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Claude solo trabaja en local: hace commits y deja el título, el texto y
+      # la rama base del PR en /tmp/nube-pr/. No puede subir nada.
+      - name: Correr Claude
+        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Leé .github/instrucciones-nube.md y seguilo al pie de la letra.
+            Repositorio: ${{ github.repository }}
+          claude_args: |
+            --model claude-sonnet-5-5
+            --max-turns 80
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git fetch:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git branch:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git switch -c claude/nube-:*),Bash(git add:*),Bash(git commit:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(node pruebas/ejecutar-todas.js),Bash(date:*),Bash(mkdir -p /tmp/nube-pr)"
+
+      # Este paso no es Claude: revisa la rama y la base, sube y abre el PR.
+      - name: Subir la rama y abrir el PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ ! -f /tmp/nube-pr/titulo.txt ] || [ ! -f /tmp/nube-pr/cuerpo.md ] || [ ! -f /tmp/nube-pr/base.txt ]; then
+            echo "No hay trabajo para entregar."
+            exit 0
+          fi
+          rama="$(git rev-parse --abbrev-ref HEAD)"
+          base="$(tr -d '[:space:]' < /tmp/nube-pr/base.txt)"
+          if ! [[ "$rama" =~ ^claude/nube-[0-9A-Za-z-]+$ ]]; then
+            echo "Rama no permitida: $rama"; exit 1
+          fi
+          if ! [[ "$base" =~ ^(main|auto/menu-y-nombres|claude/nube-[0-9A-Za-z-]+)$ ]]; then
+            echo "Base no permitida: $base"; exit 1
+          fi
+          if [ "$(git rev-list --count "origin/$base..HEAD")" -eq 0 ]; then
+            echo "No hay commits nuevos sobre $base."
+            exit 0
+          fi
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:refs/heads/${rama}"
+          gh pr create --repo "$REPO" --base "$base" --head "$rama" \
+            --title "$(head -n 1 /tmp/nube-pr/titulo.txt)" \
+            --body-file /tmp/nube-pr/cuerpo.md
