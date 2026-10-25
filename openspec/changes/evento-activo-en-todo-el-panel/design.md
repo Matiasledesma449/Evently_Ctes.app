@@ -35,9 +35,9 @@ La franja muestra "Elegí un evento para ver sus datos" y un enlace a la lista d
 ## Risks / Trade-offs
 
 - [Una lectura más de Firestore por página] → es un solo documento; en Resumen, Ventas y Reportes no hace falta porque el selector ya tiene la lista.
-- [Cuál de las páginas lleva la franja depende de la pregunta 1] → las tareas están escritas para la opción A; si la persona elige B o C se ajustan las tareas 2.x.
+- [Cuál de las páginas lleva la franja] → la persona eligió la opción A (1A): Escáner, y junto al selector en Resumen, Ventas y Reportes. Las demás páginas no cambian.
 - [Falta confirmar si el Escáner valida entradas de un evento puntual o de cualquiera] → se revisa en la tarea 2.1 antes de escribir el texto de la franja; si valida de cualquiera, la franja de ese lugar no se pone y se avisa en el PR.
 
 ## Open Questions
 
-- Las 3 preguntas de `proposal.md`.
+- Ninguna: las 3 preguntas de `proposal.md` fueron respondidas el 2026-10-25 (1A 2A 3A).
