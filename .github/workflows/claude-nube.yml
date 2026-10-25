@@ -44,14 +44,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          show_full_output: true
           prompt: |
             Leé .github/instrucciones-nube.md y seguilo al pie de la letra.
             Repositorio: ${{ github.repository }}
           claude_args: |
             --model claude-sonnet-5-5
             --max-turns 80
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git fetch:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git branch:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git ls-tree:*),Bash(git ls-files:*),Bash(git switch -c claude/nube-:*),Bash(git add:*),Bash(git commit:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(node pruebas/ejecutar-todas.js),Bash(date:*),Bash(mkdir -p /tmp/nube-pr)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git fetch:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git branch:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git ls-tree:*),Bash(git ls-files:*),Bash(git switch -c:*),Bash(git add:*),Bash(git commit:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(node pruebas/ejecutar-todas.js),Bash(date:*),Bash(mkdir -p /tmp/nube-pr)"
 
       # Este paso no es Claude: revisa la rama y la base, sube y abre el PR.
       - name: Subir la rama y abrir el PR
