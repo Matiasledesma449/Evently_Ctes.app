@@ -9,7 +9,7 @@ Sos el trabajo automático del proyecto Evently. Corrés en GitHub Actions, sin 
    - Si hay PRs abiertos de ramas `claude/nube-*` de este mismo repo (`gh pr list --state open --json number,headRefName,isCrossRepository,createdAt`, y descartá los que tengan `isCrossRepository: true`, que vienen de forks), la base es la rama del más reciente: así seguís desde tu último trabajo.
    - Si no, y el PR #4 (rama `auto/menu-y-nombres`) no está mergeado a `main`, la base es `origin/auto/menu-y-nombres`. Comprobalo con `git merge-base --is-ancestor origin/auto/menu-y-nombres origin/main`.
    - Si no, la base es `origin/main`.
-3. Creá una rama nueva desde la base con `git switch -c claude/nube-AAAA-MM-DD-HHMM <base>` (fecha y hora UTC de ahora). Al final la subís con `git push -u origin claude/nube-...`: son los únicos comandos de rama y push que tenés permitidos.
+3. Creá una rama nueva desde la base con `git switch -c claude/nube-AAAA-MM-DD-HHMM <base>` (fecha y hora UTC de ahora). No subís nada vos: no tenés push ni permiso para crear PRs. Al terminar, un paso automático del workflow sube tu rama y abre el PR con lo que dejes escrito (ver "Entrega").
 
 ## Paso 0: leer las respuestas de la persona
 
@@ -33,7 +33,10 @@ Mirá los comentarios de los PRs `claude/nube-*` de este repo de los últimos 14
 ## Entrega
 
 1. Commit en español, descriptivo (ej: "tarea 2.1 de <change>: ..."), terminado con la línea `Co-Authored-By: Claude <noreply@anthropic.com>`.
-2. Push de tu rama y PR hacia la rama base con `gh pr create`. El título del PR: `Evently · <qué hiciste, máx 6 palabras> · <"Necesito N respuestas" o "No necesito nada">`. La descripción, con este formato exacto:
+2. Dejá el PR escrito en `/tmp/nube-pr/` (creá la carpeta con `mkdir -p /tmp/nube-pr`; estos archivos no van al commit):
+   - `base.txt`: solo el nombre de la rama base, sin `origin/` (ej: `auto/menu-y-nombres`).
+   - `titulo.txt`: una línea, `Evently · <qué hiciste, máx 6 palabras> · <"Necesito N respuestas" o "No necesito nada">`.
+   - `cuerpo.md`: la descripción, con este formato exacto:
 
 ```
 ✅ Qué hice
