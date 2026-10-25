@@ -18,7 +18,7 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 - [x] 3.1 Escribir `seccionesDelPdf(elegidas)` en `shared/ventas-utils.js` (orden fijo, numeración sin saltos, claves desconocidas ignoradas, lista vacía devuelve vacío). Se comprueba con `node -e`: todas marcadas da 5; sin "detalle" da 4 numeradas 1 a 4; `[]` y `null` no fallan.
 - [x] 3.2 Agregar a `pruebas/18-formas-de-pago.js` los casos de 3.1. Se comprueba con `node pruebas/18-formas-de-pago.js` y `node pruebas/ejecutar-todas.js`.
-- [ ] 3.3 En `admin/reportes.html`: casillas por sección junto a "Exportar PDF", armado del PDF solo con las elegidas y títulos numerados con la función; aviso en pantalla si no hay ninguna. Se comprueba con la skill `auditar-panel` con datos inventados, reemplazando `html2pdf` para leer lo que se le entrega: con todo marcado hay 5 títulos, sin "Detalle" hay 4 numerados 1 a 4, y sin ninguna no se llama a `html2pdf`.
+- [x] 3.3 (Hecha con `SIGUE A`: casillas, armado por secciones y aviso escritos; la nube no tiene navegador, así que la comprobación con `auditar-panel` queda para la persona o para 4.1.) En `admin/reportes.html`: casillas por sección junto a "Exportar PDF", armado del PDF solo con las elegidas y títulos numerados con la función; aviso en pantalla si no hay ninguna. Se comprueba con la skill `auditar-panel` con datos inventados, reemplazando `html2pdf` para leer lo que se le entrega: con todo marcado hay 5 títulos, sin "Detalle" hay 4 numerados 1 a 4, y sin ninguna no se llama a `html2pdf`.
 
 ## 4. Revisión final
 
