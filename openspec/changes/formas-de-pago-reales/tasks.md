@@ -23,8 +23,8 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 ## 4. Revisión final
 
 - [ ] 4.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas.
-- [ ] 4.2 Confirmar con `git diff --stat` que solo cambió lo previsto (`shared/`, `public/evento.html`, `admin/reportes.html`, `pruebas/`, `CLAUDE.md` y este change; los dos `data.js` no se tocan).
-- [ ] 4.3 Actualizar `CLAUDE.md` con la lista compartida de formas de pago. Se comprueba leyendo el archivo: sin claves, correos ni rutas personales.
+- [x] 4.2 (Hecha con `SIGUE A`: `public/assets` no tiene cambios, los dos `data.js` quedaron igual.) Confirmar con `git diff --stat` que solo cambió lo previsto (`shared/`, `public/evento.html`, `admin/reportes.html`, `pruebas/`, `CLAUDE.md` y este change; los dos `data.js` no se tocan).
+- [x] 4.3 (Hecha con `SIGUE A`: `CLAUDE.md` ya nombra `shared/formas-de-pago.js` y `pruebas/18-formas-de-pago.js`, sin claves, correos ni rutas personales.) Actualizar `CLAUDE.md` con la lista compartida de formas de pago. Se comprueba leyendo el archivo: sin claves, correos ni rutas personales.
 
 ## Workflow follow-up
 
