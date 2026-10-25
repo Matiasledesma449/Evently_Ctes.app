@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Ventas en Tiempo Real</title>
+    <title>Evently - Ventas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -40,33 +40,18 @@
     </script>
 
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
-            <div class="p-6">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-                <span class="block text-xs text-gray-500">Administración</span>
-            </div>
-            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
-                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
-                <a data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
-                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
-                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
-                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
-                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link active-link flex items-center gap-3 px-4 py-3 rounded-lg font-medium"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
-                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
-                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
-            </nav>
-            <div class="p-4 border-t border-gray-200">
-                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></a>
-            </div>
-        </aside>
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="ventas"></script>
 
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Ventas en Tiempo Real</h1>
+                <h1 class="text-2xl font-bold text-gray-800">Ventas</h1>
+                <div id="selectorEvento" class="flex flex-wrap items-center gap-2">
+                    <label for="selectorEventoSelect" class="text-sm font-medium text-gray-500">Evento</label>
+                    <select id="selectorEventoSelect" disabled class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white min-w-[16rem] max-w-full focus:ring-2 focus:ring-violet-500 outline-none"><option>—</option></select>
+                    <p id="selectorEventoAviso" class="hidden w-full text-sm text-gray-500"></p>
+                </div>
             </div>
 
             <!-- Filtros de estado y método -->
@@ -77,33 +62,17 @@
                 <button class="filtro-btn px-3 py-1 rounded-full text-sm" data-filtro="rechazada">❌ Rechazadas</button>
                 <span class="text-sm text-gray-400 mx-2">|</span>
                 <select id="filtroMetodo" class="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                    <!-- Las opciones las arma el JavaScript con los métodos que tienen las ventas del evento -->
                     <option value="todos">Todos los métodos</option>
-                    <option value="Crédito">Crédito</option>
-                    <option value="Débito">Débito</option>
-                    <option value="Prepaga">Prepaga</option>
-                    <option value="Dinero en cuenta">Dinero en cuenta</option>
                 </select>
                 <button id="btnAplicarFiltros" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-full text-sm transition">Aplicar filtros</button>
             </div>
 
-            <!-- Resumen de ventas -->
-            <div id="resumenVentas" class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Total recaudado</p>
-                    <p id="totalRecaudado" class="text-2xl font-bold text-violet-600">$0</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Entradas vendidas</p>
-                    <p id="totalEntradas" class="text-2xl font-bold text-gray-800">0</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Ventas confirmadas</p>
-                    <p id="totalTransacciones" class="text-2xl font-bold text-gray-800">0</p>
-                </div>
-                <div class="bg-white rounded-xl border border-gray-200 p-4">
-                    <p class="text-sm text-gray-500">Pendientes de pago</p>
-                    <p id="totalPendientes" class="text-2xl font-bold text-yellow-600">0</p>
-                </div>
+            <!-- Resumen de ventas: las tarjetas cambian según el filtro (las arma el JavaScript) -->
+            <div class="mb-6">
+                <p id="textoFiltro" class="text-sm text-gray-500 mb-2"></p>
+                <div id="resumenVentas" class="grid grid-cols-1 sm:grid-cols-4 gap-4"></div>
+                <p id="avisoMetodo" class="hidden text-xs text-gray-500 mt-2"></p>
             </div>
 
             <!-- Tabla de ventas -->
@@ -132,20 +101,6 @@
         </main>
     </div>
 
-    <!-- Bottom nav (móvil) -->
-    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
-        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
-        <a data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
-        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
-        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-violet-600"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
-        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
-        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
-        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
-    </nav>
     <!-- Modal Detalle de Venta -->
     <div id="modalVenta" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4" onclick="if(event.target === this) { this.classList.add('hidden'); this.classList.remove('flex'); }">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
@@ -193,18 +148,18 @@
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module" src="../shared/selector-evento.js"></script>
     <script type="module">
         // Esta pantalla solo LEE las ventas: los estados los define el servidor a partir de Mercado Pago,
         // por eso ya no se importa ninguna funcion para escribir ni hay boton para confirmar a mano.
         import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { escaparHtml, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta } from "../shared/ventas-utils.js";
+        import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro } from "../shared/ventas-utils.js";
 
         // Elementos
         const tablaBody = document.getElementById('tablaVentasBody');
-        const totalRecaudado = document.getElementById('totalRecaudado');
-        const totalEntradas = document.getElementById('totalEntradas');
-        const totalTransacciones = document.getElementById('totalTransacciones');
-        const totalPendientes = document.getElementById('totalPendientes');
+        const resumenVentas = document.getElementById('resumenVentas');
+        const textoFiltro = document.getElementById('textoFiltro');
+        const avisoMetodo = document.getElementById('avisoMetodo');
         const filtroMetodo = document.getElementById('filtroMetodo');
         const btnAplicarFiltros = document.getElementById('btnAplicarFiltros');
 
@@ -219,8 +174,8 @@
             eventoSeleccionadoId = params.get('id') || localStorage.getItem('eventoId');
             
             if (!eventoSeleccionadoId) {
-                alert('No se ha seleccionado ningún evento.');
-                window.location.href = 'eventos-seleccion.html';
+                // Sin evento no se lleva a otra pantalla: el selector de arriba invita a elegir uno
+                tablaBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">Elegí un evento para ver sus datos</td></tr>`;
                 return;
             }
             
@@ -258,18 +213,20 @@
             });
         }
 
-        // Aplicar filtros y renderizar
+        // El desplegable ofrece solo los métodos que tienen las ventas del evento. Reconstruirlo borra lo elegido,
+        // así que se guarda la selección y se vuelve a poner si ese método todavía existe.
+        function actualizarOpcionesDeMetodo(ventas) {
+            const elegido = filtroMetodo.value;
+            const metodos = metodosDePago(ventas);
+            filtroMetodo.innerHTML = ['<option value="todos">Todos los métodos</option>']
+                .concat(metodos.map(m => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
+            filtroMetodo.value = metodos.includes(elegido) ? elegido : 'todos';
+        }
+
+        // Aplicar filtros y renderizar. La tabla y las tarjetas usan EXACTAMENTE la misma lista filtrada.
         function aplicarFiltrosYRenderizar(ventas) {
-            const metodo = filtroMetodo.value;
-            let filtradas = ventas;
-
-            if (filtroEstado !== 'todos') {
-                filtradas = filtradas.filter(v => v.estado === filtroEstado);
-            }
-            if (metodo !== 'todos') {
-                filtradas = filtradas.filter(v => v.metodo_pago === metodo);
-            }
-
+            actualizarOpcionesDeMetodo(ventas);
+            const filtradas = filtrarVentas(ventas, filtroEstado, filtroMetodo.value);
             renderizarVentas(filtradas);
             actualizarResumen(filtradas);
         }
@@ -354,14 +311,27 @@
             modal.classList.add('flex');
         };
 
-        // Actualizar resumen. Recaudacion y entradas cuentan SOLO ventas confirmadas;
-        // las pendientes se informan aparte y las rechazadas no suman a nada.
+        // Tarjetas de resumen: cambian según el filtro de estado y siempre respetan el de método.
+        // La recaudación cuenta SOLO ventas confirmadas; lo pendiente se muestra "en espera" y lo rechazado "no cobrado".
+        const COLOR_DEL_TONO = { dinero: 'text-violet-600', pendiente: 'text-yellow-600', rechazo: 'text-red-600', normal: 'text-gray-800' };
+        const NOMBRE_DEL_ESTADO = { todos: 'Todas las ventas', confirmada: 'Confirmadas', pendiente: 'Pendientes', rechazada: 'Rechazadas' };
+
         function actualizarResumen(ventas) {
-            const resumen = resumenDeVentas(ventas);
-            totalRecaudado.textContent = `$${resumen.recaudado.toLocaleString()}`;
-            totalEntradas.textContent = resumen.entradas;
-            totalTransacciones.textContent = resumen.confirmadas;
-            totalPendientes.textContent = resumen.pendientes;
+            resumenVentas.innerHTML = tarjetasDelFiltro(filtroEstado, ventas).map(t => `
+                <div class="bg-white rounded-xl border border-gray-200 p-4" title="${escaparHtml(t.titulo + ': ' + t.valor)}">
+                    <p class="text-sm text-gray-500">${escaparHtml(t.titulo)}</p>
+                    <p class="text-2xl font-bold ${COLOR_DEL_TONO[t.tono] || COLOR_DEL_TONO.normal} truncate">${escaparHtml(t.valor)}</p>
+                    <p class="text-xs text-gray-400 mt-1">${escaparHtml(t.ayuda)}</p>
+                </div>`).join('');
+
+            const metodo = filtroMetodo.value;
+            const cantidad = ventas.length;
+            textoFiltro.textContent = `Mostrando: ${NOMBRE_DEL_ESTADO[filtroEstado] || NOMBRE_DEL_ESTADO.todos} · ${metodo === 'todos' ? 'Todos los métodos' : metodo} · ${cantidad} ${cantidad === 1 ? 'venta' : 'ventas'}`;
+
+            // Las ventas pendientes todavía no tienen método de pago: con un método elegido no entran
+            const hayAviso = metodo !== 'todos';
+            avisoMetodo.textContent = hayAviso ? 'Con un método de pago elegido no aparecen las ventas pendientes, porque todavía no tienen método de pago.' : '';
+            if (hayAviso) avisoMetodo.classList.remove('hidden'); else avisoMetodo.classList.add('hidden');
         }
 
         // Filtros de estado (botones)
@@ -370,17 +340,13 @@
                 document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 filtroEstado = this.dataset.filtro;
-                if (eventoSeleccionadoId) {
-                    escucharVentas(eventoSeleccionadoId);
-                }
+                aplicarFiltrosYRenderizar(todasLasVentas); // ya están en memoria: solo se vuelve a filtrar
             });
         });
 
-        btnAplicarFiltros.addEventListener('click', () => {
-            if (eventoSeleccionadoId) {
-                escucharVentas(eventoSeleccionadoId);
-            }
-        });
+        // El método se aplica apenas se cambia; el botón "Aplicar filtros" queda y hace lo mismo
+        filtroMetodo.addEventListener('change', () => aplicarFiltrosYRenderizar(todasLasVentas));
+        btnAplicarFiltros.addEventListener('click', () => aplicarFiltrosYRenderizar(todasLasVentas));
 
         inicializarVentas();
     </script>

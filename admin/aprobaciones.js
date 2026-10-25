@@ -6,6 +6,7 @@
     const db = window.db;
     const auth = window.auth;
 
+    import { crearImagenEvento } from "../shared/imagen-evento.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
         serverTimestamp, getDoc, getDocs
@@ -180,13 +181,7 @@
 
         const imagenFrame = document.createElement('div');
         imagenFrame.className = 'relative h-32 w-full bg-violet-50';
-        const imagen = document.createElement('img');
-        imagen.className = 'w-full h-full object-cover';
-        imagen.alt = `Portada de ${solicitud.nombre || 'la solicitud'}`;
-        imagen.src = typeof solicitud.imagen === 'string' && solicitud.imagen.trim()
-            ? solicitud.imagen.trim()
-            : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=400&auto=format&fit=crop';
-        imagen.onerror = () => { imagen.hidden = true; };
+        const imagen = crearImagenEvento(solicitud, document, { clases: 'h-32' });
 
         const badge = document.createElement('span');
         badge.className = 'absolute top-2 right-2 bg-white/95 px-2 py-1 rounded text-[10px] font-bold text-violet-800 shadow-sm';

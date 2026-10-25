@@ -15,7 +15,7 @@ const verificar = (nombre, condicion, detalle = '') => {
 
 // ---------- Cargar shared/ventas-utils.js (es un modulo del navegador: se le quitan los "export") ----------
 const codigoUtils = leer('shared', 'ventas-utils.js').replace(/^export /gm, '');
-const NOMBRES = 'escaparHtml, esConfirmada, soloConfirmadas, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta';
+const NOMBRES = 'escaparHtml, esConfirmada, soloConfirmadas, resumenDeVentas, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, cifrasDelEvento, tarjetasDeResumen';
 const U = vm.runInNewContext(codigoUtils + '\n;({ ' + NOMBRES + ' })');
 
 // Extrae el texto de una funcion de una pagina (contando llaves)
@@ -75,8 +75,9 @@ const htmlVentas = leer('admin', 'ventas.html');
   verificar('V1 ya no hay boton ni codigo para confirmar a mano (Confirmar Pago, confirmarPagoModal, updateDoc, acciones)',
     !/Confirmar Pago|confirmarPagoModal|updateDoc|modalVentaAcciones|confirm\(/.test(sinComentarios));
   verificar('V2 el estado "anulada" ya no se ofrece: hay filtro "Rechazadas" y la clase estado-rechazada', !/anulada|Anulada/.test(sinComentarios) && /data-filtro="rechazada">❌ Rechazadas/.test(sinComentarios) && /\.estado-rechazada/.test(sinComentarios));
-  verificar('V3 el filtro de metodo usa los nombres reales (con tilde) y los nuevos', /value="Crédito"/.test(sinComentarios) && /value="Débito"/.test(sinComentarios) && /value="Prepaga"/.test(sinComentarios) && /value="Dinero en cuenta"/.test(sinComentarios) && !/value="Credito"|value="Debito"|value="Efectivo"|value="Transferencia"/.test(sinComentarios));
-  verificar('V4 las etiquetas del resumen dicen "Ventas confirmadas" y "Pendientes de pago"', /Ventas confirmadas/.test(sinComentarios) && /Pendientes de pago/.test(sinComentarios) && !/Pendientes de confirmar/.test(sinComentarios));
+  verificar('V3 el HTML ya no trae metodos fijos: solo "Todos los métodos" (los demas salen de las ventas)',
+    (sinComentarios.match(/<select id="filtroMetodo"[\s\S]*?<\/select>/)[0].match(/<option/g) || []).length === 1 && !/value="Crédito"|value="Débito"|value="Prepaga"/.test(sinComentarios));
+  verificar('V4 las tarjetas ya no son fijas en el HTML: las arma el JavaScript segun el filtro', /id="resumenVentas"/.test(sinComentarios) && !/id="totalRecaudado"|id="totalPendientes"/.test(sinComentarios) && /id="textoFiltro"/.test(sinComentarios) && /id="avisoMetodo"/.test(sinComentarios));
 }
 
 class Elemento {
@@ -87,6 +88,7 @@ class Elemento {
   replaceChildren(...ns) { this.hijos = [...ns]; }
   addEventListener(tipo, fn) { (this._oyentes[tipo] = this._oyentes[tipo] || []).push(fn); }
   async clic() { for (const fn of this._oyentes.click || []) await fn.call(this, {}); }
+  async dispararCambio() { for (const fn of this._oyentes.change || []) await fn.call(this, {}); }
   get textoCompleto() { return this.textContent + this.hijos.map((h) => h.textoCompleto).join(' '); }
 }
 
@@ -111,8 +113,15 @@ function abrirPaginaVentas(ventas) {
   vm.createContext(contexto);
   const script = [...htmlVentas.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((m) => m[1]).find((s) => s.includes('escucharVentas'));
   vm.runInContext(codigoUtils + '\n' + script.replace(/^\s*import .*$/gm, ''), contexto);
-  return { els, botones, ventana, problemas, filas: () => (els.tablaVentasBody.innerHTML.match(/<tr class="venta-card/g) || []).length };
+  return { els, botones, ventana, problemas, contexto, filas: () => (els.tablaVentasBody.innerHTML.match(/<tr class="venta-card/g) || []).length };
 }
+
+// Lee el valor de una tarjeta del resumen por su titulo (o null si esa tarjeta no esta)
+const tarjeta = (els, titulo) => {
+  const m = els.resumenVentas.innerHTML.match(new RegExp('<p class="text-sm text-gray-500">' + titulo + '</p>\\s*<p class="[^"]*">([^<]*)</p>'));
+  return m ? m[1] : null;
+};
+const $ = (n) => '$' + n.toLocaleString();
 
 (async () => {
   {
@@ -120,9 +129,13 @@ function abrirPaginaVentas(ventas) {
     const { els } = p;
     verificar('V5 el JavaScript solo usa elementos que existen y no usa alert', p.problemas.length === 0, p.problemas.join(' | '));
     verificar('V6 todas las ventas se ven en "Todos" (6 filas, incluida la vieja)', p.filas() === 6, 'filas=' + p.filas());
-    verificar('V7 recaudado = solo las 2 confirmadas ($25.000)', els.totalRecaudado.textContent === '$' + (25000).toLocaleString(), els.totalRecaudado.textContent);
-    verificar('V8 entradas vendidas = 5 (solo confirmadas)', String(els.totalEntradas.textContent) === '5', String(els.totalEntradas.textContent));
-    verificar('V9 "Ventas confirmadas" = 2 y "Pendientes de pago" = 1', String(els.totalTransacciones.textContent) === '2' && String(els.totalPendientes.textContent) === '1');
+    verificar('V7 "Todos": recaudado = solo las 2 confirmadas ($25.000)', tarjeta(els, 'Total recaudado') === $(25000), tarjeta(els, 'Total recaudado'));
+    verificar('V8 "Todos": entradas vendidas = 5 (solo confirmadas)', tarjeta(els, 'Entradas vendidas') === '5', tarjeta(els, 'Entradas vendidas'));
+    verificar('V9 "Todos": "Ventas confirmadas" = 2 y "Pendientes de pago" = 1', tarjeta(els, 'Ventas confirmadas') === '2' && tarjeta(els, 'Pendientes de pago') === '1');
+    verificar('V9b "Todos": la linea dice que se muestran las 6 ventas de todos los metodos', els.textoFiltro.textContent === 'Mostrando: Todas las ventas · Todos los métodos · 6 ventas', els.textoFiltro.textContent);
+    verificar('V9c el desplegable ofrece solo los metodos que existen en las ventas (Crédito, Débito y el viejo Efectivo)',
+      /^<option value="todos">Todos los métodos<\/option><option value="Crédito">Crédito<\/option><option value="Débito">Débito<\/option><option value="Efectivo">Efectivo<\/option>$/.test(els.filtroMetodo.innerHTML), els.filtroMetodo.innerHTML);
+    verificar('V9d sin metodo elegido no hay aviso de pendientes', els.avisoMetodo.classList.contains('hidden') && els.avisoMetodo.textContent === '');
 
     const html = els.tablaVentasBody.innerHTML;
     verificar('V10 se ve quien compro: nombre, apellido y correo reales', /Ana Pérez/.test(html) && /ana@example\.com/.test(html) && /Luis Gómez/.test(html));
@@ -133,12 +146,17 @@ function abrirPaginaVentas(ventas) {
 
     // Filtros
     await p.botones[1].clic();
-    verificar('V15 filtro "Confirmadas": 2 filas y las cifras siguen siendo $25.000 / 5', p.filas() === 2 && els.totalRecaudado.textContent === '$' + (25000).toLocaleString() && String(els.totalEntradas.textContent) === '5');
+    verificar('V15 filtro "Confirmadas": 2 filas y tarjetas propias ($25.000, 5 entradas, 2 ventas, promedio $12.500)',
+      p.filas() === 2 && tarjeta(els, 'Total recaudado') === $(25000) && tarjeta(els, 'Entradas vendidas') === '5' && tarjeta(els, 'Ventas confirmadas') === '2' && tarjeta(els, 'Promedio por venta') === $(12500) && tarjeta(els, 'Pendientes de pago') === null);
     await p.botones[2].clic();
-    verificar('V16 filtro "Pendientes": 1 fila, recaudado $0 y 1 pendiente de pago', p.filas() === 1 && els.totalRecaudado.textContent === '$0' && String(els.totalPendientes.textContent) === '1' && /Pendiente de pago/.test(els.tablaVentasBody.innerHTML));
+    verificar('V16 filtro "Pendientes": 1 fila y tarjetas propias (1 venta, 4 entradas y $20.000 en espera), sin tarjeta de recaudado',
+      p.filas() === 1 && tarjeta(els, 'Ventas pendientes') === '1' && tarjeta(els, 'Entradas en espera') === '4' && tarjeta(els, 'Dinero en espera') === $(20000) && tarjeta(els, 'Total recaudado') === null && /Pendiente de pago/.test(els.tablaVentasBody.innerHTML));
+    verificar('V16b filtro "Pendientes": la linea lo dice y "La mas antigua" tiene un valor', els.textoFiltro.textContent === 'Mostrando: Pendientes · Todos los métodos · 1 venta' && tarjeta(els, 'La más antigua') !== null && !/NaN|undefined/.test(tarjeta(els, 'La más antigua')), els.textoFiltro.textContent);
     await p.botones[3].clic();
     verificar('V17 filtro "Rechazadas": solo las 2 rechazadas, cada una con su motivo, y no suman dinero',
-      p.filas() === 2 && /No se pagó a tiempo/.test(els.tablaVentasBody.innerHTML) && /Se agotaron las entradas/.test(els.tablaVentasBody.innerHTML) && els.totalRecaudado.textContent === '$0' && String(els.totalEntradas.textContent) === '0');
+      p.filas() === 2 && /No se pagó a tiempo/.test(els.tablaVentasBody.innerHTML) && /Se agotaron las entradas/.test(els.tablaVentasBody.innerHTML));
+    verificar('V17b filtro "Rechazadas": tarjetas propias (2 ventas, 7 entradas, $35.000 no cobrados), sin tarjeta de recaudado',
+      tarjeta(els, 'Ventas rechazadas') === '2' && tarjeta(els, 'Entradas que no se vendieron') === '7' && tarjeta(els, 'Dinero no cobrado') === $(35000) && tarjeta(els, 'Total recaudado') === null && tarjeta(els, 'Motivo más frecuente') !== null);
     verificar('V18 la venta vieja "anulada" NO aparece en "Rechazadas"', !/viejo@example\.com/.test(els.tablaVentasBody.innerHTML));
 
     // Filtro por metodo
@@ -146,6 +164,21 @@ function abrirPaginaVentas(ventas) {
     els.filtroMetodo.value = 'Crédito';
     await els.btnAplicarFiltros.clic();
     verificar('V19 filtro de metodo "Crédito" (con tilde): muestra solo la venta pagada con credito', p.filas() === 1 && /ana@example\.com/.test(els.tablaVentasBody.innerHTML));
+    verificar('V19b con "Crédito" las tarjetas y la linea usan esa misma lista (1 venta, $15.000) y aparece el aviso de pendientes',
+      tarjeta(els, 'Total recaudado') === $(15000) && tarjeta(els, 'Ventas confirmadas') === '1' && els.textoFiltro.textContent === 'Mostrando: Todas las ventas · Crédito · 1 venta' && !els.avisoMetodo.classList.contains('hidden') && /todavía no tienen método de pago/.test(els.avisoMetodo.textContent), els.textoFiltro.textContent);
+    await p.botones[1].clic();
+    els.filtroMetodo.value = 'Débito';
+    await els.filtroMetodo.dispararCambio();
+    verificar('V24 "Confirmadas" + "Débito" se aplican juntos y al instante (sin apretar el boton): 1 fila, $10.000',
+      p.filas() === 1 && tarjeta(els, 'Total recaudado') === $(10000) && tarjeta(els, 'Ventas confirmadas') === '1' && els.textoFiltro.textContent === 'Mostrando: Confirmadas · Débito · 1 venta', els.textoFiltro.textContent);
+    await p.botones[2].clic();
+    verificar('V25 "Pendientes" + un metodo: no hay filas (las pendientes no tienen metodo), las tarjetas quedan en 0 y el aviso se ve',
+      p.filas() === 0 && tarjeta(els, 'Ventas pendientes') === '0' && tarjeta(els, 'La más antigua') === '—' && !els.avisoMetodo.classList.contains('hidden'));
+    p.contexto.aplicarFiltrosYRenderizar(VENTAS);
+    verificar('V26 al llegar datos nuevos el metodo elegido se conserva mientras exista', els.filtroMetodo.value === 'Débito', els.filtroMetodo.value);
+    p.contexto.aplicarFiltrosYRenderizar(VENTAS.filter((v) => v.metodo_pago !== 'Débito'));
+    verificar('V27 si el metodo elegido ya no existe, vuelve a "Todos los métodos" y el aviso desaparece', els.filtroMetodo.value === 'todos' && els.avisoMetodo.classList.contains('hidden'), els.filtroMetodo.value);
+    await p.botones[0].clic();
     els.filtroMetodo.value = 'todos';
     await els.btnAplicarFiltros.clic();
 
@@ -171,45 +204,50 @@ function abrirPaginaVentas(ventas) {
     const html = p.els.tablaVentasBody.innerHTML;
     verificar('S1 correo, lote, nombre y metodo con HTML se muestran como texto en la tabla (sin etiquetas reales)', !/<img|<script|<svg|<b>raro|<i>/.test(html) && /&lt;img/.test(html) && /&lt;script&gt;/.test(html) && /&lt;svg/.test(html));
     verificar('S2 los atributos no se pueden romper con comillas', !/onerror=alert|onload=alert/.test(html.replace(/&quot;|&lt;|&gt;/g, '')) || !/"\s*onerror|"\s*onload/.test(html));
+    verificar('S1b un metodo de pago con HTML se muestra como texto en el desplegable y en las tarjetas',
+      !/<i>/.test(p.els.filtroMetodo.innerHTML) && /&lt;i&gt;m&lt;\/i&gt;/.test(p.els.filtroMetodo.innerHTML) && !/<i>|<svg|<script/.test(p.els.resumenVentas.innerHTML));
     p.ventana.abrirDetalleVenta('M1');
     verificar('S3 el detalle usa solo texto (nunca interpreta HTML)', p.els.modalVentaCorreo.textContent.includes('<img/src=x/onerror=alert(1)>@a.bc') && p.els.modalVentaLote.textContent.includes('<script>'));
     p.ventana.abrirDetalleVenta('M2');
     verificar('S4 un motivo desconocido o con HTML nunca se muestra tal cual', !/raro/.test(p.els.modalVentaEstadoContainer.textoCompleto) && /Motivo no especificado/.test(p.els.modalVentaEstadoContainer.textoCompleto));
   }
 
-  // ====================== 3. Dashboard (cifras del evento) ======================
+  // ====================== 3. Resumen (cifras del evento) ======================
+  // Resumen arma sus tarjetas con cifrasDelEvento y tarjetasDeResumen (las mismas funciones que usa Reportes)
   {
     const html = leer('admin', 'dashboard.html');
-    const funcion = extraerFuncion(html, 'actualizarKPIs');
-    const kpiContainer = { innerHTML: '' };
-    const contexto = { kpiContainer, console, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas })') };
-    vm.createContext(contexto);
-    vm.runInContext(funcion + ';this.actualizarKPIs = actualizarKPIs;', contexto);
+    const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '');
     const evento = { lotes: [{ nombre: 'General', disponibles: 100, vendidas: 5, precio: 5000 }] };
-    contexto.actualizarKPIs(evento, VENTAS);
-    const h = kpiContainer.innerHTML.replace(/\s+/g, ' ');
-    verificar('D1 dashboard: la recaudacion suma solo las 2 confirmadas ($25.000)', h.includes('$' + (25000).toLocaleString() + '</p>'), h.match(/\$[\d.,]+<\/p>/g) + '');
-    verificar('D2 dashboard: dice "2 ventas confirmadas" y muestra "Ventas confirmadas" = 2', /2 ventas confirmadas/.test(h) && /Ventas confirmadas<\/span>[\s\S]*?>2<\/p>/.test(h));
-    verificar('D3 dashboard: muestra 1 "Pendientes de pago" aparte', /Pendientes de pago<\/span>[\s\S]*?>1<\/p>/.test(h), h.slice(h.indexOf('Pendientes de pago') - 20, h.indexOf('Pendientes de pago') + 220));
-    verificar('D4 dashboard: no suma las rechazadas ni las pendientes (ni 20.000 ni 30.000 ni 5.000 de ellas, ni 9.999 de la vieja)', !h.includes('$' + (45000).toLocaleString()) && !h.includes('$' + (60000).toLocaleString()) && !h.includes('$' + (35000).toLocaleString()));
-    verificar('D5 dashboard: el metodo mas usado sale solo de las confirmadas (no cuenta "Efectivo" de la vieja ni los sin metodo)', !/Efectivo|Desconocido/.test(h));
-    contexto.actualizarKPIs(evento, []);
-    verificar('D6 dashboard: sin ventas no se rompe y muestra $0', kpiContainer.innerHTML.includes('$0'));
+    const tarjetas = U.tarjetasDeResumen(U.cifrasDelEvento([evento], VENTAS));
+    const valor = (titulo) => (tarjetas.find((x) => x.titulo === titulo) || {}).valor;
+    const todo = tarjetas.map((x) => x.titulo + ' ' + x.valor + ' ' + x.ayuda).join(' | ');
+    verificar('D1 resumen: la recaudacion suma solo las 2 confirmadas ($25.000)', valor('Total recaudado') === '$' + (25000).toLocaleString(), valor('Total recaudado'));
+    verificar('D2 resumen: "Ventas confirmadas" = 2 y 5 entradas vendidas (aunque el contador del lote diga 5 por otra razon)', valor('Ventas confirmadas') === '2' && valor('Entradas vendidas') === '5');
+    verificar('D3 resumen: muestra 1 "Pendientes de pago" aparte', valor('Pendientes de pago') === '1');
+    verificar('D4 resumen: no suma las rechazadas ni las pendientes (ni 20.000 ni 30.000 ni 5.000 de ellas, ni 9.999 de la vieja)', !todo.includes('$' + (45000).toLocaleString()) && !todo.includes('$' + (60000).toLocaleString()) && !todo.includes('$' + (35000).toLocaleString()));
+    verificar('D5 resumen: el metodo mas usado sale solo de las confirmadas (no cuenta "Efectivo" de la vieja ni los sin metodo)', !/Efectivo|Desconocido/.test(todo));
+    const vacias = U.tarjetasDeResumen(U.cifrasDelEvento([evento], []));
+    verificar('D6 resumen: sin ventas no se rompe y muestra $0', (vacias.find((x) => x.titulo === 'Total recaudado') || {}).valor === '$0');
+    verificar('D7 resumen: la pagina usa las funciones compartidas y ya no calcula ni usa los contadores "vendidas" de los lotes',
+      /cifrasDelEvento/.test(sinComentarios) && /tarjetasDeResumen/.test(sinComentarios) && !/\.vendidas|actualizarKPIs/.test(sinComentarios));
+    verificar('D8 resumen: no hay un texto "Cargando datos..." que se reemplace de golpe, y no redirige cuando falta el evento', !/Cargando datos/.test(sinComentarios) && !/window\.location\.href\s*=\s*'eventos-seleccion\.html'/.test(sinComentarios));
   }
 
   // ====================== 4. Reportes ======================
   {
     const html = leer('admin', 'reportes.html');
-    verificar('R1 reportes: ya no hay ningun "[...ventas]" (todo parte de las confirmadas)', !/\[\.\.\.ventas\]/.test(html) && (html.match(/soloConfirmadas\(ventas\)/g) || []).length === 2);
-    verificar('R2 reportes: filtro de metodo con los nombres reales', /<option value="Prepaga">/.test(html) && /<option value="Dinero en cuenta">/.test(html) && !/value="Efectivo"|value="Transferencia"|value="Mixto"/.test(html));
+    const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '');
+    verificar('R1 reportes: ya no hay ningun "[...ventas]" y soloConfirmadas se aplica en un unico lugar', !/\[\.\.\.ventas\]/.test(html) && (html.match(/soloConfirmadas\(ventas\)/g) || []).length === 1);
+    verificar('R2 reportes: el filtro de metodo sale de los datos (metodosDePago), sin metodos fijos en el HTML', /metodosDePago\(ventas\)/.test(html) && !/<option value="(Crédito|Débito|Prepaga|Dinero en cuenta|Efectivo|Transferencia|Mixto)"/.test(html));
 
-    // aplicarFiltros: se le pasa a cada seccion SOLO lo confirmado
+    // aplicarFiltros: se le pasa a cada seccion SOLO lo confirmado del lote y metodo elegidos
     const capturas = {};
     const nombresRender = ['renderResumen', 'renderDesglose', 'renderTransacciones', 'renderMetodos', 'renderComportamiento', 'renderIndicadores'];
-    const ctx = { ventas: VENTAS, loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas })') };
+    const utils = vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento })');
+    const ctx = { ventas: VENTAS, loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, textoFiltro: {}, datosListos: () => true, textoDeFiltros: () => 'x', ...utils };
     nombresRender.forEach((n) => { ctx[n] = (v) => { capturas[n] = v; }; });
     vm.createContext(ctx);
-    vm.runInContext(extraerFuncion(html, 'aplicarFiltros') + ';this.aplicarFiltros = aplicarFiltros;', ctx);
+    vm.runInContext(extraerFuncion(html, 'ventasFiltradasActuales') + extraerFuncion(html, 'aplicarFiltros') + ';this.aplicarFiltros = aplicarFiltros;', ctx);
     ctx.aplicarFiltros();
     verificar('R3 reportes: todas las secciones reciben solo las 2 confirmadas', nombresRender.every((n) => capturas[n] && capturas[n].map((v) => v.id).join() === 'C1,C2'), JSON.stringify(Object.fromEntries(nombresRender.map((n) => [n, capturas[n] && capturas[n].map((v) => v.id)]))));
     ctx.loteFilter.value = 'VIP';
@@ -219,18 +257,32 @@ function abrirPaginaVentas(ventas) {
     ctx.aplicarFiltros();
     verificar('R5 reportes: el filtro de metodo sigue funcionando sobre las confirmadas', capturas.renderResumen.map((v) => v.id).join() === 'C1');
 
-    // renderResumen: cifras y pendientes aparte
+    // cifras: las mismas que Resumen (cifrasDelEvento), con la capacidad de los lotes elegidos y los pendientes aparte
     const kpi = { innerHTML: '' };
-    const ctx2 = { ventas: VENTAS, eventos: [{ lotes: [{ nombre: 'General', disponibles: 100 }] }], loteFilter: { value: 'todos' }, document: { getElementById: () => kpi }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas })') };
+    const evento = { id: 'E', lotes: [{ nombre: 'General', disponibles: 100 }, { nombre: 'VIP', disponibles: 50 }] };
+    const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml })') };
     vm.createContext(ctx2);
-    vm.runInContext(extraerFuncion(html, 'renderResumen') + ';this.renderResumen = renderResumen;', ctx2);
+    vm.runInContext(['cifrasActuales', 'dibujarTarjetas', 'renderResumen'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.renderResumen = renderResumen;', ctx2);
     ctx2.renderResumen(U.soloConfirmadas(VENTAS));
     const h = kpi.innerHTML.replace(/\s+/g, ' ');
-    verificar('R6 reportes: recaudacion $25.000, 5 entradas vendidas, 2 ventas confirmadas', h.includes('$' + (25000).toLocaleString() + '</p>') && /Entradas vendidas<\/span>[\s\S]*?>5 </.test(h) && /2 ventas confirmadas/.test(h) && /Ventas confirmadas<\/span>[\s\S]*?>2<\/p>/.test(h));
-    verificar('R7 reportes: muestra 1 "Pendientes de pago" aparte', /Pendientes de pago<\/span>[\s\S]*?>1<\/p>/.test(h));
+    verificar('R6 reportes: recaudacion $25.000, 5 entradas vendidas, 2 ventas confirmadas (como Resumen)', h.includes('$' + (25000).toLocaleString() + '</p>') && /Entradas vendidas<\/span>[\s\S]*?>5</.test(h) && /Ventas confirmadas<\/span>[\s\S]*?>2<\/p>/.test(h));
+    verificar('R7 reportes: muestra 1 "Pendientes de pago" aparte y la capacidad de todos los lotes (150)', /Pendientes de pago<\/span>[\s\S]*?>1<\/p>/.test(h) && /Capacidad total<\/span>[\s\S]*?>150</.test(h));
     ctx2.loteFilter.value = 'VIP';
     ctx2.renderResumen(U.soloConfirmadas(VENTAS).filter((v) => v.loteNombre === 'VIP'));
-    verificar('R8 reportes: los pendientes respetan el filtro de lote (VIP no tiene pendientes)', /Pendientes de pago<\/span>[\s\S]*?>0<\/p>/.test(kpi.innerHTML.replace(/\s+/g, ' ')));
+    const hv = kpi.innerHTML.replace(/\s+/g, ' ');
+    verificar('R8 reportes: con el lote VIP los pendientes respetan el lote (0) y la capacidad es la de VIP (50)', /Pendientes de pago<\/span>[\s\S]*?>0<\/p>/.test(hv) && /Capacidad total<\/span>[\s\S]*?>50</.test(hv));
+    // "Todos los eventos": dos eventos con un lote "General" no se juntan
+    {
+      const evs = [{ id: 'A', nombre: 'Fiesta A', lotes: [{ nombre: 'General', precio: 10, disponibles: 5 }] }, { id: 'B', nombre: 'Fiesta B', lotes: [{ nombre: 'General', precio: 99, disponibles: 7 }] }];
+      const c = { EN_TODOS: true, eventos: evs };
+      vm.createContext(c);
+      vm.runInContext(['claveDeLote', 'claveDelLote', 'etiquetaDeLote', 'lotesInfoActual'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.api = { claveDeLote, claveDelLote, etiquetaDeLote, lotesInfoActual };', c);
+      const k1 = c.api.claveDeLote({ eventoId: 'A', loteNombre: 'General' });
+      const k2 = c.api.claveDeLote({ eventoId: 'B', loteNombre: 'General' });
+      const info = c.api.lotesInfoActual();
+      verificar('R8c reportes (Todos): el lote "General" de dos eventos son filas distintas, con su propio precio y etiqueta "Evento · Lote"', k1 !== k2 && info[k1].precio === 10 && info[k2].precio === 99 && c.api.etiquetaDeLote(k2) === 'Fiesta B · General' && c.api.etiquetaDeLote('N/A') === 'N/A');
+    }
+    verificar('R8b reportes: lee solo el evento elegido (ya no suscribe a todos los eventos sin filtro) y no redirige si falta el evento', /where\("eventoId", "==", eventoId\)/.test(sinComentarios) && !/window\.location\.href\s*=\s*'eventos-seleccion\.html'/.test(sinComentarios));
   }
 
   // Reportes: la tabla de transacciones y el PDF no deben mostrar sin escapar el correo, el lote ni el metodo
@@ -238,7 +290,8 @@ function abrirPaginaVentas(ventas) {
     const html = leer('admin', 'reportes.html');
     const sinEscapar = html.match(/\$\{v\.(correo|comprador|loteNombre|metodo_pago)[^}]*\}/g) || [];
     verificar('R9 reportes: ningun correo, lote ni metodo se inserta en el HTML sin escapar', sinEscapar.length === 0, sinEscapar.join(' | '));
-    verificar('R10 reportes: importa y usa escaparHtml', /escaparHtml \} from "\.\.\/shared\/ventas-utils\.js"/.test(html) && (html.match(/escaparHtml\(/g) || []).length >= 13);
+    verificar('R9b reportes: la pestana Indicadores escapa titulo y valor (vienen de nombres de lote y metodo)', /\$\{escaparHtml\(ind\.label\)\}/.test(html) && /\$\{escaparHtml\(ind\.value\)\}/.test(html) && !/\$\{ind\.(label|value)\}/.test(html));
+    verificar('R10 reportes: importa y usa escaparHtml', /import \{[^}]*escaparHtml[^}]*\} from "\.\.\/shared\/ventas-utils\.js"/.test(html) && (html.match(/escaparHtml\(/g) || []).length >= 13);
 
     const contenedor = { innerHTML: '' };
     const ctx = { document: { getElementById: () => contenedor }, ...vm.runInNewContext(codigoUtils + '\n;({ escaparHtml })') };

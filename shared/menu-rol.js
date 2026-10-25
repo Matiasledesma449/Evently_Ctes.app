@@ -1,143 +1,19 @@
 // shared/menu-rol.js
 // Sin import - usa las variables globales de firebase-init.js
 
-// =====================================================
-// 1. SIDEBAR COLAPSABLE (estilo apps de IA)
-// =====================================================
-(function configurarSidebarColapsable() {
-    if (!document.getElementById('sidebar-colapsable-style')) {
-        const style = document.createElement('style');
-        style.id = 'sidebar-colapsable-style';
-        style.textContent = `
-            aside.sidebar-principal {
-                transition: width 0.25s ease;
-                overflow: visible;
-                position: relative;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal {
-                width: 76px !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal > div:first-child {
-                display: none !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal nav a {
-                justify-content: center !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                font-size: 0 !important;
-                position: relative;
-                gap: 0 !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal nav a .material-symbols-outlined {
-                font-size: 24px !important;
-                margin: 0 !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal nav a .badge-no-leidos {
-                font-size: 10px !important;
-                position: absolute !important;
-                top: 6px;
-                right: 8px;
-                margin: 0 !important;
-            }
-
-            body.sidebar-colapsado aside.sidebar-principal .link-logout {
-                justify-content: center !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                font-size: 0 !important;
-                gap: 0 !important;
-            }
-            body.sidebar-colapsado aside.sidebar-principal .link-logout .material-symbols-outlined {
-                font-size: 24px !important;
-                margin: 0 !important;
-            }
-
-            #btnToggleSidebar {
-                position: absolute;
-                top: 12px;
-                right: -14px;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                background: white;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 60;
-                transition: all 0.2s;
-            }
-            #btnToggleSidebar:hover {
-                background: #f5f3ff;
-                border-color: #7c3aed;
-            }
-            #btnToggleSidebar .material-symbols-outlined {
-                font-size: 16px !important;
-                color: #7c3aed;
-            }
-
-            @media (max-width: 1023px) {
-                #btnToggleSidebar { display: none !important; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    function initSidebar() {
-        const aside = document.querySelector('aside');
-        if (!aside) return;
-        if (aside.querySelector('#btnToggleSidebar')) return; // ya inicializado
-
-        aside.classList.add('sidebar-principal');
-
-        const linkLogout = aside.querySelector('#btnCerrarSesion');
-        if (linkLogout) linkLogout.classList.add('link-logout');
-
-        const btn = document.createElement('button');
-        btn.id = 'btnToggleSidebar';
-        btn.title = 'Colapsar / expandir menú';
-        btn.innerHTML = '<span class="material-symbols-outlined">chevron_left</span>';
-        aside.appendChild(btn);
-
-        const colapsado = localStorage.getItem('sidebarColapsado') === 'true';
-        if (colapsado) {
-            document.body.classList.add('sidebar-colapsado');
-            btn.querySelector('span').textContent = 'chevron_right';
-        }
-
-        btn.addEventListener('click', () => {
-            const estaColapsado = document.body.classList.toggle('sidebar-colapsado');
-            localStorage.setItem('sidebarColapsado', estaColapsado);
-            btn.querySelector('span').textContent = estaColapsado ? 'chevron_right' : 'chevron_left';
-        });
-    }
-
-    // ✅ Ejecutar cuando el DOM esté listo (o inmediatamente si ya lo está)
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSidebar);
-    } else {
-        initSidebar();
-    }
-})();
+// Este archivo maneja los roles (qué secciones se muestran), los avisos de no leídos y el cierre de sesión.
+// El menú en sí (dibujo, botón de achicar y estado) vive en shared/menu-admin.js.
 
 // =====================================================
 // 2. LÓGICA DE ROLES Y BADGE DE MENSAJES
 // =====================================================
 function aplicarRolVisual(rol) {
+    // En la vista "Ver como organización" un superadmin se muestra como organización (solo lo que se ve)
+    rol = window.rolEfectivo ? window.rolEfectivo(rol) : rol;
     const esAdmin = rol === 'superadmin';
     const esOrganizacion = rol === 'organizacion';
     document.querySelectorAll('[data-role="superadmin"]').forEach(enlace => enlace.classList.toggle('hidden', !esAdmin));
     document.querySelectorAll('[data-role="organizacion"]').forEach(enlace => enlace.classList.toggle('hidden', !esOrganizacion));
-    document.querySelectorAll('[data-nav-key="superadmin"] > span:last-child').forEach(label => {
-        label.textContent = 'Panel Global';
-    });
 
     const nuevoHref = esAdmin ? 'mensajes.html' : 'soporte.html';
     document.querySelectorAll('.link-soporte, .link-soporte-mobile').forEach(enlace => {
@@ -189,7 +65,7 @@ function initRoles() {
 
     window.onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            localStorage.removeItem('eventlyRol');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
             aplicarRolVisual(null);
             mostrarNavegacion();
             return;
@@ -197,15 +73,20 @@ function initRoles() {
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (!userDoc.exists()) {
-                localStorage.removeItem('eventlyRol');
+                localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
                 aplicarRolVisual(null);
                 mostrarNavegacion();
                 return;
             }
 
             const rol = userDoc.data().rol;
-            const esAdmin = rol === 'superadmin';
             localStorage.setItem('eventlyRol', rol);
+            // La vista "Ver como organización" solo vale para un superadmin real
+            if (rol !== 'superadmin' && localStorage.getItem('vistaComo')) {
+                localStorage.removeItem('vistaComo');
+                if (document.getElementById('avisoVistaOrganizacion')) { location.reload(); return; }
+            }
+            const esAdmin = (window.rolEfectivo ? window.rolEfectivo(rol) : rol) === 'superadmin';
             aplicarRolVisual(rol);
             actualizarBadgeConsultasPublicas(esAdmin);
 
@@ -214,7 +95,7 @@ function initRoles() {
             mostrarNavegacion();
         } catch (e) {
             console.error('Error al verificar rol:', e);
-            localStorage.removeItem('eventlyRol');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
             aplicarRolVisual(null);
             mostrarNavegacion();
         }
@@ -388,7 +269,7 @@ document.addEventListener('click', async (e) => {
         e.preventDefault();
         try {
             await window.signOut(auth);
-            localStorage.removeItem('eventlyRol');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
             // ✅ replace: elimina la página actual del historial
             window.location.replace('login.html');
         } catch (err) {

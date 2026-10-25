@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Solicitar Evento</title>
+    <title>Evently - Solicitar evento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -44,33 +44,13 @@
     </script>
 
     <div class="flex h-screen min-h-0">
-        <!-- Sidebar -->
-        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
-            <div class="p-6">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-                <span class="block text-xs text-gray-500">Administración</span>
-            </div>
-            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
-                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
-                <a data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
-                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
-                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
-                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
-                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
-                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
-                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
-            </nav>
-            <div class="p-4 border-t border-gray-200">
-                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></a>
-            </div>
-        </aside>
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="eventos"></script>
 
         <!-- Contenido principal -->
         <main class="flex-1 min-h-0 overflow-y-auto p-6 pb-24 lg:pb-6">
             <div class="max-w-4xl mx-auto">
-                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar nuevo evento</h1>
+                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar evento</h1>
                 <p id="descripcionFormulario" class="text-gray-500 mb-6">Completa el formulario para solicitar un nuevo evento. Nuestro equipo evaluará la solicitud y se pondrá en contacto contigo.</p>
 
                 <form id="formSolicitud" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
@@ -92,10 +72,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Imagen del evento</label>
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <input type="file" id="imagenFile" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
-                            <button type="button" id="btnSubirImagen" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap">
-                                Subir imagen
-                            </button>
+                            <input type="file" id="imagenFile" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
                         </div>
                         <div id="previewContainer" class="mt-3 hidden">
                             <p class="text-sm text-gray-500">Vista previa:</p>
@@ -103,7 +80,8 @@
                             <span id="nombreArchivo" class="text-xs text-gray-400 block mt-1"></span>
                         </div>
                         <input type="hidden" id="imagenUrl" name="imagen" value="" />
-                        <p class="text-xs text-gray-400 mt-1">Selecciona una imagen y haz clic en "Subir imagen". Opcional.</p>
+                        <p id="mensajeImagen" role="status" class="hidden text-sm mt-2"></p>
+                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP); se achica sola. Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
                     </div>
 
                     <div>
@@ -152,26 +130,11 @@
         </main>
     </div>
 
-    <!-- Bottom nav (móvil) -->
-    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
-        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
-        <a data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
-        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
-        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
-        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
-        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
-        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
-    </nav>
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const form = document.getElementById('formSolicitud');
         const lotesContainer = document.getElementById('lotesContainer');
@@ -181,7 +144,6 @@
         const textoBotonEnviar = document.getElementById('textoBotonEnviar');
         const fileInput = document.getElementById('imagenFile');
         const btnLimpiar = form.querySelector('button[type="reset"]');
-        const btnSubirImagen = document.getElementById('btnSubirImagen');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
         const nombreArchivo = document.getElementById('nombreArchivo');
@@ -189,14 +151,13 @@
         const modoDirecto = new URLSearchParams(window.location.search).get('modo') === 'directo';
 
         if (modoDirecto) {
-            document.title = 'Evently - Crear Evento Directo';
-            document.getElementById('tituloFormulario').textContent = 'Crear evento directo';
+            document.title = 'Evently - Crear evento';
+            document.getElementById('tituloFormulario').textContent = 'Crear evento';
             document.getElementById('descripcionFormulario').textContent = 'Publicá un evento directamente en Evently, sin crear una solicitud.';
             document.getElementById('textoBotonEnviar').textContent = 'Publicar evento';
         }
 
         let loteIndex = 1;
-        let imagenSubiendo = false;
 
         // ============ AGREGAR LOTE (con scroll correcto) ============
         function agregarLote() {
@@ -256,57 +217,103 @@
         asignarEventosEliminar();
 
         // ============ IMAGEN ============
-        fileInput.addEventListener('change', () => {
-            imagenUrlInput.value = '';
-            btnSubirImagen.textContent = 'Subir imagen';
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewImage.src = e.target.result;
-                    previewContainer.classList.remove('hidden');
-                    nombreArchivo.textContent = `Archivo: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewContainer.classList.add('hidden');
-            }
-        });
+        // La foto no se sube a ningún servicio: se achica y queda guardada dentro del propio evento (campo "imagen").
+        const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
+        const MAXIMO_BYTES = 200 * 1024;           // lo que se guarda en el evento
+        const ENTRADA_MAXIMA = 15 * 1024 * 1024;   // la foto original, antes de achicarla
+        const PASOS_DE_ACHICADO = [[1200, 0.8], [1200, 0.7], [1000, 0.7], [1000, 0.6], [800, 0.6], [640, 0.6]]; // [lado mayor en px, calidad]
+        const mensajeImagen = document.getElementById('mensajeImagen');
+        let imagenPreparando = false;
+        let versionImagen = 0;                     // cada vez que se elige un archivo sube; un resultado viejo se descarta
 
-        btnSubirImagen.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) { alert('Selecciona un archivo de imagen primero.'); return; }
-            if (file.size > 2 * 1024 * 1024) { alert('La imagen no debe superar los 2MB.'); return; }
-            if (!file.type.startsWith('image/')) { alert('El archivo debe ser una imagen.'); return; }
+        // Avisos de la foto, dentro de la página y como texto (nunca como HTML)
+        function avisoImagen(texto, tipo = 'info') {
+            mensajeImagen.textContent = texto;
+            mensajeImagen.className = 'text-sm mt-2 ' + (tipo === 'error' ? 'text-red-600' : tipo === 'ok' ? 'text-green-600' : 'text-gray-500');
+            mensajeImagen.classList.toggle('hidden', !texto);
+        }
+
+        function limpiarImagen() {
+            imagenUrlInput.value = '';
+            previewContainer.classList.add('hidden');
+        }
+
+        function leerComoTexto(blob) {
+            return new Promise((resolver, rechazar) => {
+                const lector = new FileReader();
+                lector.onload = () => resolver(lector.result);
+                lector.onerror = () => rechazar(new Error('lectura'));
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        // Achica la foto en pasos hasta que pese 200 KB o menos. Devuelve la foto como texto (data:image/jpeg;base64,...)
+        async function prepararFoto(file) {
+            let bitmap;
             try {
-                imagenSubiendo = true;
-                btnSubirImagen.disabled = true;
-                fileInput.disabled = true;
-                btnLimpiar.disabled = true;
-                btnSubirImagen.textContent = 'Subiendo...';
-                // ✅ USAR storage desde window
-                const storage = window.storage;
-                const path = `eventos_solicitudes/${Date.now()}_${file.name}`;
-                const storageRef = ref(storage, path);
-                const uploadResult = await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(uploadResult.ref);
-                if (!url) throw new Error('Storage no devolvió una URL para la imagen.');
-                imagenUrlInput.value = url;
-                btnSubirImagen.textContent = '✅ Subida correcta';
-                btnSubirImagen.disabled = false;
-                fileInput.disabled = false;
-                btnLimpiar.disabled = false;
-                imagenSubiendo = false;
-                console.log('Imagen subida:', url);
-            } catch (error) {
-                console.error('Error al subir imagen:', error);
-                alert('Error al subir la imagen. Intenta nuevamente.');
-                btnSubirImagen.textContent = 'Subir imagen';
-                btnSubirImagen.disabled = false;
-                fileInput.disabled = false;
-                btnLimpiar.disabled = false;
-                imagenSubiendo = false;
+                bitmap = await createImageBitmap(file);
+            } catch (e) {
+                throw new Error('ilegible');
             }
+            try {
+                for (const [lado, calidad] of PASOS_DE_ACHICADO) {
+                    const escala = Math.min(1, lado / Math.max(bitmap.width, bitmap.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+                    canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+                    const dibujo = canvas.getContext('2d');
+                    dibujo.fillStyle = '#ffffff'; // los PNG con transparencia quedan sobre blanco, no negro
+                    dibujo.fillRect(0, 0, canvas.width, canvas.height);
+                    dibujo.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                    const blob = await new Promise((resolver) => canvas.toBlob(resolver, 'image/jpeg', calidad));
+                    if (blob && blob.size <= MAXIMO_BYTES) return await leerComoTexto(blob);
+                }
+            } finally {
+                if (bitmap.close) bitmap.close();
+            }
+            throw new Error('pesada');
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const miVersion = ++versionImagen;
+            imagenPreparando = false;
+            limpiarImagen();
+            avisoImagen('');
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (!TIPOS_IMAGEN.includes(file.type)) {
+                avisoImagen('El archivo tiene que ser una imagen (JPG, PNG o WebP).', 'error');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > ENTRADA_MAXIMA) {
+                avisoImagen('La foto es demasiado grande (máximo 15 MB). Elegí otra.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            imagenPreparando = true;
+            avisoImagen('Preparando la foto...');
+            let foto = '';
+            let fallo = '';
+            try {
+                foto = await prepararFoto(file);
+            } catch (error) {
+                fallo = error && error.message;
+            }
+            if (miVersion !== versionImagen) return; // eligió otra mientras tanto: este resultado ya no sirve
+            imagenPreparando = false;
+            if (!foto) {
+                avisoImagen(fallo === 'pesada'
+                    ? 'No se pudo achicar la foto lo suficiente. Elegí otra.'
+                    : 'No se pudo leer ese archivo como imagen. Elegí otra foto.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            imagenUrlInput.value = foto;
+            previewImage.src = foto;
+            previewContainer.classList.remove('hidden');
+            nombreArchivo.textContent = `Foto lista (${Math.max(1, Math.round(foto.length * 0.75 / 1024))} KB)`;
+            avisoImagen('La foto está lista.', 'ok');
         });
 
         // ============ ENVÍO ============
@@ -340,8 +347,8 @@
                 });
 
                 if (!lotesValidos || lotes.length === 0) throw new Error('Todos los lotes deben tener nombre, precio válido y cantidad disponible (mayor a 0).');
-                if (imagenSubiendo) throw new Error('La imagen aún se está subiendo. Espera a que termine.');
-                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('Subí la imagen antes de enviar el evento.');
+                if (imagenPreparando) throw new Error('La foto todavía se está preparando. Esperá a que termine.');
+                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('La foto no está lista. Elegí otra o quitala con "Limpiar".');
 
                 const user = auth.currentUser;
                 if (!user) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
@@ -349,7 +356,7 @@
                 if (!userSnap.exists()) throw new Error('No se encontró el perfil del usuario.');
                 const userData = userSnap.data();
                 if (modoDirecto && userData.rol !== 'superadmin') throw new Error('Solo el superadmin puede publicar eventos directamente.');
-                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear Evento Directo.');
+                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear evento.');
 
                 const evento = {
                     nombre, fecha, lugar,
@@ -386,10 +393,12 @@
             } catch (error) {
                 console.error('Error al enviar solicitud:', error);
                 mensajeResultado.className = 'mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200';
-                mensajeResultado.innerHTML = `
-                    <span class="material-symbols-outlined align-middle text-red-600">error</span>
-                    <strong>Error:</strong> ${error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'}
-                `;
+                const iconoError = document.createElement('span');
+                iconoError.className = 'material-symbols-outlined align-middle text-red-600';
+                iconoError.textContent = 'error';
+                const fuerte = document.createElement('strong');
+                fuerte.textContent = 'Error:';
+                mensajeResultado.replaceChildren(iconoError, ' ', fuerte, ' ' + (error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'));
                 mensajeResultado.classList.remove('hidden');
                 
                 btnEnviar.disabled = false;
@@ -399,11 +408,10 @@
 
         form.addEventListener('reset', () => {
             mensajeResultado.classList.add('hidden');
-            previewContainer.classList.add('hidden');
-            imagenUrlInput.value = '';
-            fileInput.disabled = false;
-            btnLimpiar.disabled = false;
-            btnSubirImagen.textContent = 'Subir imagen';
+            limpiarImagen();
+            avisoImagen('');
+            versionImagen++;
+            imagenPreparando = false;
         });
     </script>
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Mis Eventos</title>
+    <title>Evently - Eventos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -41,30 +41,8 @@
     </script>
 
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
-            <div class="p-6">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-                <span class="block text-xs text-gray-500">Administración</span>
-            </div>
-            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
-                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
-                <a id="linkPanelPrincipal" data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
-                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
-                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
-                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
-                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
-                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
-                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
-            </nav>
-            <div class="p-4 border-t border-gray-200">
-                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
-                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
-                </a>
-            </div>
-        </aside>
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="eventos-seleccion"></script>
 
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
@@ -79,14 +57,14 @@
             <!-- Header -->
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
-                    <h1 id="tituloPagina" class="text-2xl font-bold text-gray-800">Mis Eventos</h1>
+                    <h1 id="tituloPagina" class="text-2xl font-bold text-gray-800">Eventos</h1>
                     <p id="subtituloPagina" class="text-sm text-gray-500"></p>
                 </div>
                 <div id="filtrosContainer" class="flex flex-wrap gap-2 items-center">
                     
                     <!-- Boton de Solicitar Evento (Oculto por defecto, se muestra para clientes) -->
                     <a href="eventos.html" id="btnSolicitarEventoCliente" class="hidden bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm mr-2">
-                        <span class="material-symbols-outlined text-sm">add</span> Solicitar Evento
+                        <span class="material-symbols-outlined text-sm">add</span> Solicitar evento
                     </a>
 
                     <div class="relative">
@@ -111,25 +89,13 @@
         </main>
     </div>
 
-    <!-- Bottom nav (móvil) -->
-    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
-        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-violet-600"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
-        <a id="linkPanelPrincipalMobile" data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
-        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
-        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
-        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
-        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
-        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
-    </nav>
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
         const searchInput = document.getElementById('searchInput');
@@ -174,7 +140,7 @@
                 filtrosContainer.classList.add('hidden');
                 cargarOrganizaciones();
             } else {
-                tituloPagina.textContent = 'Mis Eventos';
+                tituloPagina.textContent = 'Eventos';
                 subtituloPagina.textContent = 'Todos tus eventos';
                 filtrosContainer.classList.remove('hidden');
                 btnSolicitarEventoCliente.classList.remove('hidden'); // Mostrar botón al cliente
@@ -350,7 +316,7 @@
 
         // ✅ Vista: Eventos y Solicitudes combinados del cliente
         function renderizarEventosCliente() {
-            tituloPagina.textContent = 'Mis Eventos';
+            tituloPagina.textContent = 'Eventos';
             
             // 1. Tomamos sus eventos publicados
             let misEventos = eventos.filter(ev => 
@@ -413,7 +379,6 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${lista.map(evento => {
                         const estado = evento.estado || 'publicado'; // Seguro por defecto
-                        const imagen = evento.imagen || '/public/imag/Imagen de evento 1.jpg';
                         
                         let badgeClass = '';
                         let estadoTexto = '';
@@ -426,7 +391,7 @@
                             estadoTexto = 'Publicado';
                             botonHTML = `
                                 <a href="dashboard.html?id=${evento.id}" onclick="localStorage.setItem('eventoId', '${evento.id}')" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
-                                    <span>Entrar al Dashboard</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                    <span>Ver resumen</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
                                 </a>
                             `;
                         } else if (estado === 'pendiente') {
@@ -458,19 +423,19 @@
                         return `
                             <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden flex flex-col">
                                 <div class="relative">
-                                    <img src="${imagen}" alt="${evento.nombre}" class="w-full h-40 object-cover bg-gray-100">
+                                    ${htmlDeImagenEvento(evento, { clases: 'h-40' })}
                                     <div class="absolute top-3 right-3">
                                         <span class="text-xs font-bold px-3 py-1 rounded-full shadow-sm ${badgeClass}">${estadoTexto}</span>
                                     </div>
                                 </div>
                                 <div class="p-5 flex-1 flex flex-col">
-                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${evento.nombre}">${evento.nombre || 'Sin nombre'}</h3>
+                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${escaparHtml(evento.nombre)}">${escaparHtml(evento.nombre || 'Sin nombre')}</h3>
                                     
                                     <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
-                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${escaparHtml(evento.fecha || 'Fecha no definida')}
                                     </p>
                                     <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
-                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                                     </p>
                                     
                                     ${motivoHTML}

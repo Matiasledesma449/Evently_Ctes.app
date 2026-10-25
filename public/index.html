@@ -231,6 +231,7 @@
 
     <script type="module">
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { imagenDelEvento } from "../shared/imagen-evento.js";
 
         const db = window.db;
         const container = document.getElementById('eventosContainer');
@@ -282,12 +283,6 @@
                 : evento.fecha || 'Fecha por confirmar';
         }
 
-        function imagenEvento(evento) {
-            return typeof evento.imagen === 'string' && evento.imagen.trim()
-                ? evento.imagen.trim()
-                : './imag/Imagen de evento 1.jpg';
-        }
-
         function etiquetaProximidad(evento) {
             const fecha = fechaEvento(evento.fecha);
             if (!fecha) return '';
@@ -298,14 +293,35 @@
             return '';
         }
 
-        function configurarImagen(img, placeholder, src, alt) {
+        // La foto del evento; si no tiene (o no carga) se ve su relleno propio: letra inicial sobre un violeta, distinto por evento
+        function configurarImagen(img, placeholder, evento, alt) {
+            const { src, relleno } = imagenDelEvento(evento);
+            // En el destacado hay una capa oscura encima: ahí el fondo es el violeta fuerte y la letra queda clara
+            const enDestacado = placeholder.id === 'heroPlaceholder';
+            placeholder.style.background = enDestacado ? relleno.texto : relleno.fondo;
+            placeholder.style.color = enDestacado ? 'rgba(255,255,255,0.4)' : relleno.texto;
+            const letra = document.createElement('span');
+            letra.className = 'font-bold select-none';
+            letra.style.fontSize = '4rem';
+            letra.style.lineHeight = '1';
+            letra.textContent = relleno.letra;
+            placeholder.replaceChildren(letra);
+            placeholder.dataset.imagenEvento = `relleno:${relleno.letra}:${relleno.fondo}`;
             img.alt = alt;
-            img.hidden = false;
-            placeholder.hidden = true;
             img.onerror = () => {
                 img.hidden = true;
                 placeholder.hidden = false;
             };
+            if (!src) {
+                img.removeAttribute('src');
+                img.hidden = true;
+                placeholder.hidden = false;
+                img.dataset.imagenEvento = '';
+                return;
+            }
+            img.hidden = false;
+            placeholder.hidden = true;
+            img.dataset.imagenEvento = src;
             img.src = src;
         }
 
@@ -330,7 +346,7 @@
             placeholder.className = 'event-placeholder';
             placeholder.hidden = true;
             placeholder.appendChild(crearIcono('image', 'text-5xl'));
-            configurarImagen(img, placeholder, imagenEvento(evento), evento.nombre || 'Imagen del evento');
+            configurarImagen(img, placeholder, evento, evento.nombre || 'Imagen del evento');
             frame.append(img, placeholder);
 
             const badgeText = etiquetaProximidad(evento);
@@ -403,7 +419,7 @@
             void heroContent.offsetWidth;
             heroContent.classList.add('hero-content');
 
-            configurarImagen(heroImage, heroPlaceholder, imagenEvento(evento), evento.nombre || 'Evento destacado');
+            configurarImagen(heroImage, heroPlaceholder, evento, evento.nombre || 'Evento destacado');
             document.getElementById('heroTitle').textContent = evento.nombre || 'Evento destacado';
             document.getElementById('heroDate').textContent = fechaLegible(evento);
             document.getElementById('heroPlace').textContent = evento.lugar || 'Lugar no definido';
