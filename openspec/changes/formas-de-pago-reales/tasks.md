@@ -4,15 +4,15 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Lista compartida de formas de pago
 
-- [ ] 1.1 Crear `shared/formas-de-pago.js` con la lista (Transferencia, Débito, Crédito) y una función que devuelve el texto para el comprador. Se comprueba con `node -e`: la lista no contiene "Efectivo" y el texto nombra cada forma una vez.
-- [ ] 1.2 Usar esa función en el aviso del paso de pago de `public/evento.html`. Se comprueba leyendo el archivo: el texto sale de la función y no queda ninguna lista escrita a mano.
-- [ ] 1.3 Dejar en la lista compartida la equivalencia "Transferencia" = lo que guarda el servidor como "Dinero en cuenta" (respuesta 5A), y usarla en Ventas y Reportes solo para mostrar el nombre. "Prepaga" se sigue mostrando en el panel si aparece. No se toca `server/`. Se comprueba con `node -e` y con `node pruebas/ejecutar-todas.js`.
+- [x] 1.1 Crear `shared/formas-de-pago.js` con la lista (Transferencia, Débito, Crédito) y una función que devuelve el texto para el comprador. Se comprueba con `node -e`: la lista no contiene "Efectivo" y el texto nombra cada forma una vez.
+- [x] 1.2 Usar esa función en el aviso del paso de pago de `public/evento.html`. Se comprueba leyendo el archivo: el texto sale de la función y no queda ninguna lista escrita a mano.
+- [ ] 1.3 (La equivalencia ya está en `shared/formas-de-pago.js` como `nombreParaMostrar`, con prueba; falta usarla en Ventas y Reportes.) Dejar en la lista compartida la equivalencia "Transferencia" = lo que guarda el servidor como "Dinero en cuenta" (respuesta 5A), y usarla en Ventas y Reportes solo para mostrar el nombre. "Prepaga" se sigue mostrando en el panel si aparece. No se toca `server/`. Se comprueba con `node -e` y con `node pruebas/ejecutar-todas.js`.
 
 ## 2. Sin efectivo
 
 - [ ] 2.1 Borrar `public/assets/js/data.js` y `public/assets/css/js/data.js` (respuesta 1B). Se comprueba con una búsqueda de `data.js` en el repo (sin referencias fuera de `openspec/`) y `git status`.
 - [ ] 2.2 Quitar la decisión pendiente de los `data.js` en `CLAUDE.md`. Se comprueba leyendo el archivo.
-- [ ] 2.3 Crear `pruebas/18-formas-de-pago.js`: recorre `public/*.html`, `admin/*.html` y `shared/*.js` y falla si hay "Efectivo" como opción (`<option>` o valor de lista), permitiéndolo en comentarios. Se comprueba con `node pruebas/18-formas-de-pago.js` (todo `OK`); se agrega a propósito un `<option value="Efectivo">` en una copia y se ve que la prueba falla.
+- [x] 2.3 Crear `pruebas/18-formas-de-pago.js`: recorre `public/*.html`, `admin/*.html` y `shared/*.js` y falla si hay "Efectivo" como opción (`<option>` o valor de lista), permitiéndolo en comentarios. Se comprueba con `node pruebas/18-formas-de-pago.js` (todo `OK`); se agrega a propósito un `<option value="Efectivo">` en una copia y se ve que la prueba falla.
 
 ## 3. PDF de Reportes con secciones elegibles (respuesta 4A)
 
