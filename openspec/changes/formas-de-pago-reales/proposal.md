@@ -81,6 +81,15 @@ Respuesta del 2026-10-25 en el PR de la segunda vuelta: `5A`.
 
 - **5A**: "Transferencia" es solo el nombre que ve quien compra para lo que el servidor guarda como "Dinero en cuenta". No cambia `server/` ni las ventas viejas. "Prepaga" se sigue contando en los reportes si aparece, pero no se nombra al comprador.
 
+## Preguntas para la persona (tercera vuelta)
+
+La respuesta al PR de la vuelta anterior fue solo `B`, sin número y sin `SIGUE`. Puede ser la opción B de la pregunta de los `data.js` (dejarlos por ahora) o la opción B de "Qué sigue" (plan de evento activo). No adivino: los `data.js` siguen sin borrarse y las tareas 2.1 y 2.2 siguen pendientes.
+
+**6. ¿Qué quisiste decir con tu `B`?**
+- A: era para los `data.js`: dejarlos por ahora. Se saltean las tareas 2.1 y 2.2 y se sigue con las demás tareas del plan.
+- B: era para "Qué sigue": hacer las primeras tareas del plan de evento activo. Los `data.js` quedan como están hasta que decidas (borrarlos vos a mano o dejarlos).
+- C: las dos cosas (dejar los `data.js` y seguir con el plan de evento activo).
+
 ## Por qué esta opción y no otra
 
 - **Una lista compartida** en vez de nombres escritos a mano en cada página: igual que con el menú y el selector de evento, tres copias terminan distintas.
