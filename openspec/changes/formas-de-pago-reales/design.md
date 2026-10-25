@@ -29,7 +29,7 @@ Un archivo nuevo `shared/formas-de-pago.js` (módulo, como `ventas-utils.js`) co
 - Seguridad: las claves vienen de casillas fijas del HTML; el nombre del evento sigue pasando por `escaparHtml`.
 
 ### 3. "Efectivo" en los datos viejos
-Respuesta 1B: se borran `public/assets/js/data.js` y `public/assets/css/js/data.js` (nadie los carga). Además, una prueba en `pruebas/` recorre las pantallas (`public/*.html`, `admin/*.html`, `shared/*.js`) y falla si encuentra "Efectivo" como opción para elegir (se permite en comentarios que explican por qué se excluye).
+Respuesta 6A (reemplaza a la 1B): los dos `data.js` (`public/assets/js/data.js` y `public/assets/css/js/data.js`, nadie los carga) **no se borran** por ahora; la decisión sigue pendiente en `CLAUDE.md`. Además, una prueba en `pruebas/` recorre las pantallas (`public/*.html`, `admin/*.html`, `shared/*.js`) y falla si encuentra "Efectivo" como opción para elegir (se permite en comentarios que explican por qué se excluye).
 
 ## Risks / Trade-offs
 
@@ -39,4 +39,4 @@ Respuesta 1B: se borran `public/assets/js/data.js` y `public/assets/css/js/data.
 
 ## Open Questions
 
-- Ninguna: todas las preguntas de `proposal.md` están respondidas (1B, 2D, 3A, 4A, 5A).
+- Ninguna: todas las preguntas de `proposal.md` están respondidas (2D, 3A, 4A, 5A, 6A; la 1B quedó reemplazada por la 6A).

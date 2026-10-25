@@ -90,6 +90,10 @@ La respuesta al PR de la vuelta anterior fue solo `B`, sin número y sin `SIGUE`
 - B: era para "Qué sigue": hacer las primeras tareas del plan de evento activo. Los `data.js` quedan como están hasta que decidas (borrarlos vos a mano o dejarlos).
 - C: las dos cosas (dejar los `data.js` y seguir con el plan de evento activo).
 
+Respuesta del 2026-10-25 en el PR de la tercera vuelta: `1A` (la pregunta de ese PR era la 6).
+
+- **6A**: el `B` era para los `data.js`: se dejan como están por ahora. Reemplaza a la respuesta 1B: no se borran los dos `data.js` y se saltean las tareas 2.1 y 2.2. La decisión pendiente de `CLAUDE.md` sobre esos archivos sigue abierta. La prueba que avisa si alguna pantalla ofrece "Efectivo" se mantiene. Esto no pide hacer ahora el plan de evento activo.
+
 ## Por qué esta opción y no otra
 
 - **Una lista compartida** en vez de nombres escritos a mano en cada página: igual que con el menú y el selector de evento, tres copias terminan distintas.
