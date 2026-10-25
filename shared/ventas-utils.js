@@ -319,6 +319,28 @@ export function tarjetasDeResumen(cifras, nombreDelMetodo = (nombre) => nombre) 
     ];
 }
 
+// ======================================================================================================
+// Secciones del PDF de Reportes (cambio formas-de-pago-reales). Función pura: se prueba con node.
+// ======================================================================================================
+
+// Las secciones del PDF, en el orden fijo en que salen
+const SECCIONES_DEL_PDF = [
+    { clave: 'resumen', titulo: 'Resumen general' },
+    { clave: 'lotes', titulo: 'Desglose por lote' },
+    { clave: 'detalle', titulo: 'Detalle de transacciones' },
+    { clave: 'metodos', titulo: 'Métodos de pago' },
+    { clave: 'indicadores', titulo: 'Indicadores clave' }
+];
+
+// Recibe las claves marcadas y devuelve las secciones a incluir: { clave, titulo, numero }, siempre en el orden
+// fijo y numeradas 1, 2, 3… sin saltos. Las claves desconocidas o repetidas se ignoran; sin claves válidas devuelve [].
+export function seccionesDelPdf(elegidas) {
+    const marcadas = new Set(Array.isArray(elegidas) ? elegidas : []);
+    return SECCIONES_DEL_PDF
+        .filter((s) => marcadas.has(s.clave))
+        .map((s, i) => ({ clave: s.clave, titulo: s.titulo, numero: i + 1 }));
+}
+
 const CLASE_DEL_TONO = { dinero: 'text-violet-600', pendiente: 'text-yellow-600', normal: 'text-gray-800' };
 const CLASE_DEL_ICONO = { pendiente: 'text-yellow-600' };
 const CLASE_DE_COLUMNAS = { 1: '', 2: 'sm:col-span-2', 4: 'sm:col-span-2 lg:col-span-4' };

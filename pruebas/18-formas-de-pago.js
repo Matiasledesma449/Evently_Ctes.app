@@ -31,7 +31,7 @@ verificar('F8 nombres del objeto base no se confunden con equivalencias', F.nomb
 // ---------- Ventas, Reportes y Dashboard muestran "Transferencia" (tarea 1.3) ----------
 const leer = (a) => fs.readFileSync(path.join(RAIZ, a), 'utf8');
 const sinExport = leer('shared/ventas-utils.js').replace(/^export /gm, '');
-const VU = vm.runInNewContext(sinExport + '\n;({ tarjetasDeResumen, cifrasDelEvento })');
+const VU = vm.runInNewContext(sinExport + '\n;({ tarjetasDeResumen, cifrasDelEvento, seccionesDelPdf })');
 const cifrasConMetodo = { capacidad: 10, entradas: 1, aforoRestante: 9, ocupacion: 10, recaudado: 1, confirmadas: 1, pendientes: 0, promedioEntradas: 1, loteMasVendido: null, loteMasRentable: null, metodoMasUsado: { nombre: 'Dinero en cuenta', cantidad: 1, porcentaje: 100 } };
 const valorMetodo = (tarjetas) => tarjetas.find((t) => t.id === 'metodo').valor;
 verificar('T1 la tarjeta "Método más usado" muestra "Transferencia" con la equivalencia', valorMetodo(VU.tarjetasDeResumen(cifrasConMetodo, F.nombreParaMostrar)) === 'Transferencia');
@@ -44,6 +44,19 @@ for (const pantalla of ['admin/ventas.html', 'admin/reportes.html', 'admin/dashb
 verificar('T5 Ventas y Reportes no muestran metodo_pago sin pasar por nombreParaMostrar', !/escaparHtml\(v\.metodo_pago \|\|/.test(leer('admin/ventas.html') + leer('admin/reportes.html')));
 verificar('T6 los desplegables guardan el nombre del servidor y muestran el otro', /<option value="\$\{escaparHtml\(m\)\}">\$\{escaparHtml\(nombreParaMostrar\(m\)\)\}<\/option>/.test(leer('admin/ventas.html')) && /<option value="\$\{escaparHtml\(m\)\}">\$\{escaparHtml\(nombreParaMostrar\(m\)\)\}<\/option>/.test(leer('admin/reportes.html')));
 verificar('T7 Dashboard y Reportes pasan nombreParaMostrar a las tarjetas', /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/dashboard.html')) && /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/reportes.html')));
+
+// ---------- Secciones del PDF de Reportes (tarea 3.1) ----------
+const TODAS = ['resumen', 'lotes', 'detalle', 'metodos', 'indicadores'];
+const numeros = (lista) => Array.from(lista).map((s) => s.numero).join(',');
+const claves = (lista) => Array.from(lista).map((s) => s.clave).join(',');
+const todas = VU.seccionesDelPdf(TODAS);
+verificar('P1 todas marcadas da 5 secciones numeradas 1 a 5', todas.length === 5 && numeros(todas) === '1,2,3,4,5', numeros(todas));
+const sinDetalle = VU.seccionesDelPdf(TODAS.filter((c) => c !== 'detalle'));
+verificar('P2 sin "detalle" da 4 secciones numeradas 1 a 4 sin saltos', sinDetalle.length === 4 && numeros(sinDetalle) === '1,2,3,4' && !claves(sinDetalle).includes('detalle'), claves(sinDetalle));
+verificar('P3 el orden es fijo aunque se marquen en otro orden', claves(VU.seccionesDelPdf(['indicadores', 'resumen', 'metodos'])) === 'resumen,metodos,indicadores');
+verificar('P4 claves desconocidas o repetidas se ignoran', claves(VU.seccionesDelPdf(['resumen', 'resumen', 'xyz', 'constructor', 7, null])) === 'resumen');
+verificar('P5 lista vacía, null y entradas raras devuelven vacío sin fallar', [[], null, undefined, 'resumen', 5, {}].every((x) => VU.seccionesDelPdf(x).length === 0));
+verificar('P6 cada sección trae su título', todas[0].titulo === 'Resumen general' && todas[2].titulo === 'Detalle de transacciones' && todas[4].titulo === 'Indicadores clave');
 
 // ---------- Ninguna pantalla ofrece "Efectivo" ----------
 // Se miran public/*.html, admin/*.html, validador.html y shared/*.js, sin los comentarios (ahí se puede explicar por qué se excluye).
