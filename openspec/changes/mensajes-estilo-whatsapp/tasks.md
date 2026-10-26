@@ -4,8 +4,8 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Funciones compartidas
 
-- [ ] 1.1 Crear `shared/estado-mensajes.js` con `estadoDeConversacion`, `estadoDeConsulta`, `contarPorEstado`, `presentacionDeEstado`, `filtrarPorEstado`, `organizacionesParaChat` y `textoVacio` (ver `design.md`). Se comprueba con `node pruebas/21-estado-mensajes.js`.
-- [ ] 1.2 Crear `pruebas/21-estado-mensajes.js` con los casos de las especificaciones (nuevo, leído, respondido, conversación vieja sin `ultimoDe`, estado de consulta desconocido, contadores, filtro, organizaciones ordenadas y filtradas sin importar tildes, sin organizaciones, con conversación abierta, nombre vacío). Se comprueba con `node pruebas/ejecutar-todas.js`.
+- [x] 1.1 Crear `shared/estado-mensajes.js` con `estadoDeConversacion`, `estadoDeConsulta`, `contarPorEstado`, `presentacionDeEstado`, `filtrarPorEstado`, `organizacionesParaChat` y `textoVacio` (ver `design.md`). Se comprueba con `node pruebas/21-estado-mensajes.js`.
+- [x] 1.2 Crear `pruebas/21-estado-mensajes.js` con los casos de las especificaciones (nuevo, leído, respondido, conversación vieja sin `ultimoDe`, estado de consulta desconocido, contadores, filtro, organizaciones ordenadas y filtradas sin importar tildes, sin organizaciones, con conversación abierta, nombre vacío). Se comprueba con `node pruebas/ejecutar-todas.js`.
 
 ## 2. Guardar a quién le toca
 
