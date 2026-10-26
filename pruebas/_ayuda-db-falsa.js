@@ -25,7 +25,7 @@ function crearDbFalsa(inicial = {}) {
     estado.escrituras++;
   };
   const ref = (col, id) => ({
-    _col: col, _id: id,
+    _col: col, _id: id, id, // `id` como en Firestore real (lo usa crearVentaPendiente)
     async get() { if (estado.fallarAlLeer) throw estado.fallarAlLeer; return instantanea(col, id); },
     async set(d) { aplicar({ tipo: 'set', col, id, d }); },
     async update(d) { aplicar({ tipo: 'update', col, id, d }); },

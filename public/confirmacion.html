@@ -121,6 +121,12 @@
             fila('Lote', v.lote || '-');
             fila('Cantidad', v.cantidad || 0);
             if (v.metodoPago) fila('Método de pago', v.metodoPago);
+            // Solo las compras con costo de servicio muestran el desglose; las demás se ven como siempre
+            const servicio = Number(v.costoServicio);
+            if (Number.isFinite(servicio) && servicio > 0) {
+                fila('Entradas', formatoMonto(Number(v.monto) - servicio));
+                fila('Costo de servicio', formatoMonto(servicio));
+            }
             lista.appendChild(crear('p', 'text-lg font-bold text-violet-600', 'Total: ' + formatoMonto(v.monto)));
             caja.appendChild(lista);
             return caja;

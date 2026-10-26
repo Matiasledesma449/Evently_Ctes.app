@@ -4,18 +4,18 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Cálculo en el servidor
 
-- [ ] 1.1 Crear `server/comision.js` con `normalizarCategorias(config)`, `porcentajeDelEvento(evento, config)` (0 si no hay categoría o no existe) y `calcularCostoServicio(subtotal, porcentaje)` que devuelve `{ costoServicio, total }` redondeados a 2 decimales. Se comprueba leyendo el archivo: sin dependencias externas ni acceso a la red.
-- [ ] 1.2 Sumar en `server/compra.js` la lectura de `configuracion/comisiones` (`leerConfiguracionComision(db)`) y que `calcularCompra` reciba la configuración y devuelva `subtotal`, `costoServicio`, `comisionPorcentaje`, `comisionCategoria` y `total` con el costo incluido. Se comprueba con la prueba 24.
-- [ ] 1.3 En `server/crear-pago.js`, leer la configuración antes de calcular; si la lectura falla, devolver el error genérico y no crear la venta. Se comprueba con la prueba 24 (caso "falla la lectura": no hay ventas creadas).
-- [ ] 1.4 En `server/ventas.js`, guardar `subtotal`, `costo_servicio`, `comision_porcentaje`, `comision_categoria` y `monto_total` con el costo incluido. Se comprueba con la prueba 24.
-- [ ] 1.5 En `server/mercadopago.js`, agregar el renglón "Costo de servicio" cuando es mayor que cero, sin tocar el renglón de las entradas ni agregar restricción de cuotas. Se comprueba con la prueba 24: la suma de los renglones es igual a `monto_total`.
-- [ ] 1.6 Crear `pruebas/24-costo-de-servicio.js` con los casos de las especificaciones: 8% sobre $4.500, redondeo de 7,5% sobre $1.234, sin categoría, categoría inexistente, el navegador manda `comision`/`porcentaje` (se ignora), falla la lectura, dos renglones que suman el total, sin `installments`, y pago por solo el subtotal (queda para revisar). Se comprueba con `node pruebas/24-costo-de-servicio.js`.
-- [ ] 1.7 Actualizar las pruebas existentes de pagos que dependan de la forma de `calcularCompra` o de la base falsa (`pruebas/_ayuda-db-falsa.js`) sin cambiar ningún caso. Se comprueba con `node pruebas/ejecutar-todas.js`.
+- [x] 1.1 Crear `server/comision.js` con `normalizarCategorias(config)`, `porcentajeDelEvento(evento, config)` (0 si no hay categoría o no existe) y `calcularCostoServicio(subtotal, porcentaje)` que devuelve `{ costoServicio, total }` redondeados a 2 decimales. Se comprueba leyendo el archivo: sin dependencias externas ni acceso a la red.
+- [x] 1.2 Sumar en `server/compra.js` la lectura de `configuracion/comisiones` (`leerConfiguracionComision(db)`) y que `calcularCompra` reciba la configuración y devuelva `subtotal`, `costoServicio`, `comisionPorcentaje`, `comisionCategoria` y `total` con el costo incluido. Se comprueba con la prueba 24.
+- [x] 1.3 En `server/crear-pago.js`, leer la configuración antes de calcular; si la lectura falla, devolver el error genérico y no crear la venta. Se comprueba con la prueba 24 (caso "falla la lectura": no hay ventas creadas).
+- [x] 1.4 En `server/ventas.js`, guardar `subtotal`, `costo_servicio`, `comision_porcentaje`, `comision_categoria` y `monto_total` con el costo incluido. Se comprueba con la prueba 24.
+- [x] 1.5 En `server/mercadopago.js`, agregar el renglón "Costo de servicio" cuando es mayor que cero, sin tocar el renglón de las entradas ni agregar restricción de cuotas. Se comprueba con la prueba 24: la suma de los renglones es igual a `monto_total`.
+- [x] 1.6 Crear `pruebas/24-costo-de-servicio.js` con los casos de las especificaciones: 8% sobre $4.500, redondeo de 7,5% sobre $1.234, sin categoría, categoría inexistente, el navegador manda `comision`/`porcentaje` (se ignora), falla la lectura, dos renglones que suman el total, sin `installments`, y pago por solo el subtotal (queda para revisar). Se comprueba con `node pruebas/24-costo-de-servicio.js`.
+- [x] 1.7 (ninguna prueba existente usaba `calcularCompra`; solo se agregó `id` a las referencias de la base falsa, como en Firestore real) Actualizar las pruebas existentes de pagos que dependan de la forma de `calcularCompra` o de la base falsa (`pruebas/_ayuda-db-falsa.js`) sin cambiar ningún caso. Se comprueba con `node pruebas/ejecutar-todas.js`.
 
 ## 2. Confirmación del comprador
 
-- [ ] 2.1 En `server/venta.js` (`/api/venta`) devolver `costoServicio` cuando la venta lo tiene, sin devolver ningún dato interno nuevo. Se comprueba con la prueba 9 ampliada.
-- [ ] 2.2 En `public/confirmacion.html` mostrar la línea "Costo de servicio" solo si viene. Se comprueba leyendo el archivo y con la prueba 11 ampliada; a mano en 5.2.
+- [x] 2.1 En `server/venta.js` (`/api/venta`) devolver `costoServicio` cuando la venta lo tiene, sin devolver ningún dato interno nuevo. Se comprueba con la prueba 9 ampliada.
+- [x] 2.2 En `public/confirmacion.html` mostrar la línea "Costo de servicio" solo si viene. Se comprueba leyendo el archivo y con la prueba 11 ampliada; a mano en 5.2.
 
 ## 3. Página del evento
 

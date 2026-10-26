@@ -188,6 +188,14 @@ const ENLACE_LIMPIO = 'https://evently-ctes-app.vercel.app/public/confirmacion.h
     verificar('7.2 marca la entrada que ya fue usada (solo esa)', (t.match(/ya fue utilizada/g) || []).length === 1);
     verificar('7.2 resumen: evento, fecha, lugar, lote, cantidad, metodo de pago y total',
       /Fiesta del Rio/.test(t) && /15 Dic 2026 21:00/.test(t) && /Costanera Corrientes/.test(t) && /General/.test(t) && /Cantidad:\s*3/.test(t) && /Crédito/.test(t) && t.includes('$' + (15000).toLocaleString()));
+    verificar('7.2 sin costo de servicio: el resumen no tiene la linea "Costo de servicio"', !/Costo de servicio/.test(t));
+    {
+      const c = crearPagina({ respuestas: [confirmada({ monto: 16200, costoServicio: 1200 })] });
+      await c.iniciar();
+      const tc = textoDe(c.contenedor);
+      verificar('7.2 con costo de servicio: muestra entradas, costo de servicio y total',
+        /Entradas:\s*\$15,?000|Entradas:\s*\$15\.000/.test(tc) && /Costo de servicio:\s*\$1,?200|Costo de servicio:\s*\$1\.200/.test(tc) && tc.includes('$' + (16200).toLocaleString()), tc);
+    }
     verificar('7.2 mensaje de exito y boton para imprimir (que existe de verdad)', /Compra exitosa/.test(t) && !!botonCon(p.contenedor, 'Imprimir'));
     await botonCon(p.contenedor, 'Imprimir').clic();
     verificar('7.2 "Imprimir entradas" imprime la pagina', p.impresiones === 1);

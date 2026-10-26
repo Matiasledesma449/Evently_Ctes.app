@@ -2,9 +2,18 @@
 // Reglas de la compra: que se puede vender, a que precio y cuantas entradas quedan.
 // Todo se calcula con los datos GUARDADOS del evento: nunca con lo que mande el navegador.
 
+const { categoriaDelEvento, calcularCostoServicio } = require('./comision');
+
 // Lee el evento en Firestore. Devuelve los datos o null si no existe.
 async function leerEvento(db, eventoId) {
   const snap = await db.collection('eventos').doc(eventoId).get();
+  return snap.exists ? snap.data() : null;
+}
+
+// Lee las categorias de costo de servicio. Si el documento no existe devuelve null (todos 0%).
+// Si la lectura falla, el error se propaga: es mejor no vender que vender sin el costo de servicio.
+async function leerConfiguracionComision(db) {
+  const snap = await db.collection('configuracion').doc('comisiones').get();
   return snap.exists ? snap.data() : null;
 }
 
@@ -19,9 +28,11 @@ function error(status, codigo, mensaje, extra) {
 }
 
 // Calcula la compra a partir del evento guardado y del pedido ya validado.
-// Devuelve { ok: true, lote, loteIndex, precioUnitario, total, disponibles }
+// `config` es el documento de categorias de costo de servicio (o null: 0%).
+// Devuelve { ok: true, lote, loteIndex, precioUnitario, subtotal, costoServicio, comisionPorcentaje,
+//            comisionCategoria, total, disponibles }
 // o { ok: false, status, codigo, mensaje }. No escribe nada.
-function calcularCompra(evento, pedido) {
+function calcularCompra(evento, pedido, config = null) {
   if (!evento) {
     return error(404, 'EVENTO_NO_ENCONTRADO', 'No encontramos ese evento.');
   }
@@ -53,14 +64,22 @@ function calcularCompra(evento, pedido) {
     return error(409, 'SIN_STOCK', mensaje, { disponibles });
   }
 
+  const categoria = categoriaDelEvento(evento, config);
+  const porcentaje = categoria ? categoria.porcentaje : 0;
+  const { subtotal, costoServicio, total } = calcularCostoServicio(precioUnitario * pedido.cantidad, porcentaje);
+
   return {
     ok: true,
     lote,
     loteIndex: pedido.loteIndex,
     precioUnitario,
-    total: redondear2(precioUnitario * pedido.cantidad),
+    subtotal,
+    costoServicio,
+    comisionPorcentaje: porcentaje,
+    comisionCategoria: categoria ? categoria.nombre : '',
+    total,
     disponibles,
   };
 }
 
-module.exports = { leerEvento, calcularCompra };
+module.exports = { leerEvento, leerConfiguracionComision, calcularCompra };
