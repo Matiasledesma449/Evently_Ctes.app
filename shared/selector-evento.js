@@ -10,7 +10,7 @@
 //   3. Al elegir otro, recuerda el evento y vuelve a cargar la pantalla con el ?id= nuevo.
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { eventosDeLaPersona, escaparHtml } from "./ventas-utils.js";
+import { eventosDeLaPersona, escaparHtml, elegirEventoActivo } from "./ventas-utils.js";
 
 const contenedor = document.getElementById('selectorEvento');
 const desplegable = document.getElementById('selectorEventoSelect');
@@ -25,7 +25,7 @@ function leerEventoActivo() {
         deLaDireccion = new URLSearchParams(window.location.search).get('id');
         recordado = localStorage.getItem('eventoId');
     } catch (e) { /* sin almacenamiento */ }
-    return deLaDireccion || recordado || '';
+    return elegirEventoActivo(deLaDireccion, recordado);
 }
 
 function recordar(id) {

@@ -4,9 +4,9 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Funciones puras y su prueba
 
-- [ ] 1.1 Pasar a `shared/ventas-utils.js` la regla del evento activo (dirección primero, después el recordado, "todos" nunca se recuerda) y hacer que `shared/selector-evento.js` la use. Se comprueba con `node -e`: casos con `?id=`, solo recordado, ninguno y "todos"; y que `node pruebas/ejecutar-todas.js` sigue pasando.
-- [ ] 1.2 Escribir `nombreDeArchivoDeReporte(nombreEvento, fecha)`: sin tildes, espacios ni caracteres especiales, con largo máximo y `Todos-los-eventos` para el caso general. Se comprueba con `node -e`: "Fiesta de Verano" da `Evently_Reporte_Fiesta-de-Verano_2026-10-25.pdf`; `Noche/de "Rock" <3` no deja `/`, comillas ni `<`; nombre vacío o nulo no falla.
-- [ ] 1.3 Crear `pruebas/17-evento-activo-y-exportaciones.js` con los casos de 1.1 y 1.2. Se comprueba con `node pruebas/17-evento-activo-y-exportaciones.js` (todo `OK`) y `node pruebas/ejecutar-todas.js`; se rompe una regla a propósito y se ve que la prueba falla.
+- [x] 1.1 Pasar a `shared/ventas-utils.js` la regla del evento activo (dirección primero, después el recordado, "todos" nunca se recuerda) y hacer que `shared/selector-evento.js` la use. Se comprueba con `node -e`: casos con `?id=`, solo recordado, ninguno y "todos"; y que `node pruebas/ejecutar-todas.js` sigue pasando.
+- [x] 1.2 Escribir `nombreDeArchivoDeReporte(nombreEvento, fecha)`: sin tildes, espacios ni caracteres especiales, con largo máximo y `Todos-los-eventos` para el caso general. Se comprueba con `node -e`: "Fiesta de Verano" da `Evently_Reporte_Fiesta-de-Verano_2026-10-25.pdf`; `Noche/de "Rock" <3` no deja `/`, comillas ni `<`; nombre vacío o nulo no falla.
+- [x] 1.3 Crear `pruebas/17-evento-activo-y-exportaciones.js` con los casos de 1.1 y 1.2. Se comprueba con `node pruebas/17-evento-activo-y-exportaciones.js` (todo `OK`) y `node pruebas/ejecutar-todas.js`; se rompe una regla a propósito y se ve que la prueba falla.
 
 ## 2. Franja del evento activo
 
