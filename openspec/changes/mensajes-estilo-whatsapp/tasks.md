@@ -14,8 +14,8 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 3. Consultas públicas
 
-- [ ] 3.1 Pasar `admin/consultas-publicas.html` a lista + detalle con la insignia de estado, el filtro con contadores y los estados vacíos, todo con `textContent`. Se comprueba leyendo el archivo.
-- [ ] 3.2 Abrir una consulta `nueva` la pasa a `leida` (una sola vez, sin bucle con `onSnapshot`); "Responder por Gmail" y "Marcar como respondida" siguen igual. Se comprueba leyendo el archivo.
+- [x] 3.1 Pasar `admin/consultas-publicas.html` a lista + detalle con la insignia de estado, el filtro con contadores y los estados vacíos, todo con `textContent`. Se comprueba leyendo el archivo.
+- [x] 3.2 Abrir una consulta `nueva` la pasa a `leida` (una sola vez, sin bucle con `onSnapshot`); "Responder por Gmail" y "Marcar como respondida" siguen igual. Se comprueba leyendo el archivo.
 
 ## 4. Mensajes
 
