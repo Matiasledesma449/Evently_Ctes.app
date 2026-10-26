@@ -75,6 +75,7 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1' }) {
     document: { getElementById: (id) => { if (!els[id]) { problemas.push('getElementById con id inexistente: ' + id); return null; } return els[id]; }, querySelectorAll: () => [] },
     window: ventana, URLSearchParams, URL, console: { error() {}, log() {}, warn() {} }, setTimeout, Promise,
     alert: (m) => alertas.push(m),
+    dibujarPie: () => {}, // el pie comun se prueba aparte (23-pie-publico.js)
     db: {}, doc: (db, col, id) => ({ col, id }),
     getDoc: async () => ({ exists: () => true, id: 'Evt1', data: () => evento }),
     fetch: (...a) => contexto._fetch(...a), _fetch: fetchFn,
@@ -208,6 +209,23 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     const p = crearPagina({ evento: EVENTO, fetchFn: respuesta(400, { ok: false, error: { codigo: 'X', mensaje: '<img src=x onerror=alert(1)>', errores: [{ campo: 'correo', mensaje: '<b>hola</b>' }] } }) });
     await irAlPaso2(p); await completar(p); await enviar(p);
     verificar('H los mensajes del servidor se escriben como texto (nunca como HTML)', p.els.errorCorreo.escrituraHtml === 0 && p.els.errorCompra.escrituraHtml === 0 && p.els.errorCorreo.textContent === '<b>hola</b>');
+  }
+
+  // ---------- Secciones "Sobre el evento" y "Dónde es" (cambio pagina-de-compra-mejorada) ----------
+  {
+    const p = crearPagina({ evento: { ...EVENTO, detalle: '<b>x</b>' }, fetchFn: respuesta(200, { ok: true }) });
+    await tick(); await tick();
+    verificar('V1 el afiche lleva el nombre y el lugar, y el detalle va en su propia sección',
+      p.els.eventoContainer.innerHTML.includes('Fiesta del Rio') && p.els.eventoContainer.innerHTML.includes('Costanera') && !p.els.eventoContainer.innerHTML.includes('No te lo pierdas'));
+    verificar('V2 "Sobre el evento" y "Dónde es" se muestran con el evento cargado', !p.els.sobreEventoContainer.oculto && !p.els.dondeEsContainer.oculto);
+    verificar('V3 sin detalle se lee "¡No te lo pierdas!" y "Dónde es" nombra el lugar', p.els.detalleEvento.innerHTML.includes('No te lo pierdas') && p.els.lugarEvento.innerHTML.includes('Costanera'));
+    verificar('V4 sin ubicación no hay cuadro de mapa', !p.els.lugarEvento.innerHTML.includes('mapaEvento'));
+  }
+  {
+    const html0 = html.replace(/<!--[\s\S]*?-->/g, '');
+    const orden = ['id="eventoContainer"', 'id="step1"', 'id="step2"', 'id="sobreEventoContainer"', 'id="dondeEsContainer"', 'id="loadingContainer"'].map((t) => html0.indexOf(t));
+    verificar('V5 el orden de la página es afiche, entradas, datos, sobre el evento y dónde es', orden.every((n, i) => n > -1 && (i === 0 || n > orden[i - 1])), orden.join(','));
+    verificar('V6 la sección de ayuda del encabezado lleva al Centro de ayuda con su origen', /href="soporte\.html\?origen=public\/evento\.html"/.test(html0));
   }
 
   verificar('Z durante toda la prueba el JavaScript solo uso ids que existen en el HTML', problemas.length === 0, problemas.join(' | '));

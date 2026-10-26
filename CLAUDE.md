@@ -43,6 +43,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Qué evento está activo lo decide `elegirEventoActivo` de `shared/ventas-utils.js` (primero `?id=` de la dirección, después el recordado; "todos" nunca se recuerda). `shared/franja-evento.js` es la franja compartida que muestra el nombre del evento activo (hoy todavía no la usa ninguna página: el Escáner valida entradas de cualquier evento). Los PDF de Reportes llevan el evento en el nombre del archivo (`nombreDeArchivoDeReporte`) y arriba del documento. Pruebas en `pruebas/17-evento-activo-y-exportaciones.js`.
 - La imagen de un evento sale siempre de `shared/imagen-evento.js` (su foto, o un relleno violeta con su inicial, distinto por evento): las páginas no arman su propio relleno. Como no se usa Firebase Storage (pide plan de pago), la foto se achica en el navegador (hasta 200 KB) y se guarda dentro del evento, en el campo `imagen` como `data:image/jpeg;base64,...`.
 - Utilidades de interfaz (toasts, modales, confirmar) en `shared/ui-utils.js`. Textos ES/EN en `shared/i18n.js`, todavía como esqueleto.
+- Sitio del comprador: `shared/preguntas-frecuentes.js` (preguntas y buscador del Centro de ayuda, `public/soporte.html`) y `shared/pie-publico.js` (pie común de inicio, evento y soporte).
 - Cada página HTML lleva su propio JavaScript incrustado; son pocos los archivos `.js` separados.
 
 ## Decisiones pendientes (no cambiar sin proponer opciones)
