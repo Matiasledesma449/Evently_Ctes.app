@@ -56,7 +56,8 @@ class El {
   get oculto() { return this._clases.has('hidden'); }
 }
 
-function crearPagina({ evento, fetchFn, buscar = '?id=Evt1' }) {
+// `config`: lo que devuelve configuracion/comisiones (undefined = el documento no existe; un Error = falla la lectura)
+function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
   const els = {};
   for (const id of idsEnHtml) els[id] = new El(id);
   // Los .lote-card aparecen cuando el JS escribe el HTML de los lotes
@@ -77,13 +78,19 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1' }) {
     alert: (m) => alertas.push(m),
     dibujarPie: () => {}, // el pie comun se prueba aparte (23-pie-publico.js)
     db: {}, doc: (db, col, id) => ({ col, id }),
-    getDoc: async () => ({ exists: () => true, id: 'Evt1', data: () => evento }),
+    getDoc: async (ref) => {
+      if (ref && ref.col === 'configuracion') {
+        if (config instanceof Error) throw config;
+        return { exists: () => config !== undefined, data: () => config };
+      }
+      return { exists: () => true, id: 'Evt1', data: () => evento };
+    },
     fetch: (...a) => contexto._fetch(...a), _fetch: fetchFn,
   };
   vm.createContext(contexto);
   // Los modulos compartidos (escaparHtml, htmlDeImagenEvento) se cargan sin sus "export", como en las otras pruebas
   const compartido = (archivo) => fs.readFileSync(require('path').join(__dirname, '..', 'shared', archivo), 'utf8').replace(/^export /gm, '');
-  vm.runInContext(compartido('ventas-utils.js') + ';' + compartido('imagen-evento.js') + ';' + compartido('formas-de-pago.js') + ';' + compartido('evento-datos.js'), contexto);
+  vm.runInContext(compartido('ventas-utils.js') + ';' + compartido('imagen-evento.js') + ';' + compartido('formas-de-pago.js') + ';' + compartido('evento-datos.js') + ';' + compartido('comision.js'), contexto);
   const js = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*$/gm, '');
   vm.runInContext(js, contexto);
   return { els, ubicacion, ventana, alertas, contexto };
@@ -220,6 +227,36 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     verificar('V2 "Sobre el evento" y "Dónde es" se muestran con el evento cargado', !p.els.sobreEventoContainer.oculto && !p.els.dondeEsContainer.oculto);
     verificar('V3 sin detalle se lee "¡No te lo pierdas!" y "Dónde es" nombra el lugar', p.els.detalleEvento.innerHTML.includes('No te lo pierdas') && p.els.lugarEvento.innerHTML.includes('Costanera'));
     verificar('V4 sin ubicación no hay cuadro de mapa', !p.els.lugarEvento.innerHTML.includes('mapaEvento'));
+  }
+  // ---------- Costo de servicio (vista previa; el servidor recalcula) ----------
+  {
+    const CONFIG = { categorias: [{ id: 'cat-1', nombre: 'Estándar', porcentaje: 8 }] };
+    const conCategoria = { ...EVENTO, comisionCategoriaId: 'cat-1' };
+    const p = crearPagina({ evento: conCategoria, config: CONFIG, fetchFn: respuesta(200, {}) });
+    await irAlPaso2(p, { cantidad: 2 });
+    verificar('S1 con 8%: 2 entradas de 5000 muestran entradas $10.000, costo de servicio $800 y total $10.800',
+      !p.els.filasServicio.oculto && p.els.resumenEntradas.textContent === '$' + (10000).toLocaleString() && p.els.resumenServicio.textContent === '$800' && p.els.totalMostrado.textContent === '$' + (10800).toLocaleString() && p.els.etiquetaServicio.textContent.includes('8%'),
+      [p.els.resumenEntradas.textContent, p.els.resumenServicio.textContent, p.els.totalMostrado.textContent, p.els.etiquetaServicio.textContent].join(' | '));
+    verificar('S2 con la lectura bien no se muestra el aviso de "se suma al pagar"', p.els.avisoServicio.oculto);
+
+    const sin = crearPagina({ evento: EVENTO, config: CONFIG, fetchFn: respuesta(200, {}) });
+    await irAlPaso2(sin, { cantidad: 2 });
+    verificar('S3 evento sin categoría: solo el total, sin filas de costo de servicio', sin.els.filasServicio.oculto && sin.els.totalMostrado.textContent === '$' + (10000).toLocaleString());
+
+    const noExiste = crearPagina({ evento: { ...EVENTO, comisionCategoriaId: 'cat-9' }, config: CONFIG, fetchFn: respuesta(200, {}) });
+    await irAlPaso2(noExiste, { cantidad: 2 });
+    verificar('S4 categoría que ya no existe: 0%, solo el total', noExiste.els.filasServicio.oculto && noExiste.els.totalMostrado.textContent === '$' + (10000).toLocaleString());
+
+    const falla = crearPagina({ evento: conCategoria, config: new Error('sin permiso'), fetchFn: respuesta(200, {}) });
+    await irAlPaso2(falla, { cantidad: 2 });
+    verificar('S5 si no se puede leer el porcentaje: solo el total y el aviso de que se suma al pagar', falla.els.filasServicio.oculto && !falla.els.avisoServicio.oculto && falla.els.totalMostrado.textContent === '$' + (10000).toLocaleString());
+
+    const pedidos = [];
+    const envia = crearPagina({ evento: conCategoria, config: CONFIG, fetchFn: async (url, op) => { pedidos.push(JSON.parse(op.body)); return { ok: true, status: 200, json: async () => ({ ok: true, urlPago: 'https://www.mercadopago.com.ar/x' }) }; } });
+    await irAlPaso2(envia, { cantidad: 2 });
+    await completar(envia);
+    await enviar(envia);
+    verificar('S6 el pedido al servidor NO lleva monto ni porcentaje', pedidos.length === 1 && Object.keys(pedidos[0]).sort().join() === 'apellido,cantidad,correo,eventoId,loteIndex,loteNombre,nombre', pedidos[0] && Object.keys(pedidos[0]).sort().join());
   }
   {
     const html0 = html.replace(/<!--[\s\S]*?-->/g, '');

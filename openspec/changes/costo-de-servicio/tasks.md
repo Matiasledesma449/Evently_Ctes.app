@@ -19,9 +19,9 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 3. Página del evento
 
-- [ ] 3.1 Crear `shared/comision.js` (versión del navegador): `categoriaDelEvento(evento, config)` y `desgloseDeCompra(precio, cantidad, porcentaje)`. Se comprueba con la prueba 25: da los mismos resultados que `server/comision.js` en los mismos casos.
-- [ ] 3.2 En `public/evento.html`, leer `configuracion/comisiones` y mostrar Entradas / Costo de servicio / Total; con 0% solo el Total. Si la lectura falla, mostrar solo el Total con una nota de que se calcula al pagar. Se comprueba leyendo el archivo y a mano en 5.2; no se renombra ningún `id` de la compra.
-- [ ] 3.3 Crear `pruebas/25-desglose-de-compra.js` (3.1) y ampliar `pruebas/10-pantalla-de-compra.js` si hace falta. Se comprueba con `node`.
+- [x] 3.1 Crear `shared/comision.js` (versión del navegador): `categoriaDelEvento(evento, config)` y `desgloseDeCompra(precio, cantidad, porcentaje)`. Se comprueba con la prueba 25: da los mismos resultados que `server/comision.js` en los mismos casos.
+- [x] 3.2 (hecho en el código y probado con navegador simulado en la prueba 10; falta mirarlo a mano en 5.2) En `public/evento.html`, leer `configuracion/comisiones` y mostrar Entradas / Costo de servicio / Total; con 0% solo el Total. Si la lectura falla, mostrar solo el Total con una nota de que se calcula al pagar. Se comprueba leyendo el archivo y a mano en 5.2; no se renombra ningún `id` de la compra.
+- [x] 3.3 Crear `pruebas/25-desglose-de-compra.js` (3.1) y ampliar `pruebas/10-pantalla-de-compra.js` si hace falta. Se comprueba con `node`.
 
 ## 4. Panel del superadmin y del organizador
 
