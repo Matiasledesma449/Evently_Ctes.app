@@ -26,6 +26,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Formas de pago que se nombran en el sitio (Transferencia, Débito, Crédito; sin efectivo): lista en `shared/formas-de-pago.js`, probada en `pruebas/18-formas-de-pago.js`. Es solo texto para mostrar; lo que guarda el servidor no cambia.
 - Días con horario y detalle de un evento (`dias`, `detalle`; `fecha` sigue siendo el texto del primer día): funciones en `shared/evento-datos.js`, probadas en `pruebas/19-evento-datos.js`.
 - Solicitudes de eventos del superadmin: ya no hay "Panel global"; viven en la pestaña "Solicitudes" de "Crear evento" (`admin/eventos.html?modo=directo`, lógica en `admin/aprobaciones.js`). Los comentarios (`comentarios`) y los enlaces de contacto salen de `shared/solicitudes-evento.js`, probado en `pruebas/20-solicitudes-evento.js`.
+- Mensajes y Consultas públicas (superadmin): lista + detalle con estado nuevo / leído / respondido. Los cálculos y la lista de organizaciones de "Nuevo mensaje" salen de `shared/estado-mensajes.js`, probado en `pruebas/21-estado-mensajes.js`. Cada documento de `conversaciones` guarda además `ultimoDe` (quién escribió el último mensaje) y `ultimoLeido`; las conversaciones viejas sin esos campos se ven como "leído".
 - Lugar con sugerencias y mapa: `shared/lugar-mapa.js` (Leaflet + OpenStreetMap + Nominatim por CDN, sin clave); el evento guarda `ubicacion` (`lat`, `lng`) solo si se eligió una sugerencia.
 - Detalle del change: `openspec/changes/pagos-mercadopago/`.
 

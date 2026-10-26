@@ -19,16 +19,16 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Mensajes
 
-- [ ] 4.1 En `admin/mensajes.html`: reescribir la lista con el estado de cada conversación (negrita y marca, tilde verde, gris), el filtro con contadores y los estados vacíos, sin `innerHTML` con nombres; las solicitudes de contraseña quedan arriba como hoy. Se comprueba leyendo el archivo.
-- [ ] 4.2 Al abrir una conversación, guardar `ultimoLeido: true` solo si hace falta, y mostrar la insignia de estado en la cabecera. Se comprueba leyendo el archivo.
-- [ ] 4.3 "Nuevo mensaje": buscador, lista completa de organizaciones con `organizacionesParaChat`, marca "Conversación abierta", aviso si no hay o falla la carga, y todo escapado. Se comprueba leyendo el archivo.
-- [ ] 4.4 Comprobar que borrar una conversación y las solicitudes de contraseña siguen igual. Se comprueba leyendo el archivo.
+- [x] 4.1 En `admin/mensajes.html`: reescribir la lista con el estado de cada conversación (negrita y marca, tilde verde, gris), el filtro con contadores y los estados vacíos, sin `innerHTML` con nombres; las solicitudes de contraseña quedan arriba como hoy. Se comprueba leyendo el archivo.
+- [x] 4.2 Al abrir una conversación, guardar `ultimoLeido: true` solo si hace falta, y mostrar la insignia de estado en la cabecera. Se comprueba leyendo el archivo.
+- [x] 4.3 "Nuevo mensaje": buscador, lista completa de organizaciones con `organizacionesParaChat`, marca "Conversación abierta", aviso si no hay o falla la carga, y todo escapado. Se comprueba leyendo el archivo.
+- [x] 4.4 Comprobar que borrar una conversación y las solicitudes de contraseña siguen igual. Se comprueba leyendo el archivo.
 
 ## 5. Revisión final
 
 - [ ] 5.1 Probar a mano en el navegador los siete pasos de "Cómo se verifica a mano" de `proposal.md`. (Necesita navegador y cuentas de superadmin y de organización: queda para la persona.)
 - [ ] 5.2 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas.
-- [ ] 5.3 Actualizar `CLAUDE.md` con `shared/estado-mensajes.js`, la prueba 21 y los campos `ultimoDe` y `ultimoLeido` de `conversaciones`, sin claves, correos ni rutas personales.
+- [x] 5.3 Actualizar `CLAUDE.md` con `shared/estado-mensajes.js`, la prueba 21 y los campos `ultimoDe` y `ultimoLeido` de `conversaciones`, sin claves, correos ni rutas personales.
 
 ## Workflow follow-up
 
