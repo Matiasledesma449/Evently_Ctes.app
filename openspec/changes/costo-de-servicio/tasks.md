@@ -25,10 +25,10 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Panel del superadmin y del organizador
 
-- [ ] 4.1 Crear `shared/categorias-comision.js` con `validarCategoria({ nombre, porcentaje })` (nombre 1–40, porcentaje 0–30 con hasta 2 decimales, mensajes claros), `nuevoIdDeCategoria(categorias)` y `categoriasOrdenadas(config)`. Se comprueba con la prueba 26.
-- [ ] 4.2 Crear `pruebas/26-categorias-de-comision.js`: valores válidos e inválidos (80, "ocho", vacío, negativo, 3 decimales), ids que no se repiten, nombre con `<b>x</b>`. Se comprueba con `node`.
-- [ ] 4.3 En `admin/eventos-seleccion.html` (solo superadmin) agregar el bloque "Costo de servicio" con la tabla de categorías, "Agregar categoría" y guardar por fila. Los nombres se escapan con `escaparHtml`. Se comprueba leyendo el archivo; a mano en 5.2.
-- [ ] 4.4 En la tarjeta de cada evento (solo superadmin) agregar el selector "Costo de servicio" que guarda `comisionCategoriaId` y avisa. La organización no lo ve. Se comprueba leyendo el archivo; a mano en 5.2.
+- [x] 4.1 Crear `shared/categorias-comision.js` con `validarCategoria({ nombre, porcentaje })` (nombre 1–40, porcentaje 0–30 con hasta 2 decimales, mensajes claros), `nuevoIdDeCategoria(categorias)` y `categoriasOrdenadas(config)`. Se comprueba con la prueba 26.
+- [x] 4.2 Crear `pruebas/26-categorias-de-comision.js`: valores válidos e inválidos (80, "ocho", vacío, negativo, 3 decimales), ids que no se repiten, nombre con `<b>x</b>`. Se comprueba con `node`.
+- [x] 4.3 (hecho en el código; falta mirarlo a mano en 5.2) En `admin/eventos-seleccion.html` (solo superadmin) agregar el bloque "Costo de servicio" con la tabla de categorías, "Agregar categoría" y guardar por fila. Los nombres se escapan con `escaparHtml`. Se comprueba leyendo el archivo; a mano en 5.2.
+- [x] 4.4 (hecho en el código; falta mirarlo a mano en 5.2) En la tarjeta de cada evento (solo superadmin) agregar el selector "Costo de servicio" que guarda `comisionCategoriaId` y avisa. La organización no lo ve. Se comprueba leyendo el archivo; a mano en 5.2.
 - [ ] 4.5 Sumar `ingresoDeVenta(venta)` y `costoServicioDeVenta(venta)` a `shared/ventas-utils.js` (subtotal con respaldo en `monto_total`) y usarlas en `resumenDeVentas`, `tarjetasDelFiltro` y `cifrasDelEvento`. Se comprueba con las pruebas 14 y 15 ampliadas con ventas con y sin costo de servicio.
 - [ ] 4.6 En `admin/reportes.html` cambiar las sumas de `monto_total` para recaudado, por lote y por método por `ingresoDeVenta`, y que la columna del detalle diga lo mismo. Se comprueba leyendo el archivo (no queda ninguna suma de `monto_total` para recaudación) y con la prueba 17.
 - [ ] 4.7 En el detalle de una venta de `admin/ventas.html` mostrar entradas, costo de servicio y total pagado cuando hay costo. Se comprueba leyendo el archivo; a mano en 5.2.
