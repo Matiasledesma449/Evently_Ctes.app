@@ -10,9 +10,10 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 2. Franja del evento activo
 
-- [ ] 2.1 Revisar si el Escáner valida entradas de un evento puntual o de cualquiera, y anotar el resultado acá. Se comprueba leyendo `admin/escaner.html` y este archivo con la conclusión.
-- [ ] 2.2 Crear `shared/franja-evento.js` (módulo) según el diseño: nombre con `textContent`, "—" mientras carga, texto de invitación si no hay evento. Se comprueba con la skill `auditar-panel` con datos inventados: nombre correcto, evento inexistente sin errores.
-- [ ] 2.3 Usar la franja en `admin/escaner.html`. Se comprueba en la skill: aparece el nombre del evento recordado y "Cambiar" lleva a `eventos-seleccion.html`.
+- [x] 2.1 Revisar si el Escáner valida entradas de un evento puntual o de cualquiera, y anotar el resultado acá. Se comprueba leyendo `admin/escaner.html` y este archivo con la conclusión.
+  - **Conclusión (2026-10-26):** valida entradas de **cualquier** evento. `admin/escaner.html` solo muestra el enlace a `validador.html`, sin ningún evento; y `validador.html` busca el código en todas las `ventas` (`array-contains` sobre `entradas`) sin filtrar por evento. Por el diseño (riesgo 3), la franja **no se pone** en el Escáner: se saltea la tarea 2.3 hasta que la persona decida (ver el PR).
+- [x] 2.2 Crear `shared/franja-evento.js` (módulo) según el diseño: nombre con `textContent`, "—" mientras carga, texto de invitación si no hay evento. Se comprueba con la skill `auditar-panel` con datos inventados: nombre correcto, evento inexistente sin errores.
+- [ ] 2.3 (salteada: el Escáner valida de cualquier evento, ver 2.1) Usar la franja en `admin/escaner.html`. Se comprueba en la skill: aparece el nombre del evento recordado y "Cambiar" lleva a `eventos-seleccion.html`.
 
 ## 3. PDF de Reportes
 
