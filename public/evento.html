@@ -26,9 +26,9 @@
                 </a>
                 <span class="text-2xl font-bold text-violet-600 ml-4">Evently</span>
             </div>
-            <button type="button" data-open-consulta data-origen="public/evento.html" class="text-sm font-medium text-violet-700 hover:text-violet-900 flex items-center gap-1 border-0 bg-transparent">
+            <a href="soporte.html?origen=public/evento.html" class="text-sm font-medium text-violet-700 hover:text-violet-900 flex items-center gap-1">
                 <span class="material-symbols-outlined text-base">help</span> Ayuda
-            </button>
+            </a>
         </div>
     </header>
 
@@ -116,15 +116,24 @@
             <button type="button" id="btnVolverPaso1" class="mt-4 text-sm text-violet-600 hover:underline">← Volver a seleccionar entradas</button>
         </div>
 
+        <!-- Se llenan al cargar el evento (y quedan ocultas si no se pudo cargar) -->
+        <section id="sobreEventoContainer" class="hidden mt-8 bg-white rounded-xl border border-gray-200 p-6" aria-labelledby="tituloSobreEvento">
+            <h2 id="tituloSobreEvento" class="text-xl font-bold text-gray-800">Sobre el evento</h2>
+            <div id="detalleEvento"></div>
+        </section>
+
+        <section id="dondeEsContainer" class="hidden mt-8 bg-white rounded-xl border border-gray-200 p-6" aria-labelledby="tituloDondeEs">
+            <h2 id="tituloDondeEs" class="text-xl font-bold text-gray-800">Dónde es</h2>
+            <div id="lugarEvento"></div>
+        </section>
+
         <div id="loadingContainer" class="hidden mt-8 text-center py-8">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-violet-600 border-t-transparent"></div>
             <p class="text-gray-500 mt-2">Procesando tu compra...</p>
         </div>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
-        © 2024 Evently by Bali Group
-    </footer>
+    <footer id="pie" class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400"></footer>
 
     <script type="module" src="../shared/firebase-init.js"></script>
 
@@ -136,12 +145,19 @@
         import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
         import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
         import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
+        import { dibujarPie } from "../shared/pie-publico.js";
+
+        dibujarPie(document.getElementById('pie'), 'evento');
 
         // El aviso del paso de pago nombra las formas de pago desde la lista compartida
         document.getElementById('formasDePago').textContent = textoDeFormasDePago();
 
         // Elementos
         const container = document.getElementById('eventoContainer');
+        const sobreEventoContainer = document.getElementById('sobreEventoContainer');
+        const detalleEvento = document.getElementById('detalleEvento');
+        const dondeEsContainer = document.getElementById('dondeEsContainer');
+        const lugarEvento = document.getElementById('lugarEvento');
         const lotesContainer = document.getElementById('lotesContainer');
         const cantidadInput = document.getElementById('cantidadInput');
         const btnMenos = document.getElementById('btnMenos');
@@ -232,12 +248,15 @@
                         <p class="text-gray-500 flex items-center gap-2 ${idx === 0 ? 'mt-2' : ''}">
                             <span class="material-symbols-outlined">${idx === 0 ? 'calendar_month' : 'event'}</span> ${escaparHtml(renglon)}
                         </p>`).join('');
+            const lugar = evento.lugar || 'Lugar no definido';
             const ubicacionDelEvento = ubicacionDeEvento(evento);
             const filasDeDetalle = detalleParaMostrar(evento);
             const htmlDeDetalle = filasDeDetalle.length === 0
-                ? `<p class="text-gray-600 mt-4">${escaparHtml('¡No te lo pierdas!')}</p>`
+                ? `<p class="text-gray-600 mt-3">${escaparHtml('¡No te lo pierdas!')}</p>`
                 : filasDeDetalle.map((fila, idx) => `
-                        <p class="text-gray-600 ${idx === 0 ? 'mt-4' : 'mt-2'}">${fila.titulo ? `<span class="font-medium text-gray-700">${escaparHtml(fila.titulo)}:</span> ` : ''}${escaparHtml(fila.texto)}</p>`).join('');
+                        <p class="text-gray-600 ${idx === 0 ? 'mt-3' : 'mt-2'}">${fila.titulo ? `<span class="font-medium text-gray-700">${escaparHtml(fila.titulo)}:</span> ` : ''}${escaparHtml(fila.texto)}</p>`).join('');
+
+            // 1. Afiche con nombre, días y lugar
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     ${htmlDeImagenEvento(evento, { clases: 'h-64' })}
@@ -245,13 +264,24 @@
                         <h1 class="text-3xl font-bold text-gray-800">${escaparHtml(evento.nombre || 'Evento sin nombre')}</h1>
                         ${htmlDeDias}
                         <p class="text-gray-500 flex items-center gap-2">
-                            <span class="material-symbols-outlined">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
+                            <span class="material-symbols-outlined">location_on</span> ${escaparHtml(lugar)}
                         </p>
-                        ${ubicacionDelEvento ? '<div id="mapaEvento" class="hidden mt-3 h-56 rounded-lg border border-gray-200"></div>' : ''}
-                        ${htmlDeDetalle}
                     </div>
                 </div>
             `;
+
+            // 2. Sobre el evento: el detalle (o "¡No te lo pierdas!" si no hay)
+            detalleEvento.innerHTML = htmlDeDetalle;
+            sobreEventoContainer.classList.remove('hidden');
+
+            // 3. Dónde es: el lugar y, si el evento tiene ubicación, el mapa
+            lugarEvento.innerHTML = `
+                <p class="text-gray-600 mt-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined">location_on</span> ${escaparHtml(lugar)}
+                </p>
+                ${ubicacionDelEvento ? '<div id="mapaEvento" class="hidden mt-3 h-56 rounded-lg border border-gray-200"></div>' : ''}
+            `;
+            dondeEsContainer.classList.remove('hidden');
             if (ubicacionDelEvento) mostrarMapa(ubicacionDelEvento);
         }
 
@@ -444,6 +474,5 @@
         // Iniciar
         cargarEvento(eventoId);
     </script>
-    <script type="module" src="contacto-modal.js"></script>
 </body>
 </html>

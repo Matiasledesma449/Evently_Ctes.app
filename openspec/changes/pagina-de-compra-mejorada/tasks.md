@@ -18,11 +18,11 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 3. Página del evento (`public/evento.html`)
 
-- [ ] 3.1 Sumar los contenedores `#sobreEventoContainer` y `#dondeEsContainer` después de `#step2`, con sus títulos. Se comprueba leyendo el archivo: no se renombró ningún `id` de la compra.
-- [ ] 3.2 Partir `renderEvento` en tres: afiche con nombre, días y lugar en `#eventoContainer`; el detalle en "Sobre el evento" (con "¡No te lo pierdas!" si no hay); lugar y mapa en "Dónde es" (sin cuadro de mapa si no hay ubicación). Se comprueba leyendo el archivo y a mano con un evento con mapa, uno sin ubicación y uno viejo sin días.
-- [ ] 3.3 Cambiar el botón "Ayuda" del encabezado por un link a `soporte.html?origen=public/evento.html`. Se comprueba a mano: la consulta enviada guarda ese origen.
-- [ ] 3.4 Usar `dibujarPie` en el pie. Se comprueba leyendo el archivo.
-- [ ] 3.5 Actualizar `pruebas/10-pantalla-de-compra.js` para conocer los dos contenedores nuevos y correr `node pruebas/10-pantalla-de-compra.js`. Se comprueba: pasa sin cambiar ningún caso de pago.
+- [x] 3.1 Sumar los contenedores `#sobreEventoContainer` y `#dondeEsContainer` después de `#step2`, con sus títulos. Se comprueba leyendo el archivo: no se renombró ningún `id` de la compra.
+- [x] 3.2 Partir `renderEvento` en tres: afiche con nombre, días y lugar en `#eventoContainer`; el detalle en "Sobre el evento" (con "¡No te lo pierdas!" si no hay); lugar y mapa en "Dónde es" (sin cuadro de mapa si no hay ubicación). Se comprueba leyendo el archivo y a mano con un evento con mapa, uno sin ubicación y uno viejo sin días.
+- [x] 3.3 Cambiar el botón "Ayuda" del encabezado por un link a `soporte.html?origen=public/evento.html`. Se comprueba a mano: la consulta enviada guarda ese origen.
+- [x] 3.4 Usar `dibujarPie` en el pie. Se comprueba leyendo el archivo.
+- [x] 3.5 Actualizar `pruebas/10-pantalla-de-compra.js` para conocer los dos contenedores nuevos y correr `node pruebas/10-pantalla-de-compra.js`. Se comprueba: pasa sin cambiar ningún caso de pago.
 
 ## 4. Inicio (`public/index.html`)
 
