@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Soporte</title>
+    <title>Evently - Centro de ayuda</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -68,6 +68,37 @@
             color: #9ca3af;
             font-size: 0.8rem;
         }
+        .help-section {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .help-topic-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #6d28d9;
+            margin-bottom: 0.5rem;
+        }
+        .help-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+        }
+        .help-item summary {
+            cursor: pointer;
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1f2937;
+        }
+        .help-item[open] summary { color: #6d28d9; }
+        .help-item p {
+            padding: 0 16px 12px;
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
     </style>
 </head>
 <body>
@@ -86,8 +117,25 @@
 
     <!-- Contenido principal -->
     <main class="main-content max-w-7xl mx-auto px-4 py-8">
-        <div class="support-card">
-            <h1 class="text-2xl font-bold text-gray-800 text-center">Centro de soporte</h1>
+        <section class="help-section">
+            <h1 class="text-2xl font-bold text-gray-800 text-center">Centro de ayuda</h1>
+            <p class="text-gray-500 text-center mt-1 text-sm">Buscá tu duda o mirá las preguntas más comunes.</p>
+
+            <div class="mt-4">
+                <label for="buscadorAyuda" class="sr-only">Buscar en las preguntas frecuentes</label>
+                <input type="search" id="buscadorAyuda" maxlength="100" autocomplete="off" class="input-field" placeholder="Buscar: tarjeta, entrada, pago..." />
+            </div>
+
+            <div id="temasAyuda" class="mt-6 space-y-6"></div>
+
+            <div id="sinResultadosAyuda" class="hidden mt-6 text-center text-sm text-gray-500" role="status" aria-live="polite">
+                <p>No encontramos preguntas con esa búsqueda.</p>
+                <a href="#contacto" class="inline-block mt-3 btn-enviar">Enviar una consulta</a>
+            </div>
+        </section>
+
+        <div id="contacto" class="support-card mt-10">
+            <h2 class="text-xl font-bold text-gray-800 text-center">¿No encontraste lo que buscabas?</h2>
             <p class="text-gray-500 text-center mt-1 text-sm">Cuéntanos tu problema y te ayudaremos lo antes posible.</p>
 
             <form id="soporteForm" class="mt-6 space-y-4">
@@ -114,13 +162,51 @@
     </main>
 
     <!-- Footer (siempre abajo) -->
-    <footer class="footer bg-white border-t border-gray-200 py-4 text-center footer-text">
-        © 2024 Evently by Bali Group
-    </footer>
+    <footer id="pie" class="footer bg-white border-t border-gray-200 py-4 text-center footer-text"></footer>
 
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { buscarPreguntas } from "../shared/preguntas-frecuentes.js";
+        import { dibujarPie } from "../shared/pie-publico.js";
+
+        // ---------- Preguntas frecuentes: todo se dibuja como texto ----------
+        const temasAyuda = document.getElementById('temasAyuda');
+        const sinResultadosAyuda = document.getElementById('sinResultadosAyuda');
+        const buscadorAyuda = document.getElementById('buscadorAyuda');
+
+        function dibujarPreguntas(texto) {
+            const temas = buscarPreguntas(texto);
+            temasAyuda.textContent = '';
+            sinResultadosAyuda.classList.toggle('hidden', temas.length > 0);
+            const buscando = texto.trim() !== '';
+            temas.forEach((tema) => {
+                const bloque = document.createElement('section');
+                const titulo = document.createElement('h2');
+                titulo.className = 'help-topic-title';
+                titulo.textContent = tema.titulo;
+                bloque.appendChild(titulo);
+                tema.preguntas.forEach((p) => {
+                    const detalle = document.createElement('details');
+                    detalle.className = 'help-item';
+                    detalle.open = buscando; // con una búsqueda, las respuestas ya se ven
+                    const resumen = document.createElement('summary');
+                    resumen.textContent = p.pregunta;
+                    detalle.appendChild(resumen);
+                    p.respuesta.forEach((parrafo) => {
+                        const linea = document.createElement('p');
+                        linea.textContent = parrafo;
+                        detalle.appendChild(linea);
+                    });
+                    bloque.appendChild(detalle);
+                });
+                temasAyuda.appendChild(bloque);
+            });
+        }
+
+        buscadorAyuda.addEventListener('input', () => dibujarPreguntas(buscadorAyuda.value));
+        dibujarPreguntas('');
+        dibujarPie(document.getElementById('pie'), 'soporte');
 
         const form = document.getElementById('soporteForm');
         const btnEnviar = document.getElementById('btnEnviar');

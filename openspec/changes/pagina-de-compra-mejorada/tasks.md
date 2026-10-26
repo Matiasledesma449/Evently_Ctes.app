@@ -11,10 +11,10 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 2. Centro de ayuda (`public/soporte.html`)
 
-- [ ] 2.1 Reemplazar el título "Centro de soporte" por "Centro de ayuda" con el buscador y los temas con sus preguntas en `<details>`, dibujados con `buscarPreguntas`, con el estado "sin resultados" y el botón que lleva al formulario. Se comprueba leyendo el archivo y, a mano, buscando "tarjeta", "ENTRADA" y una palabra inexistente.
-- [ ] 2.2 Pasar el formulario al final, con `id="contacto"`, **sin cambiar su lógica** (mismos campos, mismos mensajes, mismo `origen`). Se comprueba leyendo el archivo: el bloque de envío queda igual y el `origen` sigue aceptando solo los dos valores permitidos.
-- [ ] 2.3 Usar `dibujarPie` en un `<footer>` vacío. Se comprueba leyendo el archivo.
-- [ ] 2.4 Que el link "Enviar una consulta" del pie abra la página posicionada en el formulario (`soporte.html#contacto`). Se comprueba a mano.
+- [x] 2.1 Reemplazar el título "Centro de soporte" por "Centro de ayuda" con el buscador y los temas con sus preguntas en `<details>`, dibujados con `buscarPreguntas`, con el estado "sin resultados" y el botón que lleva al formulario. Se comprueba leyendo el archivo y, a mano, buscando "tarjeta", "ENTRADA" y una palabra inexistente.
+- [x] 2.2 Pasar el formulario al final, con `id="contacto"`, **sin cambiar su lógica** (mismos campos, mismos mensajes, mismo `origen`). Se comprueba leyendo el archivo: el bloque de envío queda igual y el `origen` sigue aceptando solo los dos valores permitidos.
+- [x] 2.3 Usar `dibujarPie` en un `<footer>` vacío. Se comprueba leyendo el archivo.
+- [x] 2.4 (el link ya sale de `enlacesDelPie`; falta mirarlo a mano) Que el link "Enviar una consulta" del pie abra la página posicionada en el formulario (`soporte.html#contacto`). Se comprueba a mano.
 
 ## 3. Página del evento (`public/evento.html`)
 
