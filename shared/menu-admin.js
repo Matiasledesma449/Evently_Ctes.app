@@ -27,7 +27,8 @@
     const vistaActiva = rol === 'superadmin' && vistaComo === 'organizacion';
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
-    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes'];
+    // 'eventos' también: el superadmin real siempre ve ahí su Crear evento y las solicitudes (superadmin.html redirige ahí)
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
