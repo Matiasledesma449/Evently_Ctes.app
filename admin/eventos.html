@@ -60,8 +60,14 @@
                     </div>
 
                     <div>
-                        <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
-                        <input type="text" id="fecha" name="fecha" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: 15 Diciembre 2024">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="block text-sm font-medium text-gray-700">Días y horarios * (mínimo 1)</label>
+                            <button type="button" id="agregarDia" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-full transition flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">add</span> Agregar día
+                            </button>
+                        </div>
+                        <div id="diasContainer"></div>
+                        <p class="text-xs text-gray-400 mt-2">Si la hora de fin es menor que la de inicio, se entiende que el evento termina al día siguiente.</p>
                     </div>
 
                     <div>
@@ -84,9 +90,31 @@
                         <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP); se achica sola. Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
                     </div>
 
-                    <div>
-                        <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                        <textarea id="descripcion" name="descripcion" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Describe el evento, actividades, etc."></textarea>
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700">Sobre el evento</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="detalleActividad" class="block text-xs text-gray-500 mb-1">Actividad *</label>
+                                <input type="text" id="detalleActividad" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Baile con DJ en vivo">
+                            </div>
+                            <div>
+                                <label for="detalleTipo" class="block text-xs text-gray-500 mb-1">Tipo de evento *</label>
+                                <select id="detalleTipo" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none"></select>
+                                <input type="text" id="detalleTipoOtro" maxlength="500" class="hidden w-full border border-gray-300 rounded-lg px-4 py-2 mt-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="¿Qué tipo de evento es?">
+                            </div>
+                            <div>
+                                <label for="detalleRequisitos" class="block text-xs text-gray-500 mb-1">Requisitos</label>
+                                <input type="text" id="detalleRequisitos" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Llevar DNI">
+                            </div>
+                            <div>
+                                <label for="detalleEdad" class="block text-xs text-gray-500 mb-1">Edad</label>
+                                <input type="text" id="detalleEdad" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Mayores de 18 años">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="descripcion" class="block text-xs text-gray-500 mb-1">Algo más para contarle al público (opcional)</label>
+                            <textarea id="descripcion" name="descripcion" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Más información del evento."></textarea>
+                        </div>
                     </div>
 
                     <div>
@@ -135,6 +163,7 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, armarDetalle } from "../shared/evento-datos.js";
 
         const form = document.getElementById('formSolicitud');
         const lotesContainer = document.getElementById('lotesContainer');
@@ -149,6 +178,9 @@
         const nombreArchivo = document.getElementById('nombreArchivo');
         const imagenUrlInput = document.getElementById('imagenUrl');
         const modoDirecto = new URLSearchParams(window.location.search).get('modo') === 'directo';
+        const diasContainer = document.getElementById('diasContainer');
+        const selectTipo = document.getElementById('detalleTipo');
+        const inputTipoOtro = document.getElementById('detalleTipoOtro');
 
         if (modoDirecto) {
             document.title = 'Evently - Crear evento';
@@ -215,6 +247,76 @@
 
         btnAgregarLote.addEventListener('click', agregarLote);
         asignarEventosEliminar();
+
+        // ============ DÍAS Y HORARIOS ============
+        const CLASE_CAMPO = 'border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none';
+
+        function crearCampoDia(etiqueta, tipo, campo) {
+            const contenedor = document.createElement('label');
+            contenedor.className = 'block text-xs text-gray-500';
+            contenedor.append(etiqueta);
+            const input = document.createElement('input');
+            input.type = tipo;
+            input.dataset.campo = campo;
+            input.className = 'w-full mt-1 text-sm text-gray-800 ' + CLASE_CAMPO;
+            contenedor.appendChild(input);
+            return contenedor;
+        }
+
+        function agregarDia() {
+            const item = document.createElement('div');
+            item.className = 'lote-item';
+            item.dataset.dia = '';
+            const cabecera = document.createElement('div');
+            cabecera.className = 'flex justify-between items-start';
+            const titulo = document.createElement('h4');
+            titulo.className = 'font-medium text-gray-700';
+            const quitar = document.createElement('button');
+            quitar.type = 'button';
+            quitar.className = 'text-red-500 hover:text-red-700 text-sm font-medium';
+            quitar.textContent = 'Eliminar';
+            quitar.addEventListener('click', () => {
+                if (diasContainer.children.length <= 1) {
+                    alert('Debe haber al menos un día.');
+                    return;
+                }
+                item.remove();
+                numerarDias();
+            });
+            cabecera.append(titulo, quitar);
+            const grilla = document.createElement('div');
+            grilla.className = 'grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3';
+            grilla.append(crearCampoDia('Fecha', 'date', 'fecha'), crearCampoDia('Hora de inicio', 'time', 'horaInicio'), crearCampoDia('Hora de fin', 'time', 'horaFin'));
+            item.append(cabecera, grilla);
+            diasContainer.appendChild(item);
+            numerarDias();
+        }
+
+        function numerarDias() {
+            diasContainer.querySelectorAll('[data-dia] h4').forEach((titulo, idx) => { titulo.textContent = `Día ${idx + 1}`; });
+        }
+
+        function leerDias() {
+            return [...diasContainer.querySelectorAll('[data-dia]')].map(item => ({
+                fecha: item.querySelector('[data-campo="fecha"]').value,
+                horaInicio: item.querySelector('[data-campo="horaInicio"]').value,
+                horaFin: item.querySelector('[data-campo="horaFin"]').value
+            }));
+        }
+
+        function reiniciarDias() {
+            diasContainer.replaceChildren();
+            agregarDia();
+        }
+
+        document.getElementById('agregarDia').addEventListener('click', agregarDia);
+        reiniciarDias();
+
+        // ============ DETALLE ============
+        TIPOS_DE_EVENTO.forEach(tipo => selectTipo.appendChild(new Option(tipo, tipo)));
+        const OTRO = TIPOS_DE_EVENTO[TIPOS_DE_EVENTO.length - 1];
+        function mostrarTipoOtro() { inputTipoOtro.classList.toggle('hidden', selectTipo.value !== OTRO); }
+        selectTipo.addEventListener('change', mostrarTipoOtro);
 
         // ============ IMAGEN ============
         // La foto no se sube a ningún servicio: se achica y queda guardada dentro del propio evento (campo "imagen").
@@ -325,12 +427,26 @@
 
             try {
                 const nombre = document.getElementById('nombre').value.trim();
-                const fecha = document.getElementById('fecha').value.trim();
                 const lugar = document.getElementById('lugar').value.trim();
                 const descripcion = document.getElementById('descripcion').value.trim();
                 const imagenUrl = imagenUrlInput.value.trim();
 
-                if (!nombre || !fecha || !lugar) throw new Error('Nombre, fecha y lugar son obligatorios.');
+                if (!nombre || !lugar) throw new Error('Nombre y lugar son obligatorios.');
+
+                const problemaDias = validarDias(leerDias());
+                if (problemaDias) throw new Error(problemaDias);
+                const dias = normalizarDias(leerDias());
+                const fecha = fechaDeTexto(dias);
+
+                const tipo = selectTipo.value === OTRO ? inputTipoOtro.value.trim() : selectTipo.value;
+                const detalle = armarDetalle({
+                    actividad: document.getElementById('detalleActividad').value,
+                    tipo,
+                    requisitos: document.getElementById('detalleRequisitos').value,
+                    edad: document.getElementById('detalleEdad').value
+                });
+                if (!detalle.actividad) throw new Error('Contá cuál es la actividad del evento.');
+                if (!detalle.tipo) throw new Error('Elegí el tipo de evento (si es "Otro", escribí cuál).');
 
                 const loteItems = document.querySelectorAll('.lote-item');
                 const lotes = [];
@@ -359,9 +475,10 @@
                 if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear evento.');
 
                 const evento = {
-                    nombre, fecha, lugar,
+                    nombre, fecha, dias, lugar,
                     imagen: imagenUrl || '',
                     descripcion: descripcion || '',
+                    detalle,
                     lotes,
                     estado: modoDirecto ? 'publicado' : 'pendiente',
                     creadoPor: user.uid,
@@ -412,6 +529,8 @@
             avisoImagen('');
             versionImagen++;
             imagenPreparando = false;
+            reiniciarDias();
+            setTimeout(mostrarTipoOtro, 0); // el desplegable vuelve a su primer valor después del reinicio
         });
     </script>
 

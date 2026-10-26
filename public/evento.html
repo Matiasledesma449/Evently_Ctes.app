@@ -134,6 +134,7 @@
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
         import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
+        import { resumenDeDias, detalleParaMostrar } from "../shared/evento-datos.js";
 
         // El aviso del paso de pago nombra las formas de pago desde la lista compartida
         document.getElementById('formasDePago').textContent = textoDeFormasDePago();
@@ -224,18 +225,27 @@
         }
 
         function renderEvento(evento) {
+            const renglonesDeDias = resumenDeDias(evento);
+            if (renglonesDeDias.length === 0) renglonesDeDias.push('Fecha no definida');
+            const htmlDeDias = renglonesDeDias.map((renglon, idx) => `
+                        <p class="text-gray-500 flex items-center gap-2 ${idx === 0 ? 'mt-2' : ''}">
+                            <span class="material-symbols-outlined">${idx === 0 ? 'calendar_month' : 'event'}</span> ${escaparHtml(renglon)}
+                        </p>`).join('');
+            const filasDeDetalle = detalleParaMostrar(evento);
+            const htmlDeDetalle = filasDeDetalle.length === 0
+                ? `<p class="text-gray-600 mt-4">${escaparHtml('¡No te lo pierdas!')}</p>`
+                : filasDeDetalle.map((fila, idx) => `
+                        <p class="text-gray-600 ${idx === 0 ? 'mt-4' : 'mt-2'}">${fila.titulo ? `<span class="font-medium text-gray-700">${escaparHtml(fila.titulo)}:</span> ` : ''}${escaparHtml(fila.texto)}</p>`).join('');
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     ${htmlDeImagenEvento(evento, { clases: 'h-64' })}
                     <div class="p-6">
                         <h1 class="text-3xl font-bold text-gray-800">${escaparHtml(evento.nombre || 'Evento sin nombre')}</h1>
-                        <p class="text-gray-500 flex items-center gap-2 mt-2">
-                            <span class="material-symbols-outlined">calendar_month</span> ${escaparHtml(evento.fecha || 'Fecha no definida')}
-                        </p>
+                        ${htmlDeDias}
                         <p class="text-gray-500 flex items-center gap-2">
                             <span class="material-symbols-outlined">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                         </p>
-                        <p class="text-gray-600 mt-4">${escaparHtml(evento.descripcion || '¡No te lo pierdas!')}</p>
+                        ${htmlDeDetalle}
                     </div>
                 </div>
             `;
