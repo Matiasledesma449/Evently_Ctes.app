@@ -190,7 +190,7 @@
     <script type="module">
         import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago, seccionesDelPdf } from "../shared/ventas-utils.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago, seccionesDelPdf, nombreDeArchivoDeReporte } from "../shared/ventas-utils.js";
         import { nombreParaMostrar } from "../shared/formas-de-pago.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
@@ -493,6 +493,7 @@
                             <p style="margin: 4px 0 0 0; font-size: 11px; color: #6b7280;"><strong>Filtros:</strong> ${filtrosTexto}</p>
                         </div>
                     </div>
+                    <h2 style="font-size: 20px; color: #1f2937; margin: 0 0 20px 0;">Evento: ${escaparHtml(nombreDeLoElegido())}</h2>
             `;
 
             bloques.resumen = `
@@ -676,7 +677,7 @@
 
             const opt = {
                 margin: [0.4, 0.4, 0.4, 0.4],
-                filename: `Evently_Reporte_${new Date().toISOString().slice(0,10)}.pdf`,
+                filename: nombreDeArchivoDeReporte(EN_TODOS ? '' : nombreDeLoElegido()),
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
