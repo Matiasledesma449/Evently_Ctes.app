@@ -21,14 +21,14 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Eventos del superadmin y comentarios de la organización
 
-- [ ] 4.1 En `admin/eventos-seleccion.html`: para el superadmin, lista directa de eventos con el nombre de la organización y selector de organización; sacar la grilla de organizaciones. Se comprueba leyendo el archivo.
-- [ ] 4.2 En `admin/eventos-seleccion.html`: para la organización, mostrar el último comentario del superadmin en la tarjeta de la solicitud, escapado. Se comprueba leyendo el archivo.
+- [x] 4.1 En `admin/eventos-seleccion.html`: para el superadmin, lista directa de eventos con el nombre de la organización y selector de organización; sacar la grilla de organizaciones. Se comprueba leyendo el archivo.
+- [x] 4.2 En `admin/eventos-seleccion.html`: para la organización, mostrar el último comentario del superadmin en la tarjeta de la solicitud, escapado. Se comprueba leyendo el archivo.
 
 ## 5. Revisión final
 
 - [ ] 5.1 Probar a mano en el navegador los seis pasos de "Cómo se verifica a mano" de `proposal.md`. (Necesita navegador y una cuenta de superadmin y una de organización: queda para la persona.)
 - [ ] 5.2 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas.
-- [ ] 5.3 Actualizar `CLAUDE.md` con `shared/solicitudes-evento.js`, la prueba 20 y que ya no existe el Panel global, sin claves, correos ni rutas personales.
+- [x] 5.3 Actualizar `CLAUDE.md` con `shared/solicitudes-evento.js`, la prueba 20 y que ya no existe el Panel global, sin claves, correos ni rutas personales.
 
 ## Workflow follow-up
 

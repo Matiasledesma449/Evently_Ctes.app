@@ -13,14 +13,6 @@
         .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
         .hover-card { transition: box-shadow 0.2s, transform 0.2s; }
         .hover-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-        .org-card {
-            cursor: pointer;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-        }
-        .org-card:hover { border-color: #a78bfa; }
     </style>
     <link rel="stylesheet" href="../shared/admin-shell.css" />
     <link rel="prefetch" href="dashboard.html" />
@@ -47,13 +39,6 @@
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
 
-            <!-- Botón volver -->
-            <div id="btnVolverOrg" class="hidden mb-4">
-                <button onclick="volverAOrganizaciones()" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">arrow_back</span> Volver a organizaciones
-                </button>
-            </div>
-
             <!-- Header -->
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
@@ -72,6 +57,11 @@
                         <input id="searchInput" type="text" placeholder="Buscar evento..." class="w-48 sm:w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                     </div>
                     
+                    <!-- Filtro por organización (solo superadmin) -->
+                    <select id="organizacionFilter" aria-label="Filtrar por organización" class="hidden border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                        <option value="todas">Todas las organizaciones</option>
+                    </select>
+
                     <!-- Filtros ajustados -->
                     <select id="estadoFilter" class="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
                         <option value="todos">Todos</option>
@@ -96,6 +86,7 @@
         import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
+        import { ultimoComentario } from "../shared/solicitudes-evento.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
         const searchInput = document.getElementById('searchInput');
@@ -103,7 +94,7 @@
         const filtrosContainer = document.getElementById('filtrosContainer');
         const tituloPagina = document.getElementById('tituloPagina');
         const subtituloPagina = document.getElementById('subtituloPagina');
-        const btnVolverOrg = document.getElementById('btnVolverOrg');
+        const organizacionFilter = document.getElementById('organizacionFilter');
         const btnSolicitarEventoCliente = document.getElementById('btnSolicitarEventoCliente');
 
         // Estado
@@ -112,7 +103,6 @@
         let organizaciones = [];
         let eventos = [];
         let solicitudes = []; // Nuevo array para peticiones en limbo
-        let orgSeleccionada = null;
 
         // ✅ Restaurar filtro de estado guardado
         (function restaurarFiltroEstado() {
@@ -135,9 +125,11 @@
             }
 
             if (soySuperAdmin) {
-                tituloPagina.textContent = 'Organizaciones';
-                subtituloPagina.textContent = 'Seleccioná una organización para ver sus eventos';
-                filtrosContainer.classList.add('hidden');
+                // El superadmin ve los eventos de todas las organizaciones directamente
+                tituloPagina.textContent = 'Eventos';
+                subtituloPagina.textContent = 'Todos los eventos de todas las organizaciones';
+                filtrosContainer.classList.remove('hidden');
+                organizacionFilter.classList.remove('hidden');
                 cargarOrganizaciones();
             } else {
                 tituloPagina.textContent = 'Eventos';
@@ -149,7 +141,7 @@
         });
 
         // =====================================================
-        // SUPERADMIN: ORGANIZACIONES (Queda intacto)
+        // SUPERADMIN: EVENTOS DE TODAS LAS ORGANIZACIONES
         // =====================================================
         function cargarOrganizaciones() {
             onSnapshot(collection(db, "usuarios"), (snapshot) => {
@@ -161,16 +153,13 @@
                     }
                 });
                 organizaciones.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-
-                if (eventos.length === 0) {
-                    onSnapshot(collection(db, "eventos"), (snapEv) => {
-                        eventos = [];
-                        snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
-                        renderizarVista();
-                    });
-                } else {
-                    renderizarVista();
-                }
+                rellenarSelectorDeOrganizaciones();
+                renderizarVista();
+            });
+            onSnapshot(collection(db, "eventos"), (snapEv) => {
+                eventos = [];
+                snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
+                renderizarVista();
             });
         }
 
@@ -209,109 +198,38 @@
         // =====================================================
         function renderizarVista() {
             if (soySuperAdmin) {
-                if (orgSeleccionada) {
-                    renderizarEventosDeOrg(orgSeleccionada);
-                } else {
-                    renderizarOrganizaciones();
-                }
+                renderizarEventosDelSuperadmin();
             } else {
                 renderizarEventosCliente();
             }
         }
 
-        // ✅ Vista: Organizaciones
-        function renderizarOrganizaciones() {
-            filtrosContainer.classList.add('hidden');
-            btnVolverOrg.classList.add('hidden');
-            tituloPagina.textContent = 'Organizaciones';
-            subtituloPagina.textContent = `${organizaciones.length} organizaciones registradas`;
-
-            if (organizaciones.length === 0) {
-                contenidoContainer.innerHTML = `
-                    <div class="text-center py-12">
-                        <span class="material-symbols-outlined text-6xl text-gray-300">corporate_fare</span>
-                        <p class="text-gray-400 mt-3">No hay organizaciones registradas.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            contenidoContainer.innerHTML = `
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${organizaciones.map(org => {
-                        const eventosOrg = eventos.filter(ev => 
-                            (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
-                            (ev.creadoPor && ev.creadoPor === org.id) ||
-                            (ev.correo && ev.correo === org.email)
-                        );
-                        const activos = eventosOrg.filter(ev => esActivo(ev)).length;
-                        const inactivos = eventosOrg.length - activos;
-                        const inicial = (org.nombre || 'O').charAt(0).toUpperCase();
-
-                        return `
-                            <div class="org-card hover-card" onclick="seleccionarOrganizacion('${org.id}')">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                                        <span class="font-bold text-violet-700 text-lg">${inicial}</span>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <h3 class="font-semibold text-gray-800 truncate">${org.nombre || 'Sin nombre'}</h3>
-                                        <p class="text-xs text-gray-500 truncate">${org.email || ''}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
-                                    <div>
-                                        <p class="text-[10px] text-gray-500 uppercase">Activos</p>
-                                        <p class="text-lg font-bold text-green-600">${activos}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] text-gray-500 uppercase">Inactivos</p>
-                                        <p class="text-lg font-bold text-gray-400">${inactivos}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] text-gray-500 uppercase">Total</p>
-                                        <p class="text-lg font-bold text-gray-800">${eventosOrg.length}</p>
-                                    </div>
-                                </div>
-                                <div class="mt-4 text-violet-600 text-sm font-medium flex items-center justify-between">
-                                    <span>Ver eventos</span>
-                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-
-        window.seleccionarOrganizacion = function(orgId) {
-            const org = organizaciones.find(o => o.id === orgId);
-            if (!org) return;
-            orgSeleccionada = org;
-            filtrosContainer.classList.remove('hidden');
-            btnVolverOrg.classList.remove('hidden');
-            renderizarVista();
-        };
-
-        window.volverAOrganizaciones = function() {
-            orgSeleccionada = null;
-            searchInput.value = '';
-            estadoFilter.value = 'todos';
-            renderizarVista();
-        };
-
-        function renderizarEventosDeOrg(org) {
-            tituloPagina.textContent = org.nombre || 'Organización';
-            subtituloPagina.textContent = org.email || '';
-
-            let eventosFiltrados = eventos.filter(ev => 
+        // La organización a la que pertenece un evento, o undefined si no se puede saber
+        function organizacionDeEvento(ev) {
+            return organizaciones.find(org =>
                 (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
                 (ev.creadoPor && ev.creadoPor === org.id) ||
                 (ev.correo && ev.correo === org.email)
             );
+        }
 
-            eventosFiltrados = aplicarFiltrosBusqueda(eventosFiltrados);
-            renderizarListaEventos(eventosFiltrados, `Esta organización no tiene eventos.`);
+        // Selector "Todas las organizaciones": una opción por organización, sin perder lo elegido
+        function rellenarSelectorDeOrganizaciones() {
+            const elegida = organizacionFilter.value;
+            organizacionFilter.replaceChildren(new Option('Todas las organizaciones', 'todas'));
+            organizaciones.forEach(org => organizacionFilter.add(new Option(org.nombre || org.email || 'Sin nombre', org.id)));
+            organizacionFilter.value = organizaciones.some(org => org.id === elegida) ? elegida : 'todas';
+        }
+
+        // ✅ Vista del superadmin: todos los eventos, con la organización de cada uno
+        function renderizarEventosDelSuperadmin() {
+            let lista = eventos;
+            if (organizacionFilter.value !== 'todas') {
+                lista = lista.filter(ev => organizacionDeEvento(ev)?.id === organizacionFilter.value);
+            }
+            lista = aplicarFiltrosBusqueda(lista);
+            subtituloPagina.textContent = `${lista.length} ${lista.length === 1 ? 'evento' : 'eventos'}`;
+            renderizarListaEventos(lista, 'No hay eventos para mostrar.');
         }
 
         // ✅ Vista: Eventos y Solicitudes combinados del cliente
@@ -420,6 +338,22 @@
                             `;
                         }
 
+                        // El superadmin ve de qué organización es cada evento
+                        const organizacionHTML = soySuperAdmin
+                            ? `<p class="text-sm text-violet-600 font-medium flex items-center gap-2 mb-2 truncate">
+                                    <span class="material-symbols-outlined text-[16px]">corporate_fare</span> ${escaparHtml(organizacionDeEvento(evento)?.nombre || 'Organización no identificada')}
+                                </p>`
+                            : '';
+
+                        // La organización ve el último comentario del superadmin en sus solicitudes (no en los eventos publicados)
+                        const comentario = estado === 'publicado' ? null : ultimoComentario(evento);
+                        const comentarioHTML = comentario
+                            ? `<div class="mt-3 p-3 bg-violet-50 rounded-lg text-sm text-violet-900 border border-violet-100">
+                                    <strong class="block mb-1">Comentario de Evently:</strong>
+                                    ${escaparHtml(comentario.texto)}
+                                </div>`
+                            : '';
+
                         return `
                             <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden flex flex-col">
                                 <div class="relative">
@@ -438,8 +372,10 @@
                                         <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                                     </p>
                                     
+                                    ${organizacionHTML}
                                     ${motivoHTML}
-                                    
+                                    ${comentarioHTML}
+
                                     <div class="mt-auto pt-5">
                                         ${botonHTML}
                                     </div>
@@ -451,26 +387,8 @@
             `;
         }
 
-        // Se usa solo para los cálculos de la vista de superadmin (organizaciones)
-        function esActivo(evento) {
-            if (evento.activo !== undefined) return evento.activo;
-            if (evento.fecha) {
-                const hoy = new Date();
-                const partes = evento.fecha.split(' ');
-                if (partes.length === 3) {
-                    const meses = { 'Enero':0, 'Febrero':1, 'Marzo':2, 'Abril':3, 'Mayo':4, 'Junio':5, 'Julio':6, 'Agosto':7, 'Septiembre':8, 'Octubre':9, 'Noviembre':10, 'Diciembre':11 };
-                    const dia = parseInt(partes[0]);
-                    const mes = meses[partes[1]];
-                    const anio = parseInt(partes[2]);
-                    if (!isNaN(dia) && mes !== undefined && !isNaN(anio)) {
-                        return new Date(anio, mes, dia) >= hoy;
-                    }
-                }
-            }
-            return true;
-        }
-
         searchInput.addEventListener('input', renderizarVista);
+        organizacionFilter.addEventListener('change', renderizarVista);
         estadoFilter.addEventListener('change', function() {
             localStorage.setItem('eventoEstadoFilter', this.value);
             renderizarVista();
