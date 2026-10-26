@@ -26,14 +26,14 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Inicio (`public/index.html`)
 
-- [ ] 4.1 Cambiar `.event-image` a proporción de afiche (`aspect-ratio: 4 / 5`, `object-fit: cover`) y sacar el alto mínimo del cuerpo de la tarjeta; compactar nombre, fecha y lugar. Se comprueba a mano con eventos con foto y sin foto, en escritorio y en 375 px.
-- [ ] 4.2 Cambiar los links de ayuda del inicio para que lleven al Centro de ayuda (`origen=public/index.html`) y decidir si el modal de consulta queda como "Enviar una consulta" o lo reemplaza el pie. Se comprueba a mano.
-- [ ] 4.3 Usar `dibujarPie` en el pie. Se comprueba leyendo el archivo.
-- [ ] 4.4 Comprobar que el carrusel de destacados y los mensajes de carga y de "sin eventos" siguen igual. Se comprueba a mano.
+- [x] 4.1 (hecho en el código; falta mirarlo a mano) Cambiar `.event-image` a proporción de afiche (`aspect-ratio: 4 / 5`, `object-fit: cover`) y sacar el alto mínimo del cuerpo de la tarjeta; compactar nombre, fecha y lugar. Se comprueba a mano con eventos con foto y sin foto, en escritorio y en 375 px.
+- [x] 4.2 (decidido: el pie y los links llevan al Centro de ayuda y el modal ya no se carga en inicio ni evento; `contacto-modal.js` no se borró) Cambiar los links de ayuda del inicio para que lleven al Centro de ayuda (`origen=public/index.html`) y decidir si el modal de consulta queda como "Enviar una consulta" o lo reemplaza el pie. Se comprueba a mano.
+- [x] 4.3 Usar `dibujarPie` en el pie. Se comprueba leyendo el archivo.
+- [x] 4.4 (el código del carrusel y de los mensajes no se tocó; falta mirarlo a mano) Comprobar que el carrusel de destacados y los mensajes de carga y de "sin eventos" siguen igual. Se comprueba a mano.
 
 ## 5. Revisión final
 
-- [ ] 5.1 Correr `node pruebas/ejecutar-todas.js`: todo pasa, con las pruebas 22 y 23 incluidas.
+- [x] 5.1 Correr `node pruebas/ejecutar-todas.js`: todo pasa, con las pruebas 22 y 23 incluidas.
 - [ ] 5.2 Prueba a mano en navegador (necesita navegador; no la hace la nube): inicio, un evento con mapa y varios días, un evento viejo, Soporte con las tres búsquedas, y una compra de prueba hasta la página de Mercado Pago para confirmar que el pago sigue igual. Se comprueba mirando 375 px y escritorio.
 - [ ] 5.3 La persona revisa y corrige el texto de las preguntas frecuentes (en especial lo marcado "confirmar" en `design.md`) y decide cuándo sumar los links legales.
-- [ ] 5.4 Actualizar `CLAUDE.md` con `shared/preguntas-frecuentes.js` y `shared/pie-publico.js`. Se comprueba leyendo el archivo.
+- [x] 5.4 Actualizar `CLAUDE.md` con `shared/preguntas-frecuentes.js` y `shared/pie-publico.js`. Se comprueba leyendo el archivo.

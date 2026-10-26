@@ -33,7 +33,7 @@
             border-color: #c4b5fd;
         }
         .event-image {
-            height: 208px;
+            aspect-ratio: 4 / 5; /* el afiche manda: proporción vertical de afiche */
             background: #f3f0ff;
             position: relative;
             overflow: hidden;
@@ -154,9 +154,9 @@
             <div class="flex items-center gap-2">
                 <span class="text-2xl font-bold text-violet-600">Evently</span>
             </div>
-            <button type="button" data-open-consulta data-origen="public/index.html" class="support-link border-0 bg-transparent">
-                <span class="material-symbols-outlined text-sm">help</span> Soporte
-            </button>
+            <a href="soporte.html?origen=public/index.html" class="support-link">
+                <span class="material-symbols-outlined text-sm">help</span> Ayuda
+            </a>
         </div>
     </header>
 
@@ -215,16 +215,14 @@
         </section>
         <section class="mt-10 border-t border-gray-200 py-6 text-center">
             <p class="text-sm text-gray-600">¿Necesitás ayuda con una compra?</p>
-            <button type="button" data-open-consulta data-origen="public/index.html" class="mt-2 font-semibold text-violet-700 hover:text-violet-900">
-                Enviar una consulta
-            </button>
+            <a href="soporte.html?origen=public/index.html" class="inline-block mt-2 font-semibold text-violet-700 hover:text-violet-900">
+                Ir al Centro de ayuda
+            </a>
         </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 py-4 text-center footer-text">
-        © 2024 Evently by Bali Group
-    </footer>
+    <footer id="pie" class="bg-white border-t border-gray-200 py-4 text-center footer-text"></footer>
 
     <!-- Importar Firebase (módulo) -->
     <script type="module" src="../shared/firebase-init.js"></script>
@@ -232,6 +230,9 @@
     <script type="module">
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { imagenDelEvento } from "../shared/imagen-evento.js";
+        import { dibujarPie } from "../shared/pie-publico.js";
+
+        dibujarPie(document.getElementById('pie'), 'inicio');
 
         const db = window.db;
         const container = document.getElementById('eventosContainer');
@@ -358,13 +359,13 @@
             }
 
             const body = document.createElement('div');
-            body.className = 'p-4 flex flex-col min-h-[174px]';
+            body.className = 'p-4 flex flex-col';
             const title = document.createElement('h3');
-            title.className = 'text-lg font-bold leading-snug text-gray-900 line-clamp-2';
+            title.className = 'text-base font-bold leading-snug text-gray-900 line-clamp-2';
             title.textContent = evento.nombre || 'Sin nombre';
 
             const details = document.createElement('div');
-            details.className = 'mt-3 space-y-2';
+            details.className = 'mt-2 space-y-1';
             const dateRow = document.createElement('p');
             dateRow.className = 'event-meta';
             dateRow.append(crearIcono('calendar_month'), document.createTextNode(fechaLegible(evento)));
@@ -374,7 +375,7 @@
             details.append(dateRow, placeRow);
 
             const actions = document.createElement('div');
-            actions.className = 'mt-auto pt-4 flex items-center justify-between gap-3';
+            actions.className = 'mt-auto pt-3 flex items-center justify-between gap-3';
             const precio = Number(evento.lotes?.[0]?.precio);
             if (Number.isFinite(precio) && precio > 0) {
                 const price = document.createElement('span');
@@ -503,6 +504,5 @@
 
         cargarEventos();
     </script>
-    <script type="module" src="contacto-modal.js"></script>
 </body>
 </html>
