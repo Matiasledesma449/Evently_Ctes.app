@@ -9,7 +9,7 @@
     import { crearImagenEvento } from "../shared/imagen-evento.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
-        serverTimestamp, getDoc, getDocs
+        serverTimestamp, getDoc, getDocs, deleteField
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -340,6 +340,8 @@
             lugar: document.getElementById('editarLugarSolicitud').value.trim(),
             lotes
         };
+        // Si cambia el texto del lugar, el punto del mapa elegido antes ya no corresponde: se saca para no mostrar un mapa equivocado
+        if (solicitudActual.ubicacion && cambios.lugar !== (solicitudActual.lugar || '')) cambios.ubicacion = deleteField();
         if (!cambios.nombre || !cambios.fecha || !cambios.lugar) {
             errorEditarSolicitud.textContent = 'Nombre, fecha y lugar son obligatorios.';
             errorEditarSolicitud.classList.remove('hidden');

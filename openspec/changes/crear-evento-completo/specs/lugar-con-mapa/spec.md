@@ -1,6 +1,6 @@
 ## Purpose
 
-Define las sugerencias de lugar y el mapa del evento. El detalle depende de la pregunta 1 de `proposal.md`; lo de abajo vale para cualquier opción.
+Define las sugerencias de lugar y el mapa del evento. La persona eligió la opción A de la pregunta 1 de `proposal.md` (Leaflet, OpenStreetMap y Nominatim); el mapa se dibuja siempre que el evento tenga `ubicacion` (no hay botón de la opción C).
 
 ## ADDED Requirements
 
@@ -23,7 +23,7 @@ Si el servicio de sugerencias o mapa no responde, el formulario SHALL seguir per
 - **THEN** aparece un aviso corto y el campo sigue funcionando como texto
 
 ### Requirement: Mapa en la página del evento
-La página del evento SHALL mostrar el mapa (o el botón "Ver en el mapa" si se elige la opción C) solo cuando el evento tiene `ubicacion` o `lugar`.
+La página del evento SHALL mostrar el mapa solo cuando el evento tiene una `ubicacion` válida (latitud entre -90 y 90, longitud entre -180 y 180).
 
 #### Scenario: Evento viejo
 - **WHEN** se abre un evento sin `ubicacion`

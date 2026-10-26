@@ -117,3 +117,19 @@ export function detalleParaMostrar(evento) {
     if (descripcion) filas.push({ titulo: filas.length ? 'Más información' : '', texto: descripcion });
     return filas;
 }
+
+// Latitud y longitud de un lugar elegido en el mapa. Devuelve { lat, lng } (6 decimales) o null si no son números en rango.
+export function armarUbicacion(lat, lng) {
+    const aNumero = (valor) => (typeof valor === 'number' || (typeof valor === 'string' && valor.trim() !== '') ? Number(valor) : NaN);
+    const la = aNumero(lat);
+    const ln = aNumero(lng);
+    if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+    if (la < -90 || la > 90 || ln < -180 || ln > 180) return null;
+    return { lat: Math.round(la * 1e6) / 1e6, lng: Math.round(ln * 1e6) / 1e6 };
+}
+
+// La ubicación guardada en un evento, o null si no tiene o está mal (los eventos viejos no tienen)
+export function ubicacionDeEvento(evento) {
+    const u = evento && typeof evento.ubicacion === 'object' ? evento.ubicacion : null;
+    return u ? armarUbicacion(u.lat, u.lng) : null;
+}

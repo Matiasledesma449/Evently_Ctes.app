@@ -134,7 +134,8 @@
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
         import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
-        import { resumenDeDias, detalleParaMostrar } from "../shared/evento-datos.js";
+        import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
+        import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
 
         // El aviso del paso de pago nombra las formas de pago desde la lista compartida
         document.getElementById('formasDePago').textContent = textoDeFormasDePago();
@@ -231,6 +232,7 @@
                         <p class="text-gray-500 flex items-center gap-2 ${idx === 0 ? 'mt-2' : ''}">
                             <span class="material-symbols-outlined">${idx === 0 ? 'calendar_month' : 'event'}</span> ${escaparHtml(renglon)}
                         </p>`).join('');
+            const ubicacionDelEvento = ubicacionDeEvento(evento);
             const filasDeDetalle = detalleParaMostrar(evento);
             const htmlDeDetalle = filasDeDetalle.length === 0
                 ? `<p class="text-gray-600 mt-4">${escaparHtml('¡No te lo pierdas!')}</p>`
@@ -245,10 +247,17 @@
                         <p class="text-gray-500 flex items-center gap-2">
                             <span class="material-symbols-outlined">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                         </p>
+                        ${ubicacionDelEvento ? '<div id="mapaEvento" class="hidden mt-3 h-56 rounded-lg border border-gray-200"></div>' : ''}
                         ${htmlDeDetalle}
                     </div>
                 </div>
             `;
+            if (ubicacionDelEvento) mostrarMapa(ubicacionDelEvento);
+        }
+
+        // Mapa del lugar: solo si el evento tiene ubicación. Si Leaflet no carga, el lugar queda como texto.
+        async function mostrarMapa(ubicacion) {
+            if (await cargarLeaflet()) dibujarMapa(document.getElementById('mapaEvento'), ubicacion);
         }
 
         function renderLotes(lotes) {

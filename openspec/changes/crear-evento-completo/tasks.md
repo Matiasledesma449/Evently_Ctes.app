@@ -20,9 +20,10 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Lugar con sugerencias y mapa (espera la respuesta a la pregunta 1)
 
-- [ ] 4.1 Hacer el campo de lugar según la opción elegida (A, B o C) y guardar `ubicacion` si corresponde.
-- [ ] 4.2 Mostrar el mapa o el botón en `public/evento.html`.
-- [ ] 4.3 Agregar a `pruebas/19-evento-datos.js` los casos de las especificaciones de `lugar-con-mapa`.
+- [x] 4.1 (La persona eligió A el 2026-10-26.) Campo de lugar con sugerencias de Nominatim y mapa de Leaflet (`shared/lugar-mapa.js`, usado en `admin/eventos.html`); se guarda `ubicacion` solo si se eligió una sugerencia. En `admin/aprobaciones.js`, si se edita el texto del lugar de una solicitud, se borra `ubicacion`. Se comprueba leyendo los archivos.
+- [x] 4.2 Mostrar el mapa en `public/evento.html` solo si el evento tiene `ubicacion` (Leaflet se carga recién en ese caso). Se comprueba con `node pruebas/ejecutar-todas.js` y leyendo el archivo.
+- [x] 4.3 Agregar a `pruebas/19-evento-datos.js` los casos de ubicación (`armarUbicacion` y `ubicacionDeEvento`). Se comprueba con `node pruebas/19-evento-datos.js`.
+- [ ] 4.4 Probar a mano en el navegador: escribir un lugar, elegir una sugerencia y ver el mapa; con la red cortada, que el campo siga funcionando como texto. (Necesita navegador: queda para la persona.)
 
 ## 5. Revisión final
 

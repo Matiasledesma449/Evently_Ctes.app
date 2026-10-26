@@ -13,7 +13,7 @@ const verificar = (nombre, condicion, detalle = '') => {
 
 // shared/evento-datos.js es un modulo del navegador: se le quitan los "export" para cargarlo aca
 const codigo = fs.readFileSync(path.join(RAIZ, 'shared', 'evento-datos.js'), 'utf8').replace(/^export /gm, '');
-const E = vm.runInNewContext(codigo + '\n;({ TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, resumenDeDias, armarDetalle, detalleParaMostrar })');
+const E = vm.runInNewContext(codigo + '\n;({ TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, resumenDeDias, armarDetalle, detalleParaMostrar, armarUbicacion, ubicacionDeEvento })');
 const lista = (x) => JSON.parse(JSON.stringify(x)); // saca los objetos del otro contexto para poder compararlos
 
 const dia1 = { fecha: '2026-12-15', horaInicio: '21:00', horaFin: '05:00' };
@@ -58,6 +58,16 @@ verificar('M3 con detalle y descripción, la descripción va al final como "Más
 verificar('M4 sin nada no da filas y no falla', E.detalleParaMostrar({}).length === 0 && E.detalleParaMostrar(null).length === 0);
 verificar('M5 el texto con etiquetas se devuelve tal cual (quien lo muestra lo escapa)', E.detalleParaMostrar({ detalle: { actividad: '<b>hola</b>' } })[0].texto === '<b>hola</b>');
 verificar('M6 los tipos ofrecidos incluyen "Otro" al final', E.TIPOS_DE_EVENTO[E.TIPOS_DE_EVENTO.length - 1] === 'Otro' && E.TIPOS_DE_EVENTO.length === 6);
+
+// ---------- Ubicación (lugar con mapa) ----------
+verificar('U1 latitud y longitud válidas se guardan', JSON.stringify(lista(E.armarUbicacion(-28.25, -58.63))) === '{"lat":-28.25,"lng":-58.63}');
+verificar('U2 acepta números escritos como texto (lo que devuelve Nominatim)', JSON.stringify(lista(E.armarUbicacion('-28.2512345678', '-58.6312345678'))) === '{"lat":-28.251235,"lng":-58.631235}', JSON.stringify(E.armarUbicacion('-28.2512345678', '-58.6312345678')));
+verificar('U3 fuera de rango da null', E.armarUbicacion(91, 0) === null && E.armarUbicacion(0, 181) === null && E.armarUbicacion(-91, 0) === null);
+verificar('U4 vacío, texto o inválido da null', [[undefined, undefined], [null, null], ['', ''], ['a', 'b'], [NaN, 1], [Infinity, 1], [{}, []]].every(([a, b]) => E.armarUbicacion(a, b) === null));
+verificar('U5 el cero es una ubicación válida', E.armarUbicacion(0, 0) !== null);
+verificar('U6 un evento viejo (sin ubicación) da null y no falla', E.ubicacionDeEvento({}) === null && E.ubicacionDeEvento(null) === null && E.ubicacionDeEvento({ ubicacion: null }) === null && E.ubicacionDeEvento({ ubicacion: 'x' }) === null);
+verificar('U7 un evento con ubicación la devuelve', JSON.stringify(lista(E.ubicacionDeEvento({ lugar: 'Salón', ubicacion: { lat: -28.25, lng: -58.63 } }))) === '{"lat":-28.25,"lng":-58.63}');
+verificar('U8 un evento con ubicación rota no muestra mapa', E.ubicacionDeEvento({ ubicacion: { lat: 500, lng: 1 } }) === null && E.ubicacionDeEvento({ ubicacion: {} }) === null);
 
 if (mal) {
   console.log(`\n${mal} caso(s) mal.`);

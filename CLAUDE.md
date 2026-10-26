@@ -25,6 +25,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Variables de entorno (solo los nombres, los valores van en Vercel): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `SITE_URL`.
 - Formas de pago que se nombran en el sitio (Transferencia, Débito, Crédito; sin efectivo): lista en `shared/formas-de-pago.js`, probada en `pruebas/18-formas-de-pago.js`. Es solo texto para mostrar; lo que guarda el servidor no cambia.
 - Días con horario y detalle de un evento (`dias`, `detalle`; `fecha` sigue siendo el texto del primer día): funciones en `shared/evento-datos.js`, probadas en `pruebas/19-evento-datos.js`.
+- Lugar con sugerencias y mapa: `shared/lugar-mapa.js` (Leaflet + OpenStreetMap + Nominatim por CDN, sin clave); el evento guarda `ubicacion` (`lat`, `lng`) solo si se eligió una sugerencia.
 - Detalle del change: `openspec/changes/pagos-mercadopago/`.
 
 ## Datos y roles
