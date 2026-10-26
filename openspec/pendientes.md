@@ -6,7 +6,7 @@ Lista de pedidos que todavía no tienen change de OpenSpec. La usa el trabajo no
 
 - [x] 1. Selector de evento sin confusión: banner con el evento activo en cada página del panel; exportar y PDF dicen de qué evento son. (change: `evento-activo-en-todo-el-panel`)
 - [x] 2. Formas de pago: sacar "Efectivo" de todos los eventos; mostrar las formas reales (transferencia, débito, crédito); PDF con opciones elegibles. (change: `formas-de-pago-reales`)
-- [ ] 3. Crear evento: fechas y horas por día, lugar con sugerencias y mapa, descripción en campos separados (actividad, tipo, requisitos, edad).
+- [x] 3. Crear evento: fechas y horas por día, lugar con sugerencias y mapa, descripción en campos separados (actividad, tipo, requisitos, edad). (change: `crear-evento-completo`)
 - [ ] 4. Superadmin: eliminar "Panel global"; las solicitudes de evento pasan a "Crear evento" con aprobar, rechazar, comentar y contacto directo; al entrar ve los eventos directamente.
 - [ ] 5. Mensajes y Consultas públicas estilo WhatsApp: colores para nuevo, leído y respondido; estado vacío claro. "Nuevo mensaje" lista todas las organizaciones.
 - [ ] 6. Página de compra del comprador (diseño), manteniendo el violeta.
