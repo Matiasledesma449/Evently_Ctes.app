@@ -4,8 +4,8 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Funciones compartidas
 
-- [ ] 1.1 Crear `shared/evento-datos.js` con `normalizarDias`, `validarDias`, `fechaDeTexto`, `resumenDeDias`, `armarDetalle` y `detalleParaMostrar` (ver `design.md`). Se comprueba con `node -e`: dos días desordenados quedan ordenados, `fechaDeTexto` da `15 Diciembre 2026`, y un evento viejo da un solo renglón con su `fecha`.
-- [ ] 1.2 Crear `pruebas/19-evento-datos.js` con los casos de las especificaciones (sin días, hora de fin menor, fecha repetida, hora mal escrita, detalle con campos vacíos, evento viejo, texto con etiquetas). Se comprueba con `node pruebas/19-evento-datos.js` y `node pruebas/ejecutar-todas.js`.
+- [x] 1.1 Crear `shared/evento-datos.js` con `normalizarDias`, `validarDias`, `fechaDeTexto`, `resumenDeDias`, `armarDetalle` y `detalleParaMostrar` (ver `design.md`). Se comprueba con `node -e`: dos días desordenados quedan ordenados, `fechaDeTexto` da `15 Diciembre 2026`, y un evento viejo da un solo renglón con su `fecha`.
+- [x] 1.2 Crear `pruebas/19-evento-datos.js` con los casos de las especificaciones (sin días, hora de fin menor, fecha repetida, hora mal escrita, detalle con campos vacíos, evento viejo, texto con etiquetas). Se comprueba con `node pruebas/19-evento-datos.js` y `node pruebas/ejecutar-todas.js`.
 
 ## 2. Formulario
 

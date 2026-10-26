@@ -17,7 +17,7 @@ Un evento sin `dias` ni `detalle` (todos los viejos) se muestra como hoy.
 
 ## `shared/evento-datos.js`
 
-Archivo sin dependencias, usable en el navegador (`window.EventoDatos`) y en `node` (`module.exports`), como `shared/formas-de-pago.js`.
+Módulo de navegador sin dependencias (`export function ...`), como `shared/formas-de-pago.js`; la prueba le quita los `export` para cargarlo en `node`. También exporta `TIPOS_DE_EVENTO` para la lista del formulario.
 
 - `normalizarDias(dias)`: limpia la lista; descarta días sin fecha válida, ordena por fecha, devuelve `[]` si no hay nada.
 - `validarDias(dias)`: devuelve el primer problema en español o `''` si está bien (fecha obligatoria, horas con formato `HH:MM`, sin días repetidos).
