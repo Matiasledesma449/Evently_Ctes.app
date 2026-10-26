@@ -75,14 +75,14 @@
             icono: esAdmin ? 'chat' : 'support_agent',
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
-        { clave: 'consultas-publicas', rol: 'superadmin', clase: 'link-consultas', badge: 'badge-consultas-publicas', href: 'consultas-publicas.html', icono: 'contact_support', texto: 'Consultas públicas', corto: 'Consultas' },
         { clave: 'organizaciones', rol: 'superadmin', href: 'organizaciones.html', icono: 'corporate_fare', texto: 'Organizaciones', corto: 'Organiz.' },
         { clave: 'ver-como-organizacion', rol: 'superadmin', id: 'btnVerComoOrganizacion', idMovil: 'btnVerComoOrganizacionMobile', href: '#', icono: 'visibility', texto: 'Ver como organización', corto: 'Ver como' }
     ];
 
-    // La página actual: "soporte" y "mensajes" son la misma sección del menú
+    // La página actual: "soporte", "mensajes" y "consultas-publicas" son la misma sección del menú
+    // (para el superadmin, Mensajes tiene dos pestañas: Organizaciones y Consultas públicas)
     function esPaginaActual(seccion) {
-        if (seccion.soporte) return pagina === 'soporte' || pagina === 'mensajes';
+        if (seccion.soporte) return pagina === 'soporte' || pagina === 'mensajes' || pagina === 'consultas-publicas';
         return seccion.clave === pagina;
     }
 
@@ -205,6 +205,22 @@
         if (window.db && window.getDocs) llenarSelectorVista();
         else window.addEventListener('firebase-ready', llenarSelectorVista, { once: true });
     }
+
+    // ---- Pestañas de la sección Mensajes del superadmin: Organizaciones y Consultas públicas ----
+    // Todo el HTML es texto fijo de este archivo; los contadores los pone menu-rol.js con textContent.
+    window.dibujarPestanasMensajes = function (contenedor) {
+        if (!contenedor) return;
+        const pestana = (href, texto, clave, activa) => `
+            <a href="${href}" ${activa ? 'aria-current="page"' : ''} class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${activa ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-100'}">
+                <span>${texto}</span>
+                <span class="${clave} hidden min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold items-center justify-center ${activa ? 'bg-white text-violet-700' : 'bg-red-500 text-white'}">0</span>
+            </a>`;
+        contenedor.innerHTML = `
+            <nav class="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-gray-200 bg-white p-1 gap-1" aria-label="Mensajes de organizaciones o consultas públicas">
+                ${pestana('mensajes.html', 'Organizaciones', 'contador-pestana-mensajes', pagina === 'mensajes')}
+                ${pestana('consultas-publicas.html', 'Consultas públicas', 'contador-pestana-consultas', pagina === 'consultas-publicas')}
+            </nav>`;
+    };
 
     // Texto temporal en el aviso (por ejemplo, cuando se toca algo que solo usa una organización)
     let temporizadorAviso = null;

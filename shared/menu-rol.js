@@ -36,7 +36,9 @@ function aplicarRolVisual(rol) {
         const destino = enlace.dataset.navKey === 'soporte-mensajes'
             ? esAdmin ? 'mensajes.html' : 'soporte.html'
             : `${enlace.dataset.navKey}.html`;
-        const activo = paginaActual === destino;
+        // Consultas públicas es una pestaña de Mensajes: la sección activa sigue siendo Mensajes
+        const activo = paginaActual === destino
+            || (enlace.dataset.navKey === 'soporte-mensajes' && esAdmin && paginaActual === 'consultas-publicas.html');
         if (enlace.classList.contains('mobile-nav-link')) {
             enlace.classList.toggle('text-violet-600', activo);
             enlace.classList.toggle('text-gray-500', !activo);
@@ -102,10 +104,29 @@ function initRoles() {
     });
 }
 
+// Lo que se cuenta para la sección Mensajes del superadmin: sus dos pestañas y la suma en el menú
+let avisoMensajes = 0;   // mensajes sin leer de organizaciones + solicitudes de contraseña
+let avisoConsultas = 0;  // consultas públicas nuevas
+let esSuperadminAvisos = false;
+
+function pintarContador(selector, cantidad) {
+    document.querySelectorAll(selector).forEach(el => {
+        el.textContent = cantidad > 99 ? '99+' : String(cantidad);
+        el.classList.toggle('hidden', cantidad === 0);
+        el.classList.toggle('flex', cantidad > 0);
+    });
+}
+
+function pintarAvisos() {
+    actualizarBadge(esSuperadminAvisos ? avisoMensajes + avisoConsultas : avisoMensajes);
+    pintarContador('.contador-pestana-mensajes', avisoMensajes);
+    pintarContador('.contador-pestana-consultas', avisoConsultas);
+}
+
 function actualizarBadgeConsultasPublicas(esAdmin) {
     if (!esAdmin) return;
+    esSuperadminAvisos = true;
     const badges = [...document.querySelectorAll('.badge-consultas-publicas')];
-    if (badges.length === 0) return;
     const consultasNuevasQuery = query(
         collection(db, 'consultas_publicas'),
         where('estado', '==', 'nueva')
@@ -113,6 +134,8 @@ function actualizarBadgeConsultasPublicas(esAdmin) {
 
     onSnapshot(consultasNuevasQuery, snapshot => {
         const cantidad = snapshot.size;
+        avisoConsultas = cantidad;
+        pintarAvisos();
         badges.forEach(badge => {
             badge.textContent = cantidad > 99 ? '99+' : String(cantidad);
             badge.classList.toggle('hidden', cantidad === 0);
@@ -137,8 +160,8 @@ function escucharNoLeidos(miUid, esAdmin) {
     let totalSolicitudesPendientes = 0;
 
     function actualizarTotal() {
-        const total = totalMensajesNoLeidos + totalSolicitudesPendientes;
-        actualizarBadge(total);
+        avisoMensajes = totalMensajesNoLeidos + totalSolicitudesPendientes;
+        pintarAvisos(); // el menú suma también las consultas públicas (superadmin)
     }
 
     // 1. Contar mensajes no leídos (solo para superadmin)
