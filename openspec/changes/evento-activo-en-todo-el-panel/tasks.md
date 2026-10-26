@@ -17,7 +17,7 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 3. PDF de Reportes
 
-- [ ] 3.1 En `admin/reportes.html`, usar `nombreDeArchivoDeReporte` para el archivo del PDF y mostrar el evento arriba del documento. Se comprueba en la skill reemplazando `html2pdf` para leer lo que se le entrega: el nombre del archivo y el texto nombran el evento elegido, y con "Todos" dicen `Todos-los-eventos`.
+- [x] 3.1 En `admin/reportes.html`, usar `nombreDeArchivoDeReporte` para el archivo del PDF y mostrar el evento arriba del documento. Se comprueba en la skill reemplazando `html2pdf` para leer lo que se le entrega: el nombre del archivo y el texto nombran el evento elegido, y con "Todos" dicen `Todos-los-eventos`.
 
 ## 4. Revisión final
 
