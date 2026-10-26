@@ -99,6 +99,12 @@
                         <p><span class="text-gray-500">Lote:</span> <span id="resumenLote">-</span></p>
                         <p><span class="text-gray-500">Cantidad:</span> <span id="resumenCantidad">-</span></p>
                     </div>
+                    <!-- Solo se ve si el evento tiene costo de servicio -->
+                    <div id="filasServicio" class="hidden mt-2 space-y-1 text-sm">
+                        <p class="flex justify-between"><span class="text-gray-500">Entradas</span> <span id="resumenEntradas">$0</span></p>
+                        <p class="flex justify-between"><span class="text-gray-500" id="etiquetaServicio">Costo de servicio</span> <span id="resumenServicio">$0</span></p>
+                    </div>
+                    <p id="avisoServicio" class="hidden mt-2 text-xs text-gray-500">Si corresponde, el costo de servicio se suma en la página de pago.</p>
                     <div class="border-t border-gray-200 mt-3 pt-3 flex items-center justify-between">
                         <span class="text-sm text-gray-500">Total a pagar</span>
                         <span id="totalMostrado" class="text-2xl font-bold text-violet-600">$0</span>
@@ -146,6 +152,7 @@
         import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
         import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
         import { dibujarPie } from "../shared/pie-publico.js";
+        import { categoriaDeComision, desgloseDeCompra } from "../shared/comision.js";
 
         dibujarPie(document.getElementById('pie'), 'evento');
 
@@ -175,6 +182,11 @@
         const resumenEvento = document.getElementById('resumenEvento');
         const resumenLote = document.getElementById('resumenLote');
         const resumenCantidad = document.getElementById('resumenCantidad');
+        const filasServicio = document.getElementById('filasServicio');
+        const resumenEntradas = document.getElementById('resumenEntradas');
+        const etiquetaServicio = document.getElementById('etiquetaServicio');
+        const resumenServicio = document.getElementById('resumenServicio');
+        const avisoServicio = document.getElementById('avisoServicio');
 
         // Campos del comprador y donde se muestra el error de cada uno (el nombre coincide con el que usa el servidor)
         const CAMPOS = {
@@ -188,6 +200,8 @@
         const BOTON_NORMAL = 'Pagar con Mercado Pago';
 
         let eventoActual = null;
+        let categoriaServicio = null;       // categoría de costo de servicio del evento (null = 0%)
+        let servicioSinConfirmar = false;   // el evento tiene categoría pero no se pudo leer su porcentaje
         let loteSeleccionado = null;
         let enviando = false;
         const urlParams = new URLSearchParams(window.location.search);
@@ -232,12 +246,28 @@
                     return;
                 }
                 eventoActual = { id: docSnap.id, ...docSnap.data() };
+                await cargarCostoDeServicio(eventoActual);
                 renderEvento(eventoActual);
                 renderLotes(eventoActual.lotes || []);
                 actualizarTotal();
             } catch (error) {
                 console.error('Error al cargar evento:', error);
                 container.innerHTML = `<p class="text-red-500">Error al cargar el evento. Verifica tu conexión.</p>`;
+            }
+        }
+
+        // Lee el porcentaje de costo de servicio del evento. Es solo una vista previa: el servidor lo vuelve a calcular.
+        // Si el evento no tiene categoría no se lee nada (0%). Si la lectura falla, se muestra solo el total con un aviso.
+        async function cargarCostoDeServicio(evento) {
+            categoriaServicio = null;
+            servicioSinConfirmar = false;
+            if (typeof evento.comisionCategoriaId !== 'string' || evento.comisionCategoriaId === '') return;
+            try {
+                const snap = await getDoc(doc(db, "configuracion", "comisiones"));
+                categoriaServicio = categoriaDeComision(evento, snap.exists() ? snap.data() : null);
+            } catch (error) {
+                console.error('No se pudo leer el costo de servicio:', error);
+                servicioSinConfirmar = true;
             }
         }
 
@@ -349,8 +379,15 @@
             if (!eventoActual || loteSeleccionado === null) return;
             const lote = eventoActual.lotes[loteSeleccionado];
             const cantidad = cantidadElegida();
-            const total = (Number(lote.precio) || 0) * cantidad;
+            const porcentaje = categoriaServicio ? categoriaServicio.porcentaje : 0;
+            const { subtotal, costoServicio, total } = desgloseDeCompra(lote.precio, cantidad, porcentaje);
             totalMostrado.textContent = `$${total.toLocaleString()}`;
+            // Con 0% se ve solo el total, como siempre
+            filasServicio.classList.toggle('hidden', costoServicio <= 0);
+            avisoServicio.classList.toggle('hidden', !servicioSinConfirmar);
+            resumenEntradas.textContent = `$${subtotal.toLocaleString()}`;
+            etiquetaServicio.textContent = `Costo de servicio (${porcentaje.toLocaleString()}%)`;
+            resumenServicio.textContent = `$${costoServicio.toLocaleString()}`;
             resumenEvento.textContent = eventoActual.nombre || '-';
             resumenLote.textContent = lote.nombre || '-';
             resumenCantidad.textContent = String(cantidad);

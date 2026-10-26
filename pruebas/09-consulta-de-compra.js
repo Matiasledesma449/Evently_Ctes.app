@@ -102,6 +102,18 @@ const consulta = (db, id, token, extra = {}) => consultarVenta({ id, token }, { 
     verificar('5.2i la respuesta tiene solo los campos previstos', Object.keys(c).sort().join() === 'cantidad,entradas,estado,evento,eventoId,id,lote,metodoPago,moneda,monto,motivo,reembolsoPendiente' && c.eventoId === 'Evt1', Object.keys(c).sort().join());
   }
   {
+    // Costo de servicio: solo aparece en las ventas que lo tienen; las anteriores quedan con la forma de siempre
+    const { db } = crearDbFalsa({
+      eventos: { Evt1: evento() },
+      ventas: { VCon: venta({ subtotal: 15000, costo_servicio: 1200, comision_porcentaje: 8, comision_categoria: 'Estandar', monto_total: 16200 }), VViejo: venta() },
+    });
+    const con = (await consulta(db, 'VCon', TOKEN)).cuerpo.venta;
+    const viejo = (await consulta(db, 'VViejo', TOKEN)).cuerpo.venta;
+    verificar('5.2k venta con costo de servicio: devuelve costoServicio y el monto total', con.costoServicio === 1200 && con.monto === 16200, JSON.stringify(con));
+    verificar('5.2l venta sin costo de servicio: no trae el campo', !('costoServicio' in viejo));
+    verificar('5.2m no se filtran el porcentaje ni la categoria', !JSON.stringify(con).includes('comision') && !JSON.stringify(con).includes('Estandar'));
+  }
+  {
     // Evento borrado: igual se puede ver la compra
     const { db } = crearDbFalsa({ eventos: {}, ventas: { V1: confirmada() } });
     const r = await consulta(db, 'V1', TOKEN);

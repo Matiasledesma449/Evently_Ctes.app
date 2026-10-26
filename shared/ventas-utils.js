@@ -17,6 +17,21 @@ const aNumero = (valor) => {
     return Number.isFinite(n) ? n : 0;
 };
 
+// Lo que le corresponde a la organización en una venta: el precio de las entradas, SIN el costo de servicio
+// (que se cobra aparte al comprador). Las ventas anteriores al costo de servicio solo tienen `monto_total`.
+export function ingresoDeVenta(venta) {
+    if (!venta) return 0;
+    if (typeof venta.subtotal === 'number' && Number.isFinite(venta.subtotal)) return venta.subtotal;
+    return aNumero(venta.monto_total);
+}
+
+// El costo de servicio que pagó el comprador en esa venta (0 si no tiene)
+export function costoServicioDeVenta(venta) {
+    if (!venta) return 0;
+    const costo = aNumero(venta.costo_servicio);
+    return costo > 0 ? costo : 0;
+}
+
 export function esConfirmada(venta) {
     return !!venta && venta.estado === 'confirmada';
 }
@@ -32,7 +47,7 @@ export function resumenDeVentas(ventas) {
     for (const v of (Array.isArray(ventas) ? ventas : [])) {
         if (!v) continue;
         if (v.estado === 'confirmada') {
-            resumen.recaudado += aNumero(v.monto_total);
+            resumen.recaudado += ingresoDeVenta(v);
             resumen.entradas += aNumero(v.cantidad);
             resumen.confirmadas += 1;
         } else if (v.estado === 'pendiente') {
@@ -86,6 +101,14 @@ export function nombreDelComprador(venta) {
         .filter((parte) => typeof parte === 'string' && parte.trim() !== '')
         .map((parte) => parte.trim())
         .join(' ');
+}
+
+// El monto de una venta para el detalle: "$4.860" y, si tiene costo de servicio, "$4.860 (entradas $4.500 + costo de servicio $360)".
+export function textoDeMontoDeVenta(venta) {
+    const total = aNumero(venta && venta.monto_total);
+    const costo = costoServicioDeVenta(venta);
+    const base = `$${total.toLocaleString()}`;
+    return costo > 0 ? `${base} (entradas $${ingresoDeVenta(venta).toLocaleString()} + costo de servicio $${costo.toLocaleString()})` : base;
 }
 
 // Avisos para quien administra: reembolsos pendientes y pagos para revisar. Devuelve una lista de textos.
@@ -176,7 +199,7 @@ export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
         return [
             { titulo: 'Ventas pendientes', valor: String(pendientes.length), ayuda: 'Esperando que se pague', tono: 'pendiente' },
             { titulo: 'Entradas en espera', valor: String(pendientes.reduce((s, v) => s + aNumero(v.cantidad), 0)), ayuda: 'Todavía no se vendieron', tono: 'pendiente' },
-            { titulo: 'Dinero en espera', valor: dinero(pendientes.reduce((s, v) => s + aNumero(v.monto_total), 0)), ayuda: 'Todavía no se cobró', tono: 'pendiente' },
+            { titulo: 'Dinero en espera', valor: dinero(pendientes.reduce((s, v) => s + ingresoDeVenta(v), 0)), ayuda: 'Todavía no se cobró', tono: 'pendiente' },
             { titulo: 'La más antigua', valor: masVieja === null ? '—' : tiempoDesde(masVieja, ahora), ayuda: 'Venta pendiente más vieja', tono: 'normal' }
         ];
     }
@@ -195,7 +218,7 @@ export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
         return [
             { titulo: 'Ventas rechazadas', valor: String(rechazadas.length), ayuda: 'No se completaron', tono: 'rechazo' },
             { titulo: 'Entradas que no se vendieron', valor: String(rechazadas.reduce((s, v) => s + aNumero(v.cantidad), 0)), ayuda: 'Volvieron a estar disponibles', tono: 'rechazo' },
-            { titulo: 'Dinero no cobrado', valor: dinero(rechazadas.reduce((s, v) => s + aNumero(v.monto_total), 0)), ayuda: 'No suma a la recaudación', tono: 'rechazo' },
+            { titulo: 'Dinero no cobrado', valor: dinero(rechazadas.reduce((s, v) => s + ingresoDeVenta(v), 0)), ayuda: 'No suma a la recaudación', tono: 'rechazo' },
             { titulo: 'Motivo más frecuente', valor: motivo === null ? '—' : textoDelMotivo(motivo), ayuda: 'Por qué se rechazan más', tono: 'normal' }
         ];
     }
@@ -271,7 +294,7 @@ export function cifrasDelEvento(eventos, ventas) {
         const lote = v.loteNombre || 'Sin lote';
         const dato = porLote.get(lote) || { nombre: lote, entradas: 0, dinero: 0 };
         dato.entradas += aNumero(v.cantidad);
-        dato.dinero += aNumero(v.monto_total);
+        dato.dinero += ingresoDeVenta(v);
         porLote.set(lote, dato);
         const metodo = v.metodo_pago || 'Desconocido';
         porMetodo.set(metodo, (porMetodo.get(metodo) || 0) + 1);

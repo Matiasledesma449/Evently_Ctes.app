@@ -295,7 +295,7 @@ const $ = (n) => '$' + n.toLocaleString();
     verificar('R10 reportes: importa y usa escaparHtml', /import \{[^}]*escaparHtml[^}]*\} from "\.\.\/shared\/ventas-utils\.js"/.test(html) && (html.match(/escaparHtml\(/g) || []).length >= 13);
 
     const contenedor = { innerHTML: '' };
-    const ctx = { document: { getElementById: () => contenedor }, ...vm.runInNewContext(codigoUtils + '\n;({ escaparHtml, nombreParaMostrar })') };
+    const ctx = { document: { getElementById: () => contenedor }, ...vm.runInNewContext(codigoUtils + '\n;({ escaparHtml, nombreParaMostrar, ingresoDeVenta })') };
     vm.createContext(ctx);
     vm.runInContext(extraerFuncion(html, 'renderTransacciones') + ';this.renderTransacciones = renderTransacciones;', ctx);
     ctx.renderTransacciones([{ id: 'M1', estado: 'confirmada', cantidad: 1, monto_total: 100, metodo_pago: '<i>m</i>', correo: '<img/src=x/onerror=alert(1)>@a.bc', loteNombre: '<script>alert(2)</script>', fecha: { seconds: 1760000000 } }]);
