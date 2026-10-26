@@ -78,14 +78,16 @@ if (require.main === module) {
             console.error('Falta la variable GOOGLE_APPLICATION_CREDENTIALS (ver herramientas/LEEME.md).');
             process.exit(1);
         }
-        const admin = require('firebase-admin');
-        admin.initializeApp({ credential: admin.credential.applicationDefault() });
+        // Igual que server/firestore.js: firebase-admin 14 se carga por partes (app y firestore)
+        const { initializeApp, applicationDefault } = require('firebase-admin/app');
+        const { getFirestore } = require('firebase-admin/firestore');
+        initializeApp({ credential: applicationDefault() });
         const readline = require('readline');
         const preguntar = (texto) => new Promise((resolver) => {
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
             rl.question(texto, (r) => { rl.close(); resolver(r); });
         });
-        await limpiar({ db: admin.firestore(), ...opciones, preguntar, escribir: (t) => console.log(t) });
+        await limpiar({ db: getFirestore(), ...opciones, preguntar, escribir: (t) => console.log(t) });
         process.exit(0);
     })().catch((error) => {
         console.error('No se pudo terminar:', error.message);
