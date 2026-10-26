@@ -38,7 +38,13 @@ Módulo de navegador sin dependencias (`export function ...`), como `shared/form
 
 ## Lugar con mapa
 
-Depende de la pregunta 1 del `proposal.md`. Con A o B es un componente aparte (campo con sugerencias + mapa) que escribe `lugar` y `ubicacion`; con C es un botón con un enlace armado desde `lugar`. Las tareas de esta parte quedan sin hacer hasta que haya respuesta.
+Respuesta de la persona a la pregunta 1: **A** (Leaflet + OpenStreetMap + Nominatim, por CDN, sin clave).
+
+- `shared/evento-datos.js` suma `armarUbicacion(lat, lng)` (devuelve `{ lat, lng }` redondeado a 6 decimales, o `null` si no son números dentro de rango) y `ubicacionDeEvento(evento)` (la lee de un evento, `null` si no hay o es inválida). Se prueban con `node`.
+- `shared/lugar-mapa.js` (navegador): `activarLugarConMapa({ input, lista, mapa, aviso })` conecta el campo de lugar con Nominatim (`nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=ar`), con espera de 600 ms entre teclas (uso moderado, política de Nominatim) y devuelve `obtenerUbicacion()` / `limpiar()`. Al elegir una sugerencia pone el texto en el campo, dibuja el mapa y recuerda la latitud y longitud; si la persona vuelve a escribir en el campo, la ubicación se descarta para no quedar contradictoria con el texto. Si la búsqueda falla, muestra un aviso corto y el campo sigue como texto.
+- `admin/eventos.html` carga Leaflet por CDN, usa el componente y guarda `ubicacion` solo si se eligió una sugerencia.
+- `public/evento.html` carga Leaflet por CDN solo si el evento tiene `ubicacion` y dibuja el mapa con un marcador, debajo del lugar. Sin `ubicacion`, no hay mapa y el lugar se ve como siempre.
+- Los textos de las sugerencias se muestran con `textContent` (nunca como HTML).
 
 ## Edición de una solicitud
 

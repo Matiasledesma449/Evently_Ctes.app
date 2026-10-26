@@ -50,6 +50,10 @@ Lo que se ve en el código hoy (`admin/eventos.html`, que sirve para "Solicitar 
 
 Mientras no haya respuesta, no se hace nada del lugar con mapa: el resto del plan (días con horas y descripción en campos) se hace igual.
 
+## Respuestas de la persona
+
+- 2026-10-26: pregunta 1 → **A**. Leaflet con mapas de OpenStreetMap y sugerencias de Nominatim, por CDN, sin clave. Se hace la parte 4 de `tasks.md` con esta opción.
+
 ## Decidí por vos (decisiones comunes, sin pregunta)
 
 - **Varios días, un solo `fecha`**: `fecha` guarda el primer día, porque `public/index.html` ordena y esconde eventos pasados por ese texto. Si prefieren que el evento se vea hasta el último día, es un cambio chico en `index.html` (usar el último día de `dias`).
