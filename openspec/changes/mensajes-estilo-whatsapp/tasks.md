@@ -9,8 +9,8 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 2. Guardar a quién le toca
 
-- [ ] 2.1 En `admin/soporte.html`: al enviar, guardar `ultimoDe` y `ultimoLeido: false` en la conversación (en la creación y en la actualización que ya existen). Se comprueba leyendo el archivo: los dos caminos del lote llevan los campos.
-- [ ] 2.2 En `admin/mensajes.html`: lo mismo al enviar, y al crear una conversación nueva. Se comprueba leyendo el archivo.
+- [x] 2.1 En `admin/soporte.html`: al enviar, guardar `ultimoDe` y `ultimoLeido: false` en la conversación (en la creación y en la actualización que ya existen). Se comprueba leyendo el archivo: los dos caminos del lote llevan los campos.
+- [x] 2.2 En `admin/mensajes.html`: lo mismo al enviar, y al crear una conversación nueva. Se comprueba leyendo el archivo.
 
 ## 3. Consultas públicas
 

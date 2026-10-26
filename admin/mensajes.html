@@ -635,7 +635,9 @@
 
                 await updateDoc(doc(db, "conversaciones", conversacionActual.id), {
                     ultimoMensaje: texto,
-                    ultimaFecha: serverTimestamp()
+                    ultimaFecha: serverTimestamp(),
+                    ultimoDe: miUid,
+                    ultimoLeido: false
                 });
             } catch (err) {
                 console.error('Error al enviar:', err);
@@ -716,7 +718,9 @@
                 participantes: [miUid, otroUid],
                 nombres: nombres,
                 ultimoMensaje: '',
-                ultimaFecha: serverTimestamp()
+                ultimaFecha: serverTimestamp(),
+                ultimoDe: '',
+                ultimoLeido: true
             });
 
             cerrarModalNuevaConv();

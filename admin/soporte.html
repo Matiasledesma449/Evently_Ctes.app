@@ -259,13 +259,17 @@
                             [uidSuperadmin]: 'Soporte Evently'
                         },
                         ultimoMensaje: texto,
-                        ultimaFecha: serverTimestamp()
+                        ultimaFecha: serverTimestamp(),
+                        ultimoDe: uidCliente,
+                        ultimoLeido: false
                     });
                     conversacionId = conversacionRef.id;
                 } else {
                     batch.update(doc(db, 'conversaciones', conversacionId), {
                         ultimoMensaje: texto,
-                        ultimaFecha: serverTimestamp()
+                        ultimaFecha: serverTimestamp(),
+                        ultimoDe: uidCliente,
+                        ultimoLeido: false
                     });
                 }
 
