@@ -11,7 +11,7 @@
         /* 👇 CAMBIO PRINCIPAL: body con flex column y min-height */
         body { 
             font-family: 'Inter', sans-serif; 
-            background: #f9f9f9;
+            background: #f6f5fa;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -129,17 +129,6 @@
             box-shadow: 0 4px 12px rgba(124,58,237,0.15);
         }
         .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
-        .support-link {
-            color: #6b7280;
-            transition: color 0.2s;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .support-link:hover {
-            color: #7c3aed;
-        }
         .footer-text {
             color: #9ca3af;
             font-size: 0.8rem;
@@ -148,24 +137,14 @@
 </head>
 <body>
 
-    <!-- Header público (sin Admin, con Soporte) -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-            </div>
-            <a href="soporte.html?origen=public/index.html" class="support-link">
-                <span class="material-symbols-outlined text-sm">help</span> Ayuda
-            </a>
-        </div>
-    </header>
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
     <!-- Contenido principal -->
     <main class="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full">
         <section aria-labelledby="tituloDestacados">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
                 <div>
-                    <p class="text-xs uppercase font-semibold text-violet-700">Evently · Agenda</p>
                     <h1 id="tituloDestacados" class="text-2xl font-bold text-gray-900 mt-1">Encontrá tu próximo evento</h1>
                 </div>
                 <p class="text-sm text-gray-500">Experiencias para compartir, cerca y más adelante.</p>
@@ -181,7 +160,7 @@
                         <div class="hero-shade"></div>
                     </div>
                     <div id="heroContent" class="hero-content absolute inset-0 z-10 flex flex-col justify-end items-start p-6 sm:p-10 text-white">
-                        <p id="heroBadge" class="text-xs uppercase tracking-wide font-semibold mb-2">Destacado</p>
+                        <p id="heroBadge" class="text-sm font-semibold mb-2 bg-white/15 backdrop-blur px-3 py-1 rounded-full">Destacado</p>
                         <h2 id="heroTitle" class="text-2xl sm:text-4xl font-bold max-w-2xl"></h2>
                         <div class="flex flex-wrap gap-x-5 gap-y-2 mt-3 text-sm text-white/90">
                             <p class="flex items-center gap-1.5"><span class="material-symbols-outlined text-base">calendar_month</span><span id="heroDate"></span></p>
@@ -191,10 +170,10 @@
                             Ver evento <span class="material-symbols-outlined text-base">arrow_forward</span>
                         </a>
                     </div>
-                    <button id="heroAnterior" type="button" aria-label="Evento destacado anterior" class="nav-arrow absolute left-3 top-1/2 -translate-y-1/2 z-20">
+                    <button id="heroAnterior" type="button" aria-label="Evento destacado anterior" class="nav-arrow absolute right-16 top-3 sm:right-auto sm:left-3 sm:top-1/2 sm:-translate-y-1/2 z-20">
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
-                    <button id="heroSiguiente" type="button" aria-label="Siguiente evento destacado" class="nav-arrow absolute right-3 top-1/2 -translate-y-1/2 z-20">
+                    <button id="heroSiguiente" type="button" aria-label="Siguiente evento destacado" class="nav-arrow absolute right-3 top-3 sm:top-1/2 sm:-translate-y-1/2 z-20">
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
                 </div>
@@ -213,12 +192,6 @@
                 <p class="text-gray-400 py-10 text-center col-span-full">Cargando eventos...</p>
             </div>
         </section>
-        <section class="mt-10 border-t border-gray-200 py-6 text-center">
-            <p class="text-sm text-gray-600">¿Necesitás ayuda con una compra?</p>
-            <a href="soporte.html?origen=public/index.html" class="inline-block mt-2 font-semibold text-violet-700 hover:text-violet-900">
-                Ir al Centro de ayuda
-            </a>
-        </section>
     </main>
 
     <!-- Footer -->
@@ -231,8 +204,10 @@
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { imagenDelEvento } from "../shared/imagen-evento.js";
         import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarCabecera } from "../shared/cabecera-publica.js";
 
         dibujarPie(document.getElementById('pie'), 'inicio');
+        dibujarCabecera(document.getElementById('cabecera'), 'inicio');
 
         const db = window.db;
         const container = document.getElementById('eventosContainer');

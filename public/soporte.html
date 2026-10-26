@@ -8,155 +8,126 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f7f7f9; display: flex; flex-direction: column; min-height: 100vh; }
-        .main-content { flex: 1; }
-        .footer { margin-top: auto; }
-        .footer-text { color: #9ca3af; font-size: 0.8rem; }
-        /* Portada: degradé violeta oscuro con luces, sin foto */
-        .portada {
-            background:
-                radial-gradient(circle at 15% 20%, rgba(167, 139, 250, 0.35) 0, transparent 40%),
-                radial-gradient(circle at 85% 70%, rgba(236, 72, 153, 0.25) 0, transparent 45%),
-                radial-gradient(circle at 60% 10%, rgba(124, 58, 237, 0.45) 0, transparent 50%),
-                linear-gradient(135deg, #1e0b3a 0%, #3b0f6b 55%, #24083f 100%);
-        }
-        .buscador { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
-        .icono-tema {
-            font-size: 44px;
-            background: linear-gradient(135deg, #7c3aed, #ec4899);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-        }
-        .tarjeta-tema { transition: transform 0.15s, box-shadow 0.15s; }
-        .tarjeta-tema:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(124, 58, 237, 0.12); }
-        .help-topic-title { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #6d28d9; margin-bottom: 0.5rem; }
-        .help-item { background: white; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 0.5rem; }
-        .help-item summary { cursor: pointer; padding: 12px 16px; font-weight: 600; font-size: 0.95rem; color: #1f2937; }
-        .help-item[open] summary { color: #6d28d9; }
-        .help-item p { padding: 0 16px 12px; font-size: 0.9rem; color: #4b5563; }
-        .input-field { width: 100%; border: 1px solid #d1d5db; border-radius: 10px; padding: 10px 14px; font-size: 0.95rem; background: white; }
-        .input-field:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
-        .btn-violeta { background: #7c3aed; color: white; font-weight: 700; border-radius: 9999px; transition: background 0.2s; }
-        .btn-violeta:hover { background: #6d28d9; }
-        .btn-violeta:disabled { opacity: 0.6; cursor: not-allowed; }
-        .mancha { background: linear-gradient(135deg, #ede9fe, #fce7f3); border-radius: 46% 54% 38% 62% / 55% 40% 60% 45%; }
+        /* Paleta del sitio del comprador: violeta Evently, fondo gris lavanda, tarjetas blancas */
+        :root { --violeta: #6d28d9; --violeta-claro: #ede9fe; --tinta: #241a3a; --texto: #4b5563; --borde: #e7e3f0; --fondo: #f6f5fa; }
+        body { font-family: 'Inter', sans-serif; background: var(--fondo); color: var(--texto); display: flex; flex-direction: column; min-height: 100vh; }
+        main { flex: 1; }
+        /* La única pieza llamativa de la página: la franja del buscador */
+        .franja { background: linear-gradient(120deg, #5b21b6 0%, #7c3aed 60%, #8b5cf6 100%); }
+        .tema { border: 1px solid var(--borde); background: white; border-radius: 16px; text-align: left; }
+        .tema[aria-pressed="true"] { border-color: var(--violeta); box-shadow: inset 0 0 0 1px var(--violeta); background: #faf8ff; }
+        .tema:focus-visible, .btn:focus-visible, summary:focus-visible { outline: 2px solid var(--violeta); outline-offset: 2px; }
+        .pregunta { background: white; border: 1px solid var(--borde); border-radius: 12px; }
+        .pregunta + .pregunta { margin-top: 0.5rem; }
+        .pregunta summary { cursor: pointer; list-style: none; padding: 14px 16px; font-weight: 600; color: var(--tinta); display: flex; justify-content: space-between; gap: 1rem; }
+        .pregunta summary::-webkit-details-marker { display: none; }
+        .pregunta summary::after { content: '+'; color: var(--violeta); font-weight: 700; }
+        .pregunta[open] summary::after { content: '–'; }
+        .pregunta p { padding: 0 16px 14px; color: var(--texto); line-height: 1.6; }
+        .campo { width: 100%; border: 1px solid #d1d5db; border-radius: 10px; padding: 10px 14px; background: white; color: var(--tinta); }
+        .campo:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+        .btn { background: #7c3aed; color: white; font-weight: 700; border-radius: 9999px; }
+        .btn:hover { background: var(--violeta); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
     </style>
 </head>
 <body>
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
-    <!-- Header -->
-    <header class="bg-[#1e0b3a] border-b border-white/10 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <a href="index.html" class="text-2xl font-bold text-white">Evently</a>
-            <nav class="flex items-center gap-5 text-sm font-semibold text-white">
-                <a href="#formularioSolicitud" class="hover:text-violet-200">Enviar una solicitud</a>
-                <a href="index.html" class="hidden sm:inline hover:text-violet-200">Volver al inicio</a>
-            </nav>
-        </div>
-    </header>
-
-    <main class="main-content">
-        <!-- Portada con buscador -->
-        <section class="portada text-white">
-            <div class="max-w-6xl mx-auto px-4 py-12 lg:py-16 grid lg:grid-cols-5 gap-8 items-center">
-                <div class="lg:col-span-3 min-w-0">
-                    <span class="inline-block bg-violet-600 text-white text-xs font-bold uppercase tracking-wide rounded-full px-4 py-1.5">Bienvenido/a a nuestro Centro de ayuda</span>
-                    <h1 class="text-4xl sm:text-5xl font-extrabold mt-4 leading-tight">¿Cómo podemos ayudarte?</h1>
-                    <p class="text-violet-100 mt-3">Acá respondemos todas tus dudas sobre tus compras en Evently.</p>
-                    <form id="formBuscar" class="buscador mt-6 flex items-center bg-white rounded-full p-1.5" role="search">
-                        <span class="material-symbols-outlined text-gray-500 ml-3" aria-hidden="true">search</span>
-                        <label for="buscadorAyuda" class="sr-only">Buscar en las preguntas frecuentes</label>
-                        <input type="search" id="buscadorAyuda" maxlength="100" autocomplete="off" class="flex-1 min-w-0 px-3 py-2 text-gray-800 outline-none bg-transparent" placeholder="Hacenos tu pregunta" />
-                        <button type="submit" class="btn-violeta px-5 sm:px-8 py-2.5">Buscar</button>
-                    </form>
-                </div>
-                <aside class="lg:col-span-2 bg-white text-gray-800 rounded-2xl p-6 shadow-xl" aria-labelledby="tituloMasLeidas">
-                    <h2 id="tituloMasLeidas" class="text-2xl font-bold">Preguntas frecuentes</h2>
-                    <ul id="masLeidas" class="mt-3 space-y-2 text-gray-600"></ul>
-                </aside>
+    <main>
+        <!-- Franja con el buscador -->
+        <section class="franja text-white">
+            <div class="max-w-3xl mx-auto px-4 py-12 sm:py-14 text-center">
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">¿Cómo podemos ayudarte?</h1>
+                <p class="text-violet-100 mt-2">Buscá tu duda o elegí un tema.</p>
+                <form id="formBuscar" class="mt-6 flex items-center bg-white rounded-full p-1.5 shadow-lg shadow-violet-900/20" role="search">
+                    <span class="material-symbols-outlined text-gray-400 ml-3" aria-hidden="true">search</span>
+                    <label for="buscadorAyuda" class="sr-only">Buscar en las preguntas frecuentes</label>
+                    <input type="search" id="buscadorAyuda" maxlength="100" autocomplete="off" class="flex-1 min-w-0 px-3 py-2 text-[#241a3a] outline-none bg-transparent" placeholder="Por ejemplo: entrada, tarjeta, reembolso" />
+                    <button type="submit" class="btn px-5 sm:px-7 py-2.5">Buscar</button>
+                </form>
             </div>
         </section>
 
-        <!-- Tarjetas por tema -->
-        <section class="max-w-6xl mx-auto px-4 mt-10" aria-label="Temas de ayuda">
-            <div id="tarjetasTemas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
-        </section>
+        <div class="max-w-5xl mx-auto px-4 py-10 w-full">
+            <!-- Temas: al tocar uno, abajo se ven solo sus preguntas -->
+            <h2 class="text-lg font-bold text-[#241a3a] mb-4">Temas</h2>
+            <div id="tarjetasTemas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" role="group" aria-label="Temas de ayuda"></div>
 
-        <!-- Preguntas por tema (y resultados del buscador) -->
-        <section id="preguntas" class="max-w-3xl mx-auto px-4 mt-12 scroll-mt-24">
-            <h2 class="text-xl font-bold text-gray-800 mb-4" id="tituloPreguntas">Todas las preguntas</h2>
-            <div id="temasAyuda" class="space-y-6"></div>
-            <div id="sinResultadosAyuda" class="hidden mt-6 text-center text-sm text-gray-500" role="status" aria-live="polite">
-                <p>No encontramos preguntas con esa búsqueda.</p>
-                <a href="#formularioSolicitud" class="inline-block mt-3 btn-violeta px-6 py-2.5">Enviar una solicitud</a>
-            </div>
-        </section>
-
-        <!-- Contactate con nosotros -->
-        <section id="contacto" class="max-w-6xl mx-auto px-4 mt-14 scroll-mt-24">
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 grid md:grid-cols-2 gap-8 items-center">
-                <div>
-                    <h2 class="text-3xl font-bold text-gray-800">Contactate con nosotros</h2>
-                    <p class="text-gray-600 mt-3">Si todavía no encontraste lo que necesitás, enviános una solicitud con nuestro formulario y te respondemos al correo que nos dejes.</p>
-                    <a href="#formularioSolicitud" class="inline-block mt-6 btn-violeta px-6 py-3">Enviar una solicitud</a>
+            <!-- Preguntas del tema elegido (o los resultados del buscador) -->
+            <section id="preguntas" class="mt-10 scroll-mt-24" aria-live="polite">
+                <h2 class="text-lg font-bold text-[#241a3a]" id="tituloPreguntas"></h2>
+                <div id="temasAyuda" class="mt-4"></div>
+                <div id="sinResultadosAyuda" class="hidden mt-4 bg-white border border-[#e7e3f0] rounded-2xl p-6 text-center" role="status">
+                    <p class="text-[#241a3a] font-semibold">No encontramos preguntas con esa búsqueda.</p>
+                    <p class="text-sm mt-1">Probá con otra palabra o escribinos.</p>
+                    <button type="button" data-abrir-solicitud class="btn mt-4 px-6 py-2.5">Enviar una solicitud</button>
                 </div>
-                <div class="hidden md:flex justify-center" aria-hidden="true">
-                    <div class="mancha w-64 h-56 flex items-center justify-center">
-                        <span class="material-symbols-outlined icono-tema" style="font-size: 120px;">support_agent</span>
+            </section>
+
+            <!-- Contacto: el formulario se abre desde acá -->
+            <section id="contacto" class="mt-12 bg-white border border-[#e7e3f0] rounded-2xl scroll-mt-24">
+                <div class="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+                    <span class="material-symbols-outlined text-[#6d28d9] bg-[#ede9fe] rounded-2xl p-3 self-start" style="font-size: 32px;" aria-hidden="true">support_agent</span>
+                    <div class="flex-1">
+                        <h2 class="text-xl font-bold text-[#241a3a]">¿No encontraste lo que buscabas?</h2>
+                        <p class="mt-1">Mandanos una solicitud y te respondemos al correo que nos dejes.</p>
                     </div>
+                    <button type="button" id="abrirSolicitud" data-abrir-solicitud aria-expanded="false" aria-controls="formularioSolicitud" class="btn px-6 py-3 self-start sm:self-center">Enviar una solicitud</button>
                 </div>
-            </div>
-        </section>
 
-        <!-- Formulario: Enviar una solicitud -->
-        <section id="formularioSolicitud" class="max-w-3xl mx-auto px-4 mt-12 mb-16 scroll-mt-24">
-            <h2 class="text-3xl font-bold text-gray-800">Enviar una solicitud</h2>
-            <form id="soporteForm" class="mt-6 space-y-5" novalidate>
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
-                    <input type="email" id="email" name="email" maxlength="254" required class="input-field" autocomplete="email" />
+                <div id="formularioSolicitud" class="hidden border-t border-[#e7e3f0] p-6 sm:p-8">
+                    <form id="soporteForm" class="grid grid-cols-1 sm:grid-cols-2 gap-5" novalidate>
+                        <div>
+                            <label for="email" class="block text-sm font-semibold text-[#241a3a] mb-1">Correo electrónico</label>
+                            <input type="email" id="email" name="email" maxlength="254" required class="campo" autocomplete="email" />
+                        </div>
+                        <div>
+                            <label for="nombre" class="block text-sm font-semibold text-[#241a3a] mb-1">Nombre y apellido</label>
+                            <input type="text" id="nombre" name="nombre" maxlength="100" required class="campo" autocomplete="name" />
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="asunto" class="block text-sm font-semibold text-[#241a3a] mb-1">Asunto</label>
+                            <input type="text" id="asunto" name="asunto" maxlength="120" required class="campo" placeholder="Por ejemplo: no veo mis entradas" />
+                        </div>
+                        <div>
+                            <label for="evento" class="block text-sm font-semibold text-[#241a3a] mb-1">Evento <span class="font-normal text-gray-500">(opcional)</span></label>
+                            <input type="text" id="evento" name="evento" maxlength="120" class="campo" />
+                        </div>
+                        <div>
+                            <label for="numeroCompra" class="block text-sm font-semibold text-[#241a3a] mb-1">Número de compra <span class="font-normal text-gray-500">(opcional)</span></label>
+                            <input type="text" id="numeroCompra" name="numeroCompra" maxlength="60" class="campo" aria-describedby="ayudaNumero" />
+                            <p id="ayudaNumero" class="text-xs text-gray-500 mt-1">Está en la página de tu compra, la que ves al terminar el pago.</p>
+                        </div>
+                        <div>
+                            <label for="dni" class="block text-sm font-semibold text-[#241a3a] mb-1">DNI <span class="font-normal text-gray-500">(opcional, sin puntos)</span></label>
+                            <input type="text" id="dni" name="dni" maxlength="12" inputmode="numeric" class="campo" />
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="mensaje" class="block text-sm font-semibold text-[#241a3a] mb-1">Contanos qué pasó</label>
+                            <textarea id="mensaje" name="mensaje" rows="5" maxlength="5000" required class="campo"></textarea>
+                        </div>
+                        <div class="sm:col-span-2 flex flex-col sm:flex-row sm:items-center gap-3">
+                            <button type="submit" id="btnEnviar" class="btn px-10 py-3">Enviar solicitud</button>
+                            <p class="text-xs text-gray-500">Todos los campos son obligatorios salvo los que dicen "opcional".</p>
+                        </div>
+                    </form>
+                    <div id="mensajeEstado" class="hidden mt-5 p-4 rounded-xl text-sm" role="status" aria-live="polite"></div>
                 </div>
-                <div>
-                    <label for="asunto" class="block text-sm font-medium text-gray-700 mb-1">Asunto *</label>
-                    <input type="text" id="asunto" name="asunto" maxlength="120" required class="input-field" />
-                </div>
-                <div>
-                    <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre y apellido *</label>
-                    <input type="text" id="nombre" name="nombre" maxlength="100" required class="input-field" autocomplete="name" />
-                </div>
-                <div>
-                    <label for="dni" class="block text-sm font-medium text-gray-700 mb-1">DNI <span class="text-gray-400 font-normal">(opcional)</span></label>
-                    <input type="text" id="dni" name="dni" maxlength="12" inputmode="numeric" class="input-field" />
-                    <p class="text-xs text-gray-500 mt-1">El DNI de quien hizo la compra, sin puntos.</p>
-                </div>
-                <div>
-                    <label for="evento" class="block text-sm font-medium text-gray-700 mb-1">Evento <span class="text-gray-400 font-normal">(opcional)</span></label>
-                    <input type="text" id="evento" name="evento" maxlength="120" class="input-field" />
-                </div>
-                <div>
-                    <label for="numeroCompra" class="block text-sm font-medium text-gray-700 mb-1">Número de compra <span class="text-gray-400 font-normal">(opcional)</span></label>
-                    <input type="text" id="numeroCompra" name="numeroCompra" maxlength="60" class="input-field" />
-                    <p class="text-xs text-gray-500 mt-1">Está en la página de tu compra, la que ves al terminar el pago.</p>
-                </div>
-                <div>
-                    <label for="mensaje" class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-                    <textarea id="mensaje" name="mensaje" rows="6" maxlength="5000" required class="input-field"></textarea>
-                </div>
-                <button type="submit" id="btnEnviar" class="btn-violeta w-full sm:w-auto px-10 py-3 flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-sm">send</span> Enviar
-                </button>
-            </form>
-            <div id="mensajeEstado" class="hidden mt-4 p-4 rounded-xl text-sm" role="status" aria-live="polite"></div>
-        </section>
+            </section>
+        </div>
     </main>
 
-    <!-- Footer (siempre abajo) -->
-    <footer id="pie" class="footer bg-white border-t border-gray-200 py-4 text-center footer-text"></footer>
+    <footer id="pie"></footer>
 
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { buscarPreguntas, TEMAS_DE_AYUDA } from "../shared/preguntas-frecuentes.js";
         import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { armarSolicitud } from "../shared/solicitud-de-ayuda.js";
 
         // Todo lo que se dibuja con texto de los temas o de la persona va con textContent (nunca como HTML)
@@ -167,65 +138,82 @@
             return e;
         };
 
+        const tarjetasTemas = document.getElementById('tarjetasTemas');
         const temasAyuda = document.getElementById('temasAyuda');
         const sinResultadosAyuda = document.getElementById('sinResultadosAyuda');
         const buscadorAyuda = document.getElementById('buscadorAyuda');
         const tituloPreguntas = document.getElementById('tituloPreguntas');
+        let temaElegido = TEMAS_DE_AYUDA[0].id;
 
-        // ---------- Preguntas: por tema, o los resultados del buscador ----------
-        function dibujarPreguntas(texto) {
-            const temas = buscarPreguntas(texto);
+        // ---------- Preguntas: las del tema elegido, o los resultados del buscador (abiertos) ----------
+        function dibujarPreguntas() {
+            const texto = buscadorAyuda.value.trim();
+            const buscando = texto !== '';
+            const temas = buscando ? buscarPreguntas(texto) : TEMAS_DE_AYUDA.filter((t) => t.id === temaElegido);
             temasAyuda.textContent = '';
             sinResultadosAyuda.classList.toggle('hidden', temas.length > 0);
-            const buscando = texto.trim() !== '';
-            tituloPreguntas.textContent = buscando ? 'Resultados de tu búsqueda' : 'Todas las preguntas';
+            tituloPreguntas.textContent = buscando ? 'Resultados de tu búsqueda' : (temas[0] ? temas[0].titulo : '');
             temas.forEach((tema) => {
-                const bloque = crear('section', 'scroll-mt-24');
+                const bloque = crear('section');
                 bloque.id = `tema-${tema.id}`;
-                bloque.appendChild(crear('h3', 'help-topic-title', tema.titulo));
+                if (buscando) bloque.appendChild(crear('h3', 'text-sm font-semibold text-[#6d28d9] mt-5 mb-2', tema.titulo));
                 tema.preguntas.forEach((p) => {
-                    const detalle = crear('details', 'help-item');
-                    detalle.open = buscando; // con una búsqueda, las respuestas ya se ven
+                    const detalle = crear('details', 'pregunta');
+                    detalle.open = buscando;
                     detalle.appendChild(crear('summary', '', p.pregunta));
                     p.respuesta.forEach((parrafo) => detalle.appendChild(crear('p', '', parrafo)));
                     bloque.appendChild(detalle);
                 });
                 temasAyuda.appendChild(bloque);
             });
+            // Las tarjetas muestran cuál está elegida (ninguna mientras se busca)
+            tarjetasTemas.querySelectorAll('[data-tema]').forEach((b) => b.setAttribute('aria-pressed', String(!buscando && b.dataset.tema === temaElegido)));
         }
 
-        // ---------- Tarjetas por tema y "Preguntas frecuentes" de la portada ----------
-        const tarjetasTemas = document.getElementById('tarjetasTemas');
+        // ---------- Tarjetas de temas ----------
         TEMAS_DE_AYUDA.forEach((tema) => {
-            const tarjeta = crear('a', 'tarjeta-tema block bg-white rounded-2xl p-7 border border-gray-100 shadow-sm');
-            tarjeta.href = `#tema-${tema.id}`;
-            const icono = crear('span', 'material-symbols-outlined icono-tema', tema.icono);
+            const boton = crear('button', 'tema p-5 flex gap-4 items-start hover:border-[#c4b5fd] transition-colors');
+            boton.type = 'button';
+            boton.dataset.tema = tema.id;
+            const icono = crear('span', 'material-symbols-outlined text-[#6d28d9] bg-[#ede9fe] rounded-xl p-2', tema.icono);
             icono.setAttribute('aria-hidden', 'true');
-            tarjeta.append(icono, crear('h3', 'text-lg font-bold text-gray-800 mt-4', tema.titulo), crear('p', 'text-gray-600 mt-2', tema.descripcion));
-            // Si había una búsqueda, se vuelve a mostrar todo para que el tema exista en la página
-            tarjeta.addEventListener('click', () => { if (buscadorAyuda.value) { buscadorAyuda.value = ''; dibujarPreguntas(''); } });
-            tarjetasTemas.appendChild(tarjeta);
-        });
-        const masLeidas = document.getElementById('masLeidas');
-        [['mi-entrada', 0], ['pagos', 2], ['arrepentimiento', 0]].forEach(([id, indice]) => {
-            const tema = TEMAS_DE_AYUDA.find((t) => t.id === id);
-            if (!tema || !tema.preguntas[indice]) return;
-            const enlace = crear('a', 'hover:text-violet-700 flex gap-2');
-            enlace.href = `#tema-${id}`;
-            enlace.append(crear('span', 'material-symbols-outlined text-violet-600 text-base', 'chevron_right'), crear('span', '', tema.preguntas[indice].pregunta));
-            const item = crear('li');
-            item.appendChild(enlace);
-            masLeidas.appendChild(item);
+            const textos = crear('span', 'block');
+            textos.append(crear('h3', 'font-bold text-[#241a3a]', tema.titulo), crear('p', 'text-sm mt-1', tema.descripcion));
+            boton.append(icono, textos);
+            boton.addEventListener('click', () => {
+                temaElegido = tema.id;
+                buscadorAyuda.value = '';
+                dibujarPreguntas();
+                document.getElementById('preguntas').scrollIntoView({ block: 'start' });
+            });
+            tarjetasTemas.appendChild(boton);
         });
 
-        buscadorAyuda.addEventListener('input', () => dibujarPreguntas(buscadorAyuda.value));
+        buscadorAyuda.addEventListener('input', dibujarPreguntas);
         document.getElementById('formBuscar').addEventListener('submit', (e) => {
             e.preventDefault();
-            dibujarPreguntas(buscadorAyuda.value);
-            document.getElementById('preguntas').scrollIntoView({ behavior: 'smooth' });
+            dibujarPreguntas();
+            document.getElementById('preguntas').scrollIntoView({ block: 'start' });
         });
-        dibujarPreguntas('');
+        // Un link a #tema-<id> (por ejemplo, desde otra página) abre ese tema
+        const temaDeLaDireccion = location.hash.startsWith('#tema-') ? location.hash.slice(6) : '';
+        if (TEMAS_DE_AYUDA.some((t) => t.id === temaDeLaDireccion)) temaElegido = temaDeLaDireccion;
+        dibujarPreguntas();
         dibujarPie(document.getElementById('pie'), 'soporte');
+        dibujarCabecera(document.getElementById('cabecera'), 'soporte');
+
+        // ---------- Formulario: se abre desde "Enviar una solicitud" o con el link "Enviar una consulta" del pie ----------
+        const formulario = document.getElementById('formularioSolicitud');
+        const abrir = document.getElementById('abrirSolicitud');
+        function abrirSolicitud() {
+            formulario.classList.remove('hidden');
+            abrir.setAttribute('aria-expanded', 'true');
+            document.getElementById('contacto').scrollIntoView({ block: 'start' });
+            document.getElementById('email').focus({ preventScroll: true });
+        }
+        document.querySelectorAll('[data-abrir-solicitud]').forEach((b) => b.addEventListener('click', abrirSolicitud));
+        if (location.hash === '#contacto' || location.hash === '#formularioSolicitud') abrirSolicitud();
+        window.addEventListener('hashchange', () => { if (location.hash === '#contacto') abrirSolicitud(); });
 
         // ---------- Enviar una solicitud: se guarda como una consulta pública más ----------
         const form = document.getElementById('soporteForm');
@@ -237,7 +225,7 @@
             : 'public/soporte.html';
 
         function avisar(texto, esError) {
-            mensajeEstado.className = `mt-4 p-4 rounded-xl text-sm ${esError ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`;
+            mensajeEstado.className = `mt-5 p-4 rounded-xl text-sm ${esError ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-800'}`;
             mensajeEstado.textContent = texto;
             mensajeEstado.classList.remove('hidden');
         }

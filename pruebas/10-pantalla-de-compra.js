@@ -20,7 +20,7 @@ const htmlRenderizado = html.replace(/<!--[\s\S]*?-->/g, '');
 verificar('6.1b no hay campos de tarjeta, billetera ni efectivo (ni sus ids ni sus estilos)',
   !/cardNumber|cardCvv|cardExp|cardName|debitCard|cuotas|billetera|tarjeta-option|metodo-option|pagoEfectivo|pagoTransferencia|pagoCredito|pagoDebito|data-metodo/i.test(htmlRenderizado));
 verificar('6.1c ningun input pide numero de tarjeta, vencimiento ni CVV', !inputs.some((i) => /cvv|card|tarjeta|vencim|expir/i.test(i)));
-verificar('6.1d hay aviso visible de modo de prueba', /id="avisoModoPrueba"/.test(paso2) && /Modo de prueba/.test(paso2) && /no se cobra dinero real/i.test(paso2));
+verificar('6.1d ya no hay aviso de modo de prueba (Mercado Pago cobra de verdad desde el 2026-10-22)', !/avisoModoPrueba|Modo de prueba|no se cobra dinero real/i.test(paso2));
 verificar('6.1e el boton dice "Pagar con Mercado Pago" y hay resumen de la compra', />\s*Pagar con Mercado Pago\s*</.test(paso2) && /Resumen de tu compra/.test(paso2) && /id="totalMostrado"/.test(paso2));
 verificar('6.1f el formulario tiene correo, nombre y apellido con autocompletado', /autocomplete="given-name"/.test(paso2) && /autocomplete="family-name"/.test(paso2) && /autocomplete="email"/.test(paso2));
 
@@ -77,6 +77,7 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
     window: ventana, URLSearchParams, URL, console: { error() {}, log() {}, warn() {} }, setTimeout, Promise,
     alert: (m) => alertas.push(m),
     dibujarPie: () => {}, // el pie comun se prueba aparte (23-pie-publico.js)
+    dibujarCabecera: () => {}, // la cabecera comun se prueba aparte (33-cabecera-publica.js)
     db: {}, doc: (db, col, id) => ({ col, id }),
     getDoc: async (ref) => {
       if (ref && ref.col === 'configuracion') {
@@ -262,7 +263,7 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     const html0 = html.replace(/<!--[\s\S]*?-->/g, '');
     const orden = ['id="eventoContainer"', 'id="step1"', 'id="step2"', 'id="sobreEventoContainer"', 'id="dondeEsContainer"', 'id="loadingContainer"'].map((t) => html0.indexOf(t));
     verificar('V5 el orden de la página es afiche, entradas, datos, sobre el evento y dónde es', orden.every((n, i) => n > -1 && (i === 0 || n > orden[i - 1])), orden.join(','));
-    verificar('V6 la sección de ayuda del encabezado lleva al Centro de ayuda con su origen', /href="soporte\.html\?origen=public\/evento\.html"/.test(html0));
+    verificar('V6 la página usa la cabecera común (su link al Centro de ayuda lleva el origen, ver la prueba 33)', /<header id="cabecera"/.test(html0) && /dibujarCabecera\(document\.getElementById\('cabecera'\), 'evento'\)/.test(html0));
   }
 
   verificar('Z durante toda la prueba el JavaScript solo uso ids que existen en el HTML', problemas.length === 0, problemas.join(' | '));
