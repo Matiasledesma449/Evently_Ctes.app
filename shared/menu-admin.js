@@ -75,7 +75,6 @@
             icono: esAdmin ? 'chat' : 'support_agent',
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
-        { clave: 'organizaciones', rol: 'superadmin', href: 'organizaciones.html', icono: 'corporate_fare', texto: 'Organizaciones', corto: 'Organiz.' },
         { clave: 'ver-como-organizacion', rol: 'superadmin', id: 'btnVerComoOrganizacion', idMovil: 'btnVerComoOrganizacionMobile', href: '#', icono: 'visibility', texto: 'Ver como organización', corto: 'Ver como' }
     ];
 
@@ -83,6 +82,8 @@
     // (para el superadmin, Mensajes tiene dos pestañas: Organizaciones y Consultas públicas)
     function esPaginaActual(seccion) {
         if (seccion.soporte) return pagina === 'soporte' || pagina === 'mensajes' || pagina === 'consultas-publicas';
+        // Organizaciones es una pestaña de Eventos (superadmin)
+        if (seccion.clave === 'eventos-seleccion') return pagina === 'eventos-seleccion' || pagina === 'organizaciones';
         return seccion.clave === pagina;
     }
 

@@ -21,9 +21,15 @@
         <script src="../shared/menu-admin.js" data-pagina="organizaciones"></script>
 
         <main class="flex-1 min-w-0 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <!-- Pestañas de la sección Eventos del superadmin: Eventos y Organizaciones -->
+            <nav class="inline-flex rounded-lg border border-gray-200 bg-white p-1 gap-1 mb-6" aria-label="Eventos u organizaciones">
+                <a href="eventos-seleccion.html" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">Eventos</a>
+                <a href="organizaciones.html" aria-current="page" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Organizaciones</a>
+            </nav>
+
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-800">Organizaciones</h1>
-                <p class="text-sm text-gray-500">Las productoras que venden entradas en Evently. Cada evento es de una organización, y sus admins ven solo esos eventos.</p>
+                <p class="text-sm text-gray-500">Las productoras que venden en Evently. Cada evento es de una organización, y sus admins ven solo esos eventos. Una organización puede tener varios admins; cada admin es de una sola organización.</p>
             </div>
 
             <!-- Crear una organización -->
@@ -36,7 +42,7 @@
                 <p id="mensajeNueva" role="status" class="hidden mt-3 text-sm"></p>
             </section>
 
-            <!-- Lista: una tarjeta por organización, con su nombre editable, sus admins y el vínculo por correo -->
+            <!-- Lista: una tarjeta por organización, con su nombre, sus admins y "Agregar admin" -->
             <section aria-labelledby="tituloLista">
                 <h2 id="tituloLista" class="text-lg font-bold text-gray-800 mb-3">Organizaciones creadas</h2>
                 <div id="listaOrganizaciones" class="grid grid-cols-1 xl:grid-cols-2 gap-4" aria-live="polite">
@@ -47,9 +53,11 @@
     </div>
 
     <script type="module">
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { collection, doc, getDoc, getDocs, addDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onAuthStateChanged, getAuth, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { validarOrganizacion } from "../shared/organizaciones.js";
+        import { generarClave, decidirAlta, normalizarCorreo, correoValido, crearUsuarioDeAuth } from "../shared/cuentas-admin.js";
 
         const lista = document.getElementById('listaOrganizaciones');
         const formNueva = document.getElementById('formNueva');
@@ -57,22 +65,24 @@
         const mensajeNueva = document.getElementById('mensajeNueva');
 
         let organizaciones = [];
-        let usuarios = []; // cuentas con rol organización (para mostrar y vincular admins)
+        let cuentas = []; // todas las cuentas de usuarios (para buscar por correo y listar los admins)
+        let cuentasCargadas = false; // sin la lista de cuentas no se puede saber si un correo ya existe
 
         // Todo lo que escribe una persona (nombres, correos) se pone con textContent o value: nunca como HTML
-        function avisar(caja, texto, esError) {
+        function avisar(caja, texto, tipo) {
             caja.textContent = texto;
-            caja.className = `mt-3 text-sm ${esError ? 'text-red-600' : 'text-green-700'}`;
+            caja.className = `mt-3 text-sm ${tipo === 'error' ? 'text-red-600' : tipo === 'pregunta' ? 'text-amber-700' : 'text-green-700'}`;
         }
-
         const elemento = (etiqueta, clases, texto) => {
             const e = document.createElement(etiqueta);
             if (clases) e.className = clases;
             if (texto !== undefined) e.textContent = texto;
             return e;
         };
+        const boton = (texto, clases) => { const b = elemento('button', clases, texto); b.type = 'button'; return b; };
+        const nombreDe = (id) => (organizaciones.find((o) => o.id === id) || {}).nombre || 'otra organización';
 
-        // Solo el superadmin real (no en "Ver como organización": el menú ya lleva esta página a Eventos)
+        // Solo el superadmin real (en "Ver como organización" el menú ya lleva esta página a Eventos)
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.replace('login.html'); return; }
             try {
@@ -86,23 +96,22 @@
                 window.location.replace('eventos-seleccion.html');
                 return;
             }
-            cargarUsuarios();
+            await cargarCuentas();
             onSnapshot(collection(db, 'organizaciones'), (snap) => {
                 organizaciones = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
                     .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
                 dibujar();
             }, (error) => {
                 console.error('No se pudieron leer las organizaciones:', error);
-                lista.replaceChildren(elemento('p', 'text-red-600 text-sm',
-                    'No se pudieron leer las organizaciones. Si es la primera vez, falta publicar la regla de Firestore de "organizaciones".'));
+                lista.replaceChildren(elemento('p', 'text-red-600 text-sm', 'No se pudieron leer las organizaciones. Revisá que esté publicada la regla de Firestore de "organizaciones".'));
             });
         });
 
-        async function cargarUsuarios() {
+        async function cargarCuentas() {
             try {
                 const snap = await getDocs(collection(db, 'usuarios'));
-                usuarios = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => u.rol === 'organizacion');
-                dibujar();
+                cuentas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                cuentasCargadas = true;
             } catch (error) {
                 console.error('No se pudieron leer las cuentas:', error);
             }
@@ -119,6 +128,10 @@
 
         function tarjeta(org) {
             const caja = elemento('article', 'bg-white rounded-xl border border-gray-200 p-5');
+            caja.dataset.organizacion = org.id;
+            const mensaje = elemento('p', 'hidden');
+            mensaje.setAttribute('role', 'status');
+            const zonaExtra = elemento('div'); // clave nueva o confirmación de mover
 
             // Nombre editable
             const filaNombre = elemento('div', 'flex flex-col sm:flex-row gap-2');
@@ -127,83 +140,162 @@
             nombre.maxLength = 60;
             nombre.value = org.nombre || '';
             nombre.setAttribute('aria-label', 'Nombre de la organización');
-            const guardar = elemento('button', 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition', 'Guardar nombre');
-            guardar.type = 'button';
+            const guardar = boton('Guardar nombre', 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition');
             filaNombre.append(nombre, guardar);
-
-            // Admins vinculados
-            const admins = usuarios.filter((u) => u.organizacionId === org.id);
-            const tituloAdmins = elemento('p', 'text-xs font-medium text-gray-500 mt-4 mb-1', 'Admins vinculados');
-            const listaAdmins = elemento('ul', 'text-sm text-gray-700 space-y-1');
-            if (admins.length === 0) listaAdmins.appendChild(elemento('li', 'text-gray-400', 'Ninguno todavía.'));
-            admins.forEach((u) => listaAdmins.appendChild(elemento('li', '', u.email || u.nombre || 'Cuenta sin correo')));
-
-            // Vincular un admin por correo (la cuenta tiene que existir y tener rol organización)
-            const formVincular = elemento('form', 'flex flex-col sm:flex-row gap-2 mt-3');
-            formVincular.noValidate = true;
-            const correo = elemento('input', 'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none');
-            correo.type = 'email';
-            correo.placeholder = 'Correo de la cuenta (ej: admin@productora.com)';
-            correo.setAttribute('aria-label', `Correo del admin a vincular a ${org.nombre || 'la organización'}`);
-            const vincular = elemento('button', 'bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition', 'Vincular admin');
-            vincular.type = 'submit';
-            formVincular.append(correo, vincular);
-
-            const mensaje = elemento('p', 'hidden');
-            mensaje.setAttribute('role', 'status');
-
             guardar.addEventListener('click', async () => {
                 const problema = validarOrganizacion({ nombre: nombre.value }, organizaciones.filter((o) => o.id !== org.id));
-                if (problema) { avisar(mensaje, problema, true); return; }
+                if (problema) { avisar(mensaje, problema, 'error'); return; }
                 guardar.disabled = true;
                 try {
                     await updateDoc(doc(db, 'organizaciones', org.id), { nombre: nombre.value.trim().replace(/\s+/g, ' ') });
-                    avisar(mensaje, 'Nombre guardado.', false);
+                    avisar(mensaje, 'Nombre guardado.');
                 } catch (error) {
                     console.error('No se pudo guardar el nombre:', error);
-                    avisar(mensaje, 'No se pudo guardar. Probá de nuevo.', true);
-                } finally {
-                    guardar.disabled = false;
-                }
+                    avisar(mensaje, 'No se pudo guardar. Probá de nuevo.', 'error');
+                } finally { guardar.disabled = false; }
             });
 
-            formVincular.addEventListener('submit', async (e) => {
+            // Admins de esta organización, cada uno con "Quitar"
+            const admins = cuentas.filter((u) => u.rol === 'organizacion' && u.organizacionId === org.id);
+            const tituloAdmins = elemento('p', 'text-xs font-medium text-gray-500 mt-4 mb-1', `Admins (${admins.length})`);
+            const listaAdmins = elemento('ul', 'divide-y divide-gray-100');
+            if (admins.length === 0) listaAdmins.appendChild(elemento('li', 'text-sm text-gray-400 py-1', 'Ninguno todavía.'));
+            admins.forEach((u) => {
+                const fila = elemento('li', 'flex items-center justify-between gap-2 py-1.5');
+                const quitar = boton('Quitar', 'text-xs font-medium text-red-600 hover:text-red-700 px-2 py-1 rounded');
+                quitar.setAttribute('aria-label', `Quitar a ${u.email || 'esta cuenta'} de ${org.nombre || 'la organización'}`);
+                quitar.addEventListener('click', async () => {
+                    quitar.disabled = true;
+                    try {
+                        // No se borra la cuenta: deja de pertenecer a la organización y no ve ningún evento
+                        await updateDoc(doc(db, 'usuarios', u.id), { organizacionId: '' });
+                        u.organizacionId = '';
+                        dibujar();
+                    } catch (error) {
+                        console.error('No se pudo quitar al admin:', error);
+                        avisar(mensaje, 'No se pudo quitar. Probá de nuevo.', 'error');
+                        quitar.disabled = false;
+                    }
+                });
+                fila.append(elemento('span', 'text-sm text-gray-700 break-all', u.email || u.nombre || 'Cuenta sin correo'), quitar);
+                listaAdmins.appendChild(fila);
+            });
+
+            // Agregar admin por correo: vincula una cuenta que ya existe o crea una nueva con clave
+            const formAgregar = elemento('form', 'flex flex-col sm:flex-row gap-2 mt-3');
+            formAgregar.noValidate = true;
+            const correo = elemento('input', 'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none');
+            correo.type = 'email';
+            correo.placeholder = 'Correo del admin (ej: admin@productora.com)';
+            correo.setAttribute('aria-label', `Correo del admin para ${org.nombre || 'la organización'}`);
+            const agregar = elemento('button', 'bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition', 'Agregar admin');
+            agregar.type = 'submit';
+            formAgregar.append(correo, agregar);
+
+            async function vincular(cuenta) {
+                await updateDoc(doc(db, 'usuarios', cuenta.id), { organizacionId: org.id });
+                cuenta.organizacionId = org.id;
+            }
+
+            formAgregar.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const buscado = correo.value.trim().toLowerCase();
-                if (!buscado) { avisar(mensaje, 'Escribí el correo de la cuenta.', true); return; }
-                const cuenta = usuarios.find((u) => String(u.email || '').trim().toLowerCase() === buscado);
-                if (!cuenta) { avisar(mensaje, 'No hay ninguna cuenta de organización con ese correo. La cuenta tiene que existir antes de vincularla.', true); return; }
-                if (cuenta.organizacionId === org.id) { avisar(mensaje, 'Esa cuenta ya está vinculada a esta organización.', false); return; }
-                vincular.disabled = true;
+                zonaExtra.replaceChildren();
+                if (!cuentasCargadas) { avisar(mensaje, 'No se pudieron leer las cuentas: recargá la página antes de agregar admins.', 'error'); return; }
+                const buscado = normalizarCorreo(correo.value);
+                if (!correoValido(buscado)) { avisar(mensaje, 'Escribí un correo válido.', 'error'); return; }
+                const cuenta = cuentas.find((u) => normalizarCorreo(u.email) === buscado) || null;
+                const decision = decidirAlta(cuenta, org.id);
+                agregar.disabled = true;
                 try {
-                    await updateDoc(doc(db, 'usuarios', cuenta.id), { organizacionId: org.id });
-                    cuenta.organizacionId = org.id;
-                    avisar(mensaje, 'Admin vinculado. Desde ahora ve los eventos de esta organización.', false);
+                    if (decision.accion === 'no-se-puede') { avisar(mensaje, decision.motivo, 'error'); return; }
+                    if (decision.accion === 'ya-esta') { avisar(mensaje, 'Esa cuenta ya es admin de esta organización.'); return; }
+                    if (decision.accion === 'vincular') {
+                        await vincular(cuenta);
+                        correo.value = '';
+                        dibujar();
+                        return;
+                    }
+                    if (decision.accion === 'mover') {
+                        // Una cuenta es de una sola organización: antes de moverla se pide confirmar
+                        avisar(mensaje, `Esa cuenta es admin de ${nombreDe(cuenta.organizacionId)}. Si la movés, deja de ver los eventos de esa organización.`, 'pregunta');
+                        const mover = boton(`Mover a ${org.nombre || 'esta organización'}`, 'mt-2 border border-amber-600 text-amber-700 hover:bg-amber-50 px-4 py-2 rounded-lg text-sm font-medium');
+                        mover.addEventListener('click', async () => {
+                            mover.disabled = true;
+                            try { await vincular(cuenta); correo.value = ''; dibujar(); }
+                            catch (error) { console.error('No se pudo mover la cuenta:', error); avisar(mensaje, 'No se pudo mover. Probá de nuevo.', 'error'); mover.disabled = false; }
+                        });
+                        zonaExtra.appendChild(mover);
+                        return;
+                    }
+                    // crear: cuenta nueva con clave generada (no cambia la sesión del superadmin)
+                    const clave = generarClave();
+                    const uid = await crearUsuarioDeAuth({ initializeApp, getApps, getAuth, createUserWithEmailAndPassword, signOut }, db.app.options, buscado, clave);
+                    const nueva = { email: buscado, rol: 'organizacion', organizacionId: org.id, nombre: org.nombre || '', creadoEn: serverTimestamp() };
+                    try {
+                        await setDoc(doc(db, 'usuarios', uid), nueva);
+                    } catch (errorGuardado) {
+                        // El acceso ya se creó: se muestra igual la clave para no perderla, con el aviso de qué falta
+                        console.error('Se creó el acceso pero no se guardó la cuenta:', errorGuardado);
+                        mostrarClaveNueva(org.id, buscado, clave);
+                        avisar(mensaje, 'Se creó el acceso pero no se pudo guardar como admin. Anotá la clave y volvé a agregar el mismo correo más tarde.', 'error');
+                        return;
+                    }
+                    cuentas.push({ id: uid, ...nueva });
                     correo.value = '';
                     dibujar();
+                    mostrarClaveNueva(org.id, buscado, clave);
                 } catch (error) {
-                    console.error('No se pudo vincular la cuenta:', error);
-                    avisar(mensaje, 'No se pudo vincular. Probá de nuevo.', true);
-                } finally {
-                    vincular.disabled = false;
-                }
+                    console.error('No se pudo agregar el admin:', error);
+                    const codigo = error && error.code;
+                    avisar(mensaje, codigo === 'auth/email-already-in-use'
+                        ? 'Ese correo ya tiene acceso a Evently pero no figura como cuenta. Avisale a quien administra Firebase para cargarla en "usuarios".'
+                        : codigo === 'auth/invalid-email' ? 'Ese correo no es válido.' : 'No se pudo agregar el admin. Probá de nuevo.', 'error');
+                } finally { agregar.disabled = false; }
             });
 
-            caja.append(filaNombre, tituloAdmins, listaAdmins, formVincular, mensaje);
+            caja.append(filaNombre, tituloAdmins, listaAdmins, formAgregar, zonaExtra, mensaje);
             return caja;
+        }
+
+        // La clave nueva se muestra una sola vez, en la tarjeta de su organización (no se guarda en ningún lado)
+        function mostrarClaveNueva(organizacionId, correo, clave) {
+            const caja = lista.querySelector(`[data-organizacion="${CSS.escape(organizacionId)}"]`);
+            if (!caja) return;
+            const panel = elemento('div', 'mt-4 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900');
+            panel.setAttribute('role', 'status');
+            panel.append(
+                elemento('p', 'font-semibold', 'Cuenta creada. Pasale estos datos al admin:'),
+                elemento('p', 'mt-2 break-all', `Correo: ${correo}`)
+            );
+            const filaClave = elemento('p', 'mt-1 flex flex-wrap items-center gap-2');
+            filaClave.append(elemento('span', '', 'Clave:'), elemento('code', 'bg-white border border-green-200 rounded px-2 py-0.5 font-mono text-base', clave));
+            const copiar = boton('Copiar', 'text-xs font-semibold text-green-800 underline');
+            copiar.addEventListener('click', async () => {
+                try { await navigator.clipboard.writeText(clave); copiar.textContent = 'Copiada'; } catch (e) { copiar.textContent = 'No se pudo copiar: copiala a mano'; }
+            });
+            filaClave.appendChild(copiar);
+            const aviso = elemento('p', 'mt-2 text-xs', 'Esta clave no se vuelve a mostrar. El admin entra en admin/login.html y puede cambiarla con "¿Olvidaste tu contraseña?".');
+            const correoReset = boton('Mandarle el correo para que elija su contraseña', 'mt-3 border border-green-700 text-green-800 hover:bg-green-100 px-3 py-1.5 rounded-lg text-xs font-semibold');
+            correoReset.addEventListener('click', async () => {
+                correoReset.disabled = true;
+                try { await sendPasswordResetEmail(auth, correo); correoReset.textContent = 'Correo enviado'; }
+                catch (e) { console.error('No se pudo mandar el correo:', e); correoReset.textContent = 'No se pudo mandar el correo'; correoReset.disabled = false; }
+            });
+            panel.append(filaClave, aviso, correoReset);
+            caja.appendChild(panel);
         }
 
         formNueva.addEventListener('submit', async (e) => {
             e.preventDefault();
             const problema = validarOrganizacion({ nombre: nombreNueva.value }, organizaciones);
-            if (problema) { avisar(mensajeNueva, problema, true); return; }
+            if (problema) { avisar(mensajeNueva, problema, 'error'); return; }
             try {
                 await addDoc(collection(db, 'organizaciones'), { nombre: nombreNueva.value.trim().replace(/\s+/g, ' '), creadaEn: serverTimestamp() });
-                avisar(mensajeNueva, 'Organización creada. Ahora vinculale sus admins.', false);
+                avisar(mensajeNueva, 'Organización creada. Ahora agregale sus admins.');
                 nombreNueva.value = '';
             } catch (error) {
                 console.error('No se pudo crear la organización:', error);
-                avisar(mensajeNueva, 'No se pudo crear. Si es la primera vez, falta publicar la regla de Firestore de "organizaciones".', true);
+                avisar(mensajeNueva, 'No se pudo crear. Revisá que esté publicada la regla de Firestore de "organizaciones".', 'error');
             }
         });
     </script>

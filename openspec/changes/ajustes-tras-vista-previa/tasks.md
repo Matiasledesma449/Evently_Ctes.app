@@ -6,8 +6,8 @@
 - [x] 1.3 Centro de ayuda ordenado con la paleta del sitio (temas → preguntas del tema; formulario que se abre desde "Contactate"). Se comprueba con la auditoría del comprador.
 
 ## 2. Organizaciones
-- [ ] 2.1 Pestañas Eventos / Organizaciones y sacar "Organizaciones" del menú. Se comprueba con el navegador automático.
-- [ ] 2.2 `shared/cuentas-admin.js` (clave generada) y "Agregar admin" que crea la cuenta si no existe; aviso y confirmación si es de otra organización; "Quitar". Prueba de la clave con `node`; el resto con el navegador automático y Firebase falso.
+- [x] 2.1 Pestañas Eventos / Organizaciones y sacar "Organizaciones" del menú. Se comprueba con el navegador automático.
+- [x] 2.2 `shared/cuentas-admin.js` (clave generada) y "Agregar admin" que crea la cuenta si no existe; aviso y confirmación si es de otra organización; "Quitar". Prueba de la clave con `node`; el resto con el navegador automático y Firebase falso.
 
 ## 3. Lotes
 - [ ] 3.1 `shared/lotes.js` con `estadoDeLote` y su prueba.

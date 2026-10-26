@@ -39,6 +39,12 @@
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
 
+            <!-- Pestañas de la sección Eventos del superadmin: Eventos y Organizaciones -->
+            <nav id="pestanasEventos" class="hidden inline-flex rounded-lg border border-gray-200 bg-white p-1 gap-1 mb-6" aria-label="Eventos u organizaciones">
+                <a href="eventos-seleccion.html" aria-current="page" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Eventos</a>
+                <a href="organizaciones.html" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">Organizaciones</a>
+            </nav>
+
             <!-- Header -->
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
@@ -141,6 +147,7 @@
                 subtituloPagina.textContent = 'Todos los eventos de todas las organizaciones';
                 filtrosContainer.classList.remove('hidden');
                 organizacionFilter.classList.remove('hidden');
+                document.getElementById('pestanasEventos').classList.remove('hidden');
                 cargarCategorias();
                 cargarOrganizaciones();
             } else if (superadminReal) {

@@ -38,7 +38,8 @@ function aplicarRolVisual(rol) {
             : `${enlace.dataset.navKey}.html`;
         // Consultas públicas es una pestaña de Mensajes: la sección activa sigue siendo Mensajes
         const activo = paginaActual === destino
-            || (enlace.dataset.navKey === 'soporte-mensajes' && esAdmin && paginaActual === 'consultas-publicas.html');
+            || (enlace.dataset.navKey === 'soporte-mensajes' && esAdmin && paginaActual === 'consultas-publicas.html')
+            || (enlace.dataset.navKey === 'eventos-seleccion' && esAdmin && paginaActual === 'organizaciones.html');
         if (enlace.classList.contains('mobile-nav-link')) {
             enlace.classList.toggle('text-violet-600', activo);
             enlace.classList.toggle('text-gray-500', !activo);
