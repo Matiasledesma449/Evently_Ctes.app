@@ -21,9 +21,11 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 4. Revisión final
 
-- [ ] 4.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas.
-- [ ] 4.2 Confirmar con `git diff --stat` que solo cambió lo previsto (`shared/`, `admin/escaner.html`, `admin/reportes.html`, `pruebas/` y este change).
-- [ ] 4.3 Actualizar `CLAUDE.md` con la franja compartida. Se comprueba leyendo el archivo: sin claves, correos ni rutas personales.
+- [x] 4.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas.
+  - **Resultado (2026-10-26):** las 18 pruebas pasaron. La auditoría de `auditar-panel` necesita navegador y no se puede correr desde la nube: queda para que la persona la corra a mano.
+- [x] 4.2 Confirmar con `git diff --stat` que solo cambió lo previsto (`shared/`, `admin/escaner.html`, `admin/reportes.html`, `pruebas/` y este change).
+  - **Resultado (2026-10-26):** los commits de este change tocaron solo `shared/` (3 archivos), `admin/reportes.html`, `pruebas/17-...` y este `tasks.md`. `admin/escaner.html` no cambió (tarea 2.3 salteada).
+- [x] 4.3 Actualizar `CLAUDE.md` con la franja compartida. Se comprueba leyendo el archivo: sin claves, correos ni rutas personales.
 
 ## Workflow follow-up
 
