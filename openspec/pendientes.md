@@ -10,7 +10,7 @@ Lista de pedidos que todavía no tienen change de OpenSpec. La usa el trabajo no
 - [x] 4. Superadmin: eliminar "Panel global"; las solicitudes de evento pasan a "Crear evento" con aprobar, rechazar, comentar y contacto directo; al entrar ve los eventos directamente. (change: `superadmin-sin-panel-global`)
 - [x] 5. Mensajes y Consultas públicas estilo WhatsApp: colores para nuevo, leído y respondido; estado vacío claro. "Nuevo mensaje" lista todas las organizaciones. (change: `mensajes-estilo-whatsapp`)
 - [x] 6. Página de compra del comprador (diseño), manteniendo el violeta. (change: `pagina-de-compra-mejorada`)
-- [ ] 7. Comisión por servicio, porcentajes editables por organizador y cuotas.
+- [x] 7. Comisión por servicio, porcentajes editables por organizador y cuotas. (change: `costo-de-servicio`)
 
 ## Bugs conocidos (cada uno necesita su propio change)
 
