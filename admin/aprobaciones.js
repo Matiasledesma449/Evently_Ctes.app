@@ -280,7 +280,13 @@
         if ((solicitud.estado || 'pendiente') !== 'pendiente') return;
         solicitudEditando = solicitud;
         document.getElementById('editarNombreSolicitud').value = solicitud.nombre || '';
-        document.getElementById('editarFechaSolicitud').value = solicitud.fecha || '';
+        const campoFecha = document.getElementById('editarFechaSolicitud');
+        campoFecha.value = solicitud.fecha || '';
+        // Con días y horarios cargados, la fecha es la del primer día: cambiarla a mano los dejaría contradictorios
+        const tieneDias = Array.isArray(solicitud.dias) && solicitud.dias.length > 0;
+        campoFecha.readOnly = tieneDias;
+        campoFecha.classList.toggle('bg-gray-100', tieneDias);
+        campoFecha.title = tieneDias ? 'La fecha sale de los días del evento. Para cambiarlos, pedí una solicitud nueva.' : '';
         document.getElementById('editarLugarSolicitud').value = solicitud.lugar || '';
         errorEditarSolicitud.classList.add('hidden');
         lotesEdicionContainer.replaceChildren();

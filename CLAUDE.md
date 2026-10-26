@@ -24,6 +24,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Las ventas y el stock solo los escribe el servidor (`firebase-admin`); el navegador no debe escribir en `ventas` (queda garantizado cuando se publiquen las reglas de Firestore, tarea 10.3).
 - Variables de entorno (solo los nombres, los valores van en Vercel): `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `SITE_URL`.
 - Formas de pago que se nombran en el sitio (Transferencia, Débito, Crédito; sin efectivo): lista en `shared/formas-de-pago.js`, probada en `pruebas/18-formas-de-pago.js`. Es solo texto para mostrar; lo que guarda el servidor no cambia.
+- Días con horario y detalle de un evento (`dias`, `detalle`; `fecha` sigue siendo el texto del primer día): funciones en `shared/evento-datos.js`, probadas en `pruebas/19-evento-datos.js`.
 - Detalle del change: `openspec/changes/pagos-mercadopago/`.
 
 ## Datos y roles

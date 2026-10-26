@@ -9,14 +9,14 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 2. Formulario
 
-- [ ] 2.1 En `admin/eventos.html`: lista de días con fecha, hora de inicio y hora de fin, botón "Agregar día" y "Eliminar" (mínimo 1), y envío que guarda `dias` y `fecha`. Se comprueba leyendo el archivo: el envío usa las funciones de `shared/` y no queda el campo de fecha de texto libre.
-- [ ] 2.2 En `admin/eventos.html`: cuatro campos de detalle (actividad, tipo con lista y "Otro", requisitos, edad) más el texto libre opcional, guardados en `detalle` y `descripcion`. Se comprueba leyendo el archivo.
+- [x] 2.1 En `admin/eventos.html`: lista de días con fecha, hora de inicio y hora de fin, botón "Agregar día" y "Eliminar" (mínimo 1), y envío que guarda `dias` y `fecha`. Se comprueba leyendo el archivo: el envío usa las funciones de `shared/` y no queda el campo de fecha de texto libre.
+- [x] 2.2 En `admin/eventos.html`: cuatro campos de detalle (actividad, tipo con lista y "Otro", requisitos, edad) más el texto libre opcional, guardados en `detalle` y `descripcion`. Se comprueba leyendo el archivo.
 - [ ] 2.3 Probar el envío con la skill `auditar-panel` con datos inventados: dos días, detalle completo, y que `Limpiar` deja el formulario como al principio. (Necesita navegador: si la nube no lo tiene, queda para la persona.)
 
 ## 3. Mostrar en el sitio
 
-- [ ] 3.1 En `public/evento.html`: un renglón por día con horario y el detalle en filas, todo escapado; un evento viejo se ve igual que hoy. Se comprueba con `node pruebas/ejecutar-todas.js` y leyendo el archivo.
-- [ ] 3.2 En `admin/aprobaciones.js`: si la solicitud tiene `dias`, el campo `fecha` de la edición queda bloqueado con un aviso. Se comprueba leyendo el archivo.
+- [x] 3.1 (También se agregó `evento-datos.js` a lo que carga `pruebas/10-pantalla-de-compra.js`.) En `public/evento.html`: un renglón por día con horario y el detalle en filas, todo escapado; un evento viejo se ve igual que hoy. Se comprueba con `node pruebas/ejecutar-todas.js` y leyendo el archivo.
+- [x] 3.2 En `admin/aprobaciones.js`: si la solicitud tiene `dias`, el campo `fecha` de la edición queda bloqueado con un aviso. Se comprueba leyendo el archivo.
 
 ## 4. Lugar con sugerencias y mapa (espera la respuesta a la pregunta 1)
 
@@ -27,7 +27,7 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 ## 5. Revisión final
 
 - [ ] 5.1 Correr `node pruebas/ejecutar-todas.js` y la auditoría completa de `auditar-panel`: sin problemas.
-- [ ] 5.2 Actualizar `CLAUDE.md` con `shared/evento-datos.js` y la prueba 19, sin claves, correos ni rutas personales.
+- [x] 5.2 Actualizar `CLAUDE.md` con `shared/evento-datos.js` y la prueba 19, sin claves, correos ni rutas personales.
 
 ## Workflow follow-up
 
