@@ -83,8 +83,9 @@
 
             <div class="flex-1 flex overflow-hidden">
                 <!-- Lista (conversaciones + solicitudes mezcladas) -->
-                <div id="panelLista" class="w-80 border-r border-gray-200 bg-white chat-scroll hidden lg:block flex-shrink-0">
-                    <div id="listaConversaciones">
+                <div id="panelLista" class="w-80 border-r border-gray-200 bg-white hidden lg:flex flex-col flex-shrink-0">
+                    <div id="filtrosEstado" class="p-3 border-b border-gray-100 flex flex-wrap gap-1.5 flex-shrink-0" role="group" aria-label="Filtrar por estado"></div>
+                    <div id="listaConversaciones" class="flex-1 chat-scroll">
                         <p class="p-4 text-gray-400 text-sm text-center">Cargando...</p>
                     </div>
                 </div>
@@ -101,10 +102,11 @@
                             <div id="chatAvatar" class="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
                                 <span id="chatAvatarIcon" class="material-symbols-outlined text-violet-600">person</span>
                             </div>
-                            <div>
-                                <p id="chatNombre" class="font-semibold text-gray-800"></p>
+                            <div class="min-w-0 flex-1">
+                                <p id="chatNombre" class="font-semibold text-gray-800 truncate"></p>
                                 <p id="chatEmail" class="text-xs text-gray-500"></p>
                             </div>
+                            <span id="chatInsignia" class="hidden text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"></span>
                         </div>
                     </div>
 
@@ -188,9 +190,10 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Selecciona el cliente con quien querés hablar:</p>
+            <p class="text-sm text-gray-600 mb-3">Elegí la organización con la que querés hablar:</p>
+            <input id="buscarOrganizacion" type="search" placeholder="Buscar por nombre o correo" class="w-full border border-gray-300 rounded-full px-4 py-2 mb-3 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" />
             <div id="listaUsuarios" class="space-y-2 max-h-64 overflow-y-auto">
-                <p class="text-center text-gray-400 text-sm">Cargando clientes...</p>
+                <p class="text-center text-gray-400 text-sm">Cargando organizaciones...</p>
             </div>
         </div>
     </div>
@@ -203,6 +206,10 @@
             getDocs, serverTimestamp, updateDoc, deleteDoc, writeBatch
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import {
+            estadoDeConversacion, contarPorEstado, presentacionDeEstado,
+            filtrarPorEstado, organizacionesParaChat, textoVacio
+        } from "../shared/estado-mensajes.js";
 
         const listaConversaciones = document.getElementById('listaConversaciones');
         const chatHeader = document.getElementById('chatHeader');
@@ -210,6 +217,9 @@
         const chatAvatarIcon = document.getElementById('chatAvatarIcon');
         const chatNombre = document.getElementById('chatNombre');
         const chatEmail = document.getElementById('chatEmail');
+        const chatInsignia = document.getElementById('chatInsignia');
+        const filtrosEstado = document.getElementById('filtrosEstado');
+        const buscarOrganizacion = document.getElementById('buscarOrganizacion');
         const chatMensajes = document.getElementById('chatMensajes');
         const chatInput = document.getElementById('chatInput');
         const chatVacio = document.getElementById('chatVacio');
@@ -246,6 +256,7 @@
             chatVacio.classList.remove('hidden');
             conversacionActual = null;
             solicitudActual = null;
+            chatInsignia.classList.add('hidden');
         });
 
         // --- Iniciar ---
@@ -258,7 +269,7 @@
 
             btnNuevaConversacion.classList.remove('hidden');
             panelLista.classList.remove('hidden');
-            panelLista.classList.add('lg:block');
+            panelLista.classList.add('flex');
 
             cargarConversaciones();
             cargarSolicitudesPassword();
@@ -313,108 +324,228 @@
         }
 
         // ✅ Mezclar solicitudes (arriba) + conversaciones (abajo)
+        const FILTROS = [
+            { valor: 'todos', etiqueta: 'Todas' },
+            { valor: 'nuevo', etiqueta: 'Nuevas' },
+            { valor: 'leido', etiqueta: 'Leídas' },
+            { valor: 'respondido', etiqueta: 'Respondidas' }
+        ];
+        let filtroActual = 'todos';
+
+        const estadoDe = (conv) => estadoDeConversacion(conv, miUid);
+
+        function renderizarFiltros() {
+            const cuenta = contarPorEstado(conversacionesLista, estadoDe);
+            filtrosEstado.replaceChildren();
+            FILTROS.forEach(filtro => {
+                const total = filtro.valor === 'todos' ? cuenta.total : cuenta[filtro.valor];
+                const activo = filtro.valor === filtroActual;
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'px-3 py-1 rounded-full text-xs font-medium border transition ' +
+                    (activo ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-violet-50');
+                boton.textContent = `${filtro.etiqueta} (${total})`;
+                boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+                boton.addEventListener('click', () => {
+                    filtroActual = filtro.valor;
+                    renderizarListaCompleta();
+                });
+                filtrosEstado.appendChild(boton);
+            });
+        }
+
+        function crearEstadoVacio(contexto) {
+            const texto = textoVacio(contexto);
+            const caja = document.createElement('div');
+            caja.className = 'p-6 text-center text-gray-400 text-sm';
+            const icono = document.createElement('span');
+            icono.className = 'material-symbols-outlined text-4xl';
+            icono.textContent = 'chat_bubble_outline';
+            const titulo = document.createElement('p');
+            titulo.className = 'mt-2 font-medium text-gray-500';
+            titulo.textContent = texto.titulo;
+            const ayuda = document.createElement('p');
+            ayuda.className = 'mt-1 text-xs';
+            ayuda.textContent = texto.ayuda;
+            caja.append(icono, titulo, ayuda);
+            if (texto.verTodas) {
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'mt-3 px-4 py-1.5 rounded-full text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white';
+                boton.textContent = 'Ver todas';
+                boton.addEventListener('click', () => {
+                    filtroActual = 'todos';
+                    renderizarListaCompleta();
+                });
+                caja.appendChild(boton);
+            }
+            return caja;
+        }
+
+        function crearFilaSolicitud(s) {
+            const fecha = s.fecha ? new Date(s.fecha.seconds * 1000) : new Date();
+            const diffMin = Math.floor((new Date() - fecha) / 60000);
+            let tiempoTexto;
+            if (diffMin < 1) tiempoTexto = 'Ahora';
+            else if (diffMin < 60) tiempoTexto = `Hace ${diffMin} min`;
+            else if (diffMin < 1440) tiempoTexto = `Hace ${Math.floor(diffMin / 60)} h`;
+            else tiempoTexto = fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+
+            const fila = document.createElement('div');
+            fila.className = 'conversacion-item solicitud-item p-4 border-b border-amber-100' + (solicitudActual && solicitudActual.id === s.id ? ' activo' : '');
+            fila.dataset.tipo = 'solicitud';
+            fila.dataset.id = s.id;
+
+            const contenido = document.createElement('div');
+            contenido.className = 'flex items-start gap-3';
+            const avatar = document.createElement('div');
+            avatar.className = 'w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0';
+            const icono = document.createElement('span');
+            icono.className = 'material-symbols-outlined text-amber-700';
+            icono.textContent = 'lock_reset';
+            avatar.appendChild(icono);
+
+            const centro = document.createElement('div');
+            centro.className = 'flex-1 min-w-0';
+            const arriba = document.createElement('div');
+            arriba.className = 'flex items-center gap-2';
+            const correo = document.createElement('p');
+            correo.className = 'font-semibold text-gray-800 text-sm truncate';
+            correo.textContent = s.email || 'Sin email';
+            const insignia = document.createElement('span');
+            insignia.className = 'bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full';
+            insignia.textContent = 'NUEVO';
+            arriba.append(correo, insignia);
+            const tipo = document.createElement('p');
+            tipo.className = 'text-xs text-amber-700 font-medium mt-0.5';
+            tipo.textContent = 'Solicitud de contraseña';
+            const tiempo = document.createElement('p');
+            tiempo.className = 'text-[10px] text-gray-500 mt-0.5';
+            tiempo.textContent = tiempoTexto;
+            centro.append(arriba, tipo, tiempo);
+
+            contenido.append(avatar, centro);
+            fila.appendChild(contenido);
+            fila.addEventListener('click', () => {
+                abrirSolicitud(s.id);
+                if (window.innerWidth < 1024) panelLista.classList.add('hidden');
+            });
+            return fila;
+        }
+
+        function crearFilaConversacion(conv) {
+            const otroUid = conv.participantes.find(uid => uid !== miUid);
+            const nombreTexto = conv.nombres?.[otroUid] || 'Usuario';
+            const estado = estadoDe(conv);
+            const vista = presentacionDeEstado(estado);
+            const fechaTexto = conv.ultimaFecha ? new Date(conv.ultimaFecha.seconds * 1000).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+
+            const fila = document.createElement('div');
+            fila.className = 'conversacion-item p-4 border-b border-gray-100' + (conversacionActual && conversacionActual.id === conv.id ? ' activo' : '');
+            fila.dataset.tipo = 'chat';
+            fila.dataset.id = conv.id;
+
+            const contenido = document.createElement('div');
+            contenido.className = 'flex items-center gap-3';
+            const avatar = document.createElement('div');
+            avatar.className = 'w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0';
+            const inicial = document.createElement('span');
+            inicial.className = 'font-semibold text-violet-700';
+            inicial.textContent = nombreTexto.charAt(0).toUpperCase();
+            avatar.appendChild(inicial);
+
+            const centro = document.createElement('div');
+            centro.className = 'flex-1 min-w-0 pr-6';
+            const nombre = document.createElement('p');
+            nombre.className = 'text-gray-800 text-sm truncate ' + (vista.negrita ? 'font-bold' : 'font-semibold');
+            nombre.textContent = nombreTexto;
+            const previa = document.createElement('p');
+            previa.className = 'text-xs truncate ' + (vista.negrita ? 'text-gray-700' : 'text-gray-500');
+            previa.textContent = conv.ultimoMensaje || 'Sin mensajes';
+            centro.append(nombre, previa);
+
+            const derecha = document.createElement('div');
+            derecha.className = 'flex flex-col items-end gap-1 flex-shrink-0';
+            const hora = document.createElement('span');
+            hora.className = 'text-[10px] text-gray-400';
+            hora.textContent = fechaTexto;
+            derecha.appendChild(hora);
+            if (estado === 'nuevo') {
+                const punto = document.createElement('span');
+                punto.className = 'w-2.5 h-2.5 rounded-full ' + vista.clasesPunto;
+                punto.title = vista.etiqueta;
+                derecha.appendChild(punto);
+            } else if (estado === 'respondido') {
+                const tilde = document.createElement('span');
+                tilde.className = 'material-symbols-outlined text-green-600 text-base';
+                tilde.textContent = 'done_all';
+                tilde.title = vista.etiqueta;
+                derecha.appendChild(tilde);
+            }
+            contenido.append(avatar, centro, derecha);
+
+            const borrar = document.createElement('button');
+            borrar.type = 'button';
+            borrar.className = 'btn-eliminar-conv hidden absolute right-2 top-1/2 -translate-y-1/2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full w-7 h-7 items-center justify-center transition';
+            borrar.title = 'Eliminar conversación';
+            const iconoBorrar = document.createElement('span');
+            iconoBorrar.className = 'material-symbols-outlined text-sm';
+            iconoBorrar.textContent = 'delete';
+            borrar.appendChild(iconoBorrar);
+            borrar.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm(`¿Eliminar toda la conversación con "${nombreTexto}"? Esta acción no se puede deshacer.`)) {
+                    await eliminarConversacion(conv.id);
+                }
+            });
+
+            fila.append(contenido, borrar);
+            fila.addEventListener('click', () => {
+                abrirConversacion(conv.id, otroUid, nombreTexto);
+                if (window.innerWidth < 1024) panelLista.classList.add('hidden');
+            });
+            return fila;
+        }
+
+        // ✅ Mezclar solicitudes (arriba, fuera del filtro) + conversaciones (abajo)
+        // La conversación abierta: muestra su estado en la cabecera y, si llegó algo nuevo mientras está abierta, la marca como leída (solo si hace falta, para no entrar en bucle)
+        const marcandoLeida = new Set();
+        function sincronizarConversacionAbierta() {
+            const conv = conversacionActual ? conversacionesLista.find(c => c.id === conversacionActual.id) : null;
+            if (!conv) {
+                chatInsignia.classList.add('hidden');
+                return;
+            }
+            const vista = presentacionDeEstado(estadoDe(conv));
+            chatInsignia.className = 'text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ' + vista.clasesInsignia;
+            chatInsignia.textContent = vista.etiqueta;
+
+            if (conv.ultimoDe && conv.ultimoDe !== miUid && conv.ultimoLeido !== true && !marcandoLeida.has(conv.id)) {
+                marcandoLeida.add(conv.id);
+                updateDoc(doc(db, "conversaciones", conv.id), { ultimoLeido: true })
+                    .catch(e => console.error('No se pudo marcar la conversación como leída:', e))
+                    .finally(() => marcandoLeida.delete(conv.id));
+            }
+        }
+
         function renderizarListaCompleta() {
-            if (solicitudesPendientes.length === 0 && conversacionesLista.length === 0) {
-                listaConversaciones.innerHTML = `
-                    <div class="p-6 text-center text-gray-400 text-sm">
-                        <span class="material-symbols-outlined text-4xl">chat_bubble_outline</span>
-                        <p class="mt-2">No tenés conversaciones</p>
-                    </div>
-                `;
+            renderizarFiltros();
+            sincronizarConversacionAbierta();
+            listaConversaciones.replaceChildren();
+
+            solicitudesPendientes.forEach(s => listaConversaciones.appendChild(crearFilaSolicitud(s)));
+
+            if (conversacionesLista.length === 0) {
+                listaConversaciones.appendChild(crearEstadoVacio('mensajes-sin-conversaciones'));
                 return;
             }
 
-            let html = '';
-
-            // ✅ SOLICITUDES DE CONTRASEÑA PRIMERO (destacadas)
-            if (solicitudesPendientes.length > 0) {
-                html += solicitudesPendientes.map(s => {
-                    const fecha = s.fecha ? new Date(s.fecha.seconds * 1000) : new Date();
-                    const ahora = new Date();
-                    const diffMin = Math.floor((ahora - fecha) / 60000);
-                    let tiempoTexto;
-                    if (diffMin < 1) tiempoTexto = 'Ahora';
-                    else if (diffMin < 60) tiempoTexto = `Hace ${diffMin} min`;
-                    else if (diffMin < 1440) tiempoTexto = `Hace ${Math.floor(diffMin / 60)} h`;
-                    else tiempoTexto = fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
-
-                    const activo = solicitudActual && solicitudActual.id === s.id ? 'activo' : '';
-
-                    return `
-                        <div class="conversacion-item solicitud-item ${activo} p-4 border-b border-amber-100" data-tipo="solicitud" data-id="${s.id}">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
-                                    <span class="material-symbols-outlined text-amber-700">lock_reset</span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2">
-                                        <p class="font-semibold text-gray-800 text-sm truncate">${s.email || 'Sin email'}</p>
-                                        <span class="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">NUEVO</span>
-                                    </div>
-                                    <p class="text-xs text-amber-700 font-medium mt-0.5">Solicitud de contraseña</p>
-                                    <p class="text-[10px] text-gray-500 mt-0.5">${tiempoTexto}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+            const visibles = filtrarPorEstado(conversacionesLista, filtroActual, estadoDe);
+            if (visibles.length === 0) {
+                listaConversaciones.appendChild(crearEstadoVacio('filtro-sin-resultados'));
+                return;
             }
-
-            // ✅ CONVERSACIONES DESPUÉS
-            if (conversacionesLista.length > 0) {
-                html += conversacionesLista.map(conv => {
-                    const otroUid = conv.participantes.find(uid => uid !== miUid);
-                    const nombre = conv.nombres?.[otroUid] || 'Usuario';
-                    const inicial = nombre.charAt(0).toUpperCase();
-                    const activo = conversacionActual && conversacionActual.id === conv.id ? 'activo' : '';
-                    const fecha = conv.ultimaFecha ? new Date(conv.ultimaFecha.seconds * 1000).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-
-                    return `
-                        <div class="conversacion-item ${activo} p-4 border-b border-gray-100" data-tipo="chat" data-id="${conv.id}" data-otrouid="${otroUid}" data-nombre="${nombre}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                                    <span class="font-semibold text-violet-700">${inicial}</span>
-                                </div>
-                                <div class="flex-1 min-w-0 pr-6">
-                                    <p class="font-semibold text-gray-800 text-sm truncate">${nombre}</p>
-                                    <p class="text-xs text-gray-500 truncate">${conv.ultimoMensaje || 'Sin mensajes'}</p>
-                                </div>
-                                <div class="text-[10px] text-gray-400 flex-shrink-0">${fecha}</div>
-                            </div>
-                            <button class="btn-eliminar-conv hidden absolute right-2 top-1/2 -translate-y-1/2 bg-red-100 hover:bg-red-200 text-red-600 rounded-full w-7 h-7 items-center justify-center transition" data-id="${conv.id}" data-nombre="${nombre}" title="Eliminar conversación">
-                                <span class="material-symbols-outlined text-sm">delete</span>
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            listaConversaciones.innerHTML = html;
-
-            // Click: distinguir tipo
-            document.querySelectorAll('.conversacion-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    if (e.target.closest('.btn-eliminar-conv')) return;
-                    const tipo = item.dataset.tipo;
-                    if (tipo === 'solicitud') {
-                        abrirSolicitud(item.dataset.id);
-                    } else {
-                        abrirConversacion(item.dataset.id, item.dataset.otrouid, item.dataset.nombre);
-                    }
-                    if (window.innerWidth < 1024) panelLista.classList.add('hidden');
-                });
-            });
-
-            document.querySelectorAll('.btn-eliminar-conv').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const convId = btn.dataset.id;
-                    const nombre = btn.dataset.nombre;
-                    if (confirm(`¿Eliminar toda la conversación con "${nombre}"? Esta acción no se puede deshacer.`)) {
-                        await eliminarConversacion(convId);
-                    }
-                });
-            });
+            visibles.forEach(conv => listaConversaciones.appendChild(crearFilaConversacion(conv)));
         }
 
         // ✅ Abrir detalle de solicitud
@@ -424,6 +555,7 @@
 
             solicitudActual = s;
             conversacionActual = null;
+            chatInsignia.classList.add('hidden');
 
             // Marcar activo en la lista
             document.querySelectorAll('.conversacion-item').forEach(i => i.classList.remove('activo'));
@@ -537,6 +669,7 @@
 
             chatNombre.textContent = nombre;
             chatEmail.textContent = '';
+            sincronizarConversacionAbierta();
 
             getDoc(doc(db, "usuarios", otroUid)).then(d => {
                 if (d.exists()) chatEmail.textContent = d.data().email || '';
@@ -635,7 +768,9 @@
 
                 await updateDoc(doc(db, "conversaciones", conversacionActual.id), {
                     ultimoMensaje: texto,
-                    ultimaFecha: serverTimestamp()
+                    ultimaFecha: serverTimestamp(),
+                    ultimoDe: miUid,
+                    ultimoLeido: false
                 });
             } catch (err) {
                 console.error('Error al enviar:', err);
@@ -649,43 +784,85 @@
         });
 
         // --- Nueva conversación ---
-        btnNuevaConversacion.addEventListener('click', async () => {
-            modalNuevaConv.classList.remove('hidden');
-            modalNuevaConv.classList.add('flex');
-            listaUsuarios.innerHTML = `<p class="text-center text-gray-400 text-sm">Cargando clientes...</p>`;
+        let usuariosCargados = [];
 
-            const snap = await getDocs(collection(db, "usuarios"));
-            const clientes = [];
-            snap.forEach(d => {
-                const u = d.data();
-                if (d.id !== miUid && u.rol === 'organizacion') {
-                    clientes.push({ id: d.id, ...u });
-                }
-            });
+        function mensajeEnModal(texto, clases) {
+            const aviso = document.createElement('p');
+            aviso.className = clases;
+            aviso.textContent = texto;
+            listaUsuarios.replaceChildren(aviso);
+        }
 
-            if (clientes.length === 0) {
-                listaUsuarios.innerHTML = `<p class="text-center text-gray-400 text-sm">No hay clientes registrados</p>`;
+        // Todas las organizaciones (filtradas por el buscador); las que ya tienen conversación abren esa
+        function renderizarOrganizaciones() {
+            const organizaciones = organizacionesParaChat(usuariosCargados, miUid, conversacionesLista, buscarOrganizacion.value);
+            if (organizaciones.length === 0) {
+                const texto = textoVacio('organizaciones-sin-resultados');
+                mensajeEnModal(`${texto.titulo}. ${texto.ayuda}`, 'text-center text-gray-400 text-sm');
                 return;
             }
 
-            listaUsuarios.innerHTML = clientes.map(u => `
-                <div class="p-3 border border-gray-200 rounded-lg hover:bg-violet-50 cursor-pointer flex items-center gap-3" data-uid="${u.id}" data-nombre="${u.nombre || 'Cliente'}">
-                    <div class="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                        <span class="font-semibold text-violet-700">${(u.nombre || 'C').charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-gray-800 text-sm">${u.nombre || 'Cliente'}</p>
-                        <p class="text-xs text-gray-500">${u.email || ''}</p>
-                    </div>
-                </div>
-            `).join('');
+            listaUsuarios.replaceChildren();
+            organizaciones.forEach(org => {
+                const fila = document.createElement('div');
+                fila.className = 'p-3 border border-gray-200 rounded-lg hover:bg-violet-50 cursor-pointer flex items-center gap-3';
 
-            document.querySelectorAll('#listaUsuarios [data-uid]').forEach(el => {
-                el.addEventListener('click', async () => {
-                    await crearNuevaConversacion(el.dataset.uid, el.dataset.nombre);
+                const avatar = document.createElement('div');
+                avatar.className = 'w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0';
+                const inicial = document.createElement('span');
+                inicial.className = 'font-semibold text-violet-700';
+                inicial.textContent = org.nombre.charAt(0).toUpperCase();
+                avatar.appendChild(inicial);
+
+                const datos = document.createElement('div');
+                datos.className = 'min-w-0 flex-1';
+                const nombre = document.createElement('p');
+                nombre.className = 'font-semibold text-gray-800 text-sm truncate';
+                nombre.textContent = org.nombre;
+                const email = document.createElement('p');
+                email.className = 'text-xs text-gray-500 truncate';
+                email.textContent = org.email;
+                datos.append(nombre, email);
+                fila.append(avatar, datos);
+
+                if (org.conversacionId) {
+                    const marca = document.createElement('span');
+                    marca.className = 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 flex-shrink-0';
+                    marca.textContent = 'Conversación abierta';
+                    fila.appendChild(marca);
+                }
+
+                fila.addEventListener('click', async () => {
+                    if (org.conversacionId) {
+                        cerrarModalNuevaConv();
+                        abrirConversacion(org.conversacionId, org.id, org.nombre);
+                        if (window.innerWidth < 1024) panelLista.classList.add('hidden');
+                        return;
+                    }
+                    await crearNuevaConversacion(org.id, org.nombre);
                 });
+                listaUsuarios.appendChild(fila);
             });
+        }
+
+        btnNuevaConversacion.addEventListener('click', async () => {
+            modalNuevaConv.classList.remove('hidden');
+            modalNuevaConv.classList.add('flex');
+            buscarOrganizacion.value = '';
+            mensajeEnModal('Cargando organizaciones...', 'text-center text-gray-400 text-sm');
+
+            try {
+                const snap = await getDocs(collection(db, "usuarios"));
+                usuariosCargados = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (error) {
+                console.error('Error al cargar las organizaciones:', error);
+                mensajeEnModal('No se pudieron cargar las organizaciones. Cerrá esta ventana e intentá de nuevo.', 'text-center text-red-600 text-sm');
+                return;
+            }
+            renderizarOrganizaciones();
         });
+
+        buscarOrganizacion.addEventListener('input', renderizarOrganizaciones);
 
         function cerrarModalNuevaConv() {
             modalNuevaConv.classList.add('hidden');
@@ -716,7 +893,9 @@
                 participantes: [miUid, otroUid],
                 nombres: nombres,
                 ultimoMensaje: '',
-                ultimaFecha: serverTimestamp()
+                ultimaFecha: serverTimestamp(),
+                ultimoDe: '',
+                ultimoLeido: true
             });
 
             cerrarModalNuevaConv();

@@ -8,15 +8,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; overflow: hidden; height: 100vh; }
         .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .conversacion-item { transition: background 0.15s; cursor: pointer; position: relative; }
+        .conversacion-item:hover { background: #f5f3ff; }
+        .conversacion-item.activo { background: #ede9fe; border-left: 4px solid #7c3aed; }
+        .burbuja-otro { background: #ffffff; color: #1f2937; border-radius: 16px 16px 16px 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-scroll { overflow-y: auto; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 10px; }
+        .chat-scroll::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+        #detalleConsulta {
+            background: #f3f4f6;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(124,58,237,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(124,58,237,0.03) 0%, transparent 50%);
+        }
     </style>
     <link rel="stylesheet" href="../shared/admin-shell.css" />
     <link rel="prefetch" href="eventos.html?modo=directo" />
     <link rel="prefetch" href="mensajes.html" />
     <link rel="prefetch" href="eventos-seleccion.html" />
 </head>
-<body class="min-h-screen">
+<body>
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -43,43 +58,111 @@
         });
     </script>
 
-    <div class="flex min-h-screen">
+    <div class="flex h-screen overflow-hidden">
         <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
         <script src="../shared/menu-admin.js" data-pagina="consultas-publicas"></script>
 
-        <main class="flex-1 min-w-0 p-4 sm:p-6 pb-24 lg:pb-6">
-            <div class="max-w-5xl mx-auto">
-                <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">Consultas públicas</h1>
-                        <p class="text-sm text-gray-500 mt-1">Mensajes enviados desde el sitio público.</p>
+        <main class="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
+            <div class="p-4 border-b border-gray-200 bg-white flex-shrink-0">
+                <h1 class="text-xl font-bold text-gray-800">Consultas públicas</h1>
+                <p class="text-sm text-gray-500">Mensajes enviados desde el sitio público.</p>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden pb-16 lg:pb-0">
+                <!-- Lista de consultas -->
+                <div id="panelLista" class="w-full lg:w-80 border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
+                    <div class="p-3 border-b border-gray-100 flex flex-wrap gap-1.5 flex-shrink-0" id="filtrosEstado" role="group" aria-label="Filtrar por estado"></div>
+                    <div id="listaConsultas" class="flex-1 chat-scroll" aria-live="polite">
+                        <p class="p-4 text-gray-400 text-sm text-center">Cargando consultas...</p>
                     </div>
-                    <label class="text-sm text-gray-600">
-                        Estado
-                        <select id="filtroEstado" class="block mt-1 border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
-                            <option value="nueva">Nuevas</option>
-                            <option value="leida">Leídas</option>
-                            <option value="respondida">Respondidas</option>
-                            <option value="todas">Todas</option>
-                        </select>
-                    </label>
-                </header>
-                <div id="consultasContainer" class="space-y-3" aria-live="polite">
-                    <p class="text-center text-gray-400 py-10">Cargando consultas...</p>
+                </div>
+
+                <!-- Detalle -->
+                <div id="panelDetalle" class="flex-1 min-w-0 hidden lg:flex flex-col overflow-hidden">
+                    <div id="detalleCabecera" class="p-4 border-b border-gray-200 bg-white hidden flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <button id="btnVolverLista" type="button" class="lg:hidden text-gray-600 hover:text-gray-800" aria-label="Volver a la lista">
+                                <span class="material-symbols-outlined">arrow_back</span>
+                            </button>
+                            <div class="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                <span id="detalleInicial" class="font-semibold text-violet-700"></span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p id="detalleNombre" class="font-semibold text-gray-800 truncate"></p>
+                                <a id="detalleEmail" class="text-xs text-violet-700 hover:underline break-all"></a>
+                            </div>
+                            <span id="detalleInsignia" class="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0"></span>
+                        </div>
+                    </div>
+
+                    <div id="detalleConsulta" class="flex-1 chat-scroll p-4 hidden">
+                        <div class="flex justify-start">
+                            <div class="burbuja-otro px-4 py-3 max-w-lg">
+                                <p id="detalleMensaje" class="text-sm whitespace-pre-wrap break-words"></p>
+                                <p id="detalleMeta" class="text-[10px] text-gray-400 mt-2 text-right"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="detalleAcciones" class="border-t border-gray-200 p-4 bg-white hidden flex-shrink-0">
+                        <div class="flex flex-wrap gap-2">
+                            <a id="btnResponder" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-full text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white flex items-center gap-2">
+                                <span class="material-symbols-outlined text-base">mail</span> Responder por Gmail
+                            </a>
+                            <button id="btnRespondida" type="button" class="px-4 py-2 rounded-full text-sm font-medium border border-green-300 text-green-800 hover:bg-green-50 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-base">done_all</span> Marcar como respondida
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Vista inicial vacía -->
+                    <div id="detalleVacio" class="flex-1 flex items-center justify-center">
+                        <div class="text-center text-gray-400">
+                            <span class="material-symbols-outlined text-6xl">mark_email_unread</span>
+                            <p class="mt-2">Elegí una consulta para verla</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-
     <script type="module">
         import {
             collection, query, orderBy, onSnapshot, doc, updateDoc
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import {
+            estadoDeConsulta, contarPorEstado, presentacionDeEstado, filtrarPorEstado, textoVacio
+        } from "../shared/estado-mensajes.js";
 
-        const consultasContainer = document.getElementById('consultasContainer');
-        const filtroEstado = document.getElementById('filtroEstado');
+        const panelLista = document.getElementById('panelLista');
+        const panelDetalle = document.getElementById('panelDetalle');
+        const listaConsultas = document.getElementById('listaConsultas');
+        const filtrosEstado = document.getElementById('filtrosEstado');
+        const detalleCabecera = document.getElementById('detalleCabecera');
+        const detalleConsulta = document.getElementById('detalleConsulta');
+        const detalleAcciones = document.getElementById('detalleAcciones');
+        const detalleVacio = document.getElementById('detalleVacio');
+        const detalleInicial = document.getElementById('detalleInicial');
+        const detalleNombre = document.getElementById('detalleNombre');
+        const detalleEmail = document.getElementById('detalleEmail');
+        const detalleInsignia = document.getElementById('detalleInsignia');
+        const detalleMensaje = document.getElementById('detalleMensaje');
+        const detalleMeta = document.getElementById('detalleMeta');
+        const btnResponder = document.getElementById('btnResponder');
+        const btnRespondida = document.getElementById('btnRespondida');
+
+        const FILTROS = [
+            { valor: 'todos', etiqueta: 'Todas' },
+            { valor: 'nuevo', etiqueta: 'Nuevas' },
+            { valor: 'leido', etiqueta: 'Leídas' },
+            { valor: 'respondido', etiqueta: 'Respondidas' }
+        ];
+
         let consultas = [];
+        let filtroActual = 'todos';
+        let consultaActualId = null;
+        let hayError = false;
 
         function formatearFecha(fecha) {
             if (!fecha || typeof fecha.toDate !== 'function') return 'Fecha no disponible';
@@ -89,88 +172,203 @@
             });
         }
 
-        function crearBoton(texto, clases, accion) {
-            const boton = document.createElement('button');
-            boton.type = 'button';
-            boton.className = clases;
-            boton.textContent = texto;
-            boton.addEventListener('click', accion);
-            return boton;
+        function formatearFechaCorta(fecha) {
+            if (!fecha || typeof fecha.toDate !== 'function') return '';
+            return fecha.toDate().toLocaleString('es-AR', { day: '2-digit', month: '2-digit' });
         }
 
-        function crearConsultaCard(consulta) {
-            const card = document.createElement('article');
-            card.className = 'bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm';
+        // --- Filtros con contador ---
+        function renderizarFiltros() {
+            const cuenta = contarPorEstado(consultas, estadoDeConsulta);
+            filtrosEstado.replaceChildren();
+            FILTROS.forEach(filtro => {
+                const total = filtro.valor === 'todos' ? cuenta.total : cuenta[filtro.valor];
+                const activo = filtro.valor === filtroActual;
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'px-3 py-1 rounded-full text-xs font-medium border transition ' +
+                    (activo ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-violet-50');
+                boton.textContent = `${filtro.etiqueta} (${total})`;
+                boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+                boton.addEventListener('click', () => {
+                    filtroActual = filtro.valor;
+                    renderizarTodo();
+                });
+                filtrosEstado.appendChild(boton);
+            });
+        }
 
-            const encabezado = document.createElement('div');
-            encabezado.className = 'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2';
-
-            const identidad = document.createElement('div');
-            identidad.className = 'min-w-0';
-            const nombre = document.createElement('h2');
-            nombre.className = 'font-semibold text-gray-900 break-words';
-            nombre.textContent = consulta.nombre || 'Sin nombre';
-            const email = document.createElement('a');
-            email.className = 'text-sm text-violet-700 hover:underline break-all';
-            email.href = `mailto:${consulta.email || ''}`;
-            email.textContent = consulta.email || 'Sin correo';
-            identidad.append(nombre, email);
-
-            const estado = document.createElement('span');
-            const etiquetasEstado = { nueva: 'Nueva', leida: 'Leída', respondida: 'Respondida' };
-            estado.className = 'self-start text-xs font-semibold px-2.5 py-1 rounded-full ' +
-                (consulta.estado === 'nueva' ? 'bg-amber-100 text-amber-800' :
-                    consulta.estado === 'respondida' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700');
-            estado.textContent = etiquetasEstado[consulta.estado] || 'Sin estado';
-            encabezado.append(identidad, estado);
-
-            const mensaje = document.createElement('p');
-            mensaje.className = 'text-sm text-gray-700 whitespace-pre-wrap break-words mt-4';
-            mensaje.textContent = consulta.mensaje || '';
-
-            const metadata = document.createElement('p');
-            metadata.className = 'text-xs text-gray-500 mt-4';
-            metadata.textContent = `${formatearFecha(consulta.fecha)} · ${consulta.origen || 'origen desconocido'}`;
-
-            const acciones = document.createElement('div');
-            acciones.className = 'flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100';
-
-            if (consulta.estado === 'nueva') {
-                acciones.appendChild(crearBoton('Marcar como leída', 'px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-800', () => actualizarEstado(consulta.id, 'leida')));
+        // --- Lista ---
+        function crearEstadoVacio(contexto) {
+            const texto = textoVacio(contexto);
+            const caja = document.createElement('div');
+            caja.className = 'p-6 text-center text-gray-400 text-sm';
+            const icono = document.createElement('span');
+            icono.className = 'material-symbols-outlined text-4xl';
+            icono.textContent = 'inbox';
+            const titulo = document.createElement('p');
+            titulo.className = 'mt-2 font-medium text-gray-500';
+            titulo.textContent = texto.titulo;
+            const ayuda = document.createElement('p');
+            ayuda.className = 'mt-1 text-xs';
+            ayuda.textContent = texto.ayuda;
+            caja.append(icono, titulo, ayuda);
+            if (texto.verTodas) {
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'mt-3 px-4 py-1.5 rounded-full text-xs font-medium bg-violet-600 hover:bg-violet-700 text-white';
+                boton.textContent = 'Ver todas';
+                boton.addEventListener('click', () => {
+                    filtroActual = 'todos';
+                    renderizarTodo();
+                });
+                caja.appendChild(boton);
             }
+            return caja;
+        }
+
+        function crearFila(consulta) {
+            const estado = estadoDeConsulta(consulta);
+            const vista = presentacionDeEstado(estado);
+            const nombreTexto = consulta.nombre || 'Sin nombre';
+
+            const fila = document.createElement('div');
+            fila.className = 'conversacion-item p-4 border-b border-gray-100' + (consulta.id === consultaActualId ? ' activo' : '');
+            fila.dataset.id = consulta.id;
+
+            const contenido = document.createElement('div');
+            contenido.className = 'flex items-center gap-3';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0';
+            const inicial = document.createElement('span');
+            inicial.className = 'font-semibold text-violet-700';
+            inicial.textContent = nombreTexto.charAt(0).toUpperCase();
+            avatar.appendChild(inicial);
+
+            const centro = document.createElement('div');
+            centro.className = 'flex-1 min-w-0';
+            const nombre = document.createElement('p');
+            nombre.className = 'text-sm text-gray-800 truncate ' + (vista.negrita ? 'font-bold' : 'font-medium');
+            nombre.textContent = nombreTexto;
+            const previa = document.createElement('p');
+            previa.className = 'text-xs truncate ' + (vista.negrita ? 'text-gray-700' : 'text-gray-500');
+            previa.textContent = consulta.mensaje || '';
+            centro.append(nombre, previa);
+
+            const derecha = document.createElement('div');
+            derecha.className = 'flex flex-col items-end gap-1 flex-shrink-0';
+            const hora = document.createElement('span');
+            hora.className = 'text-[10px] text-gray-400';
+            hora.textContent = formatearFechaCorta(consulta.fecha);
+            derecha.appendChild(hora);
+            if (estado === 'nuevo') {
+                const punto = document.createElement('span');
+                punto.className = 'w-2.5 h-2.5 rounded-full ' + vista.clasesPunto;
+                punto.title = vista.etiqueta;
+                derecha.appendChild(punto);
+            } else if (estado === 'respondido') {
+                const tilde = document.createElement('span');
+                tilde.className = 'material-symbols-outlined text-green-600 text-base';
+                tilde.textContent = 'done_all';
+                tilde.title = vista.etiqueta;
+                derecha.appendChild(tilde);
+            }
+
+            contenido.append(avatar, centro, derecha);
+            fila.appendChild(contenido);
+            fila.addEventListener('click', () => abrirConsulta(consulta.id));
+            return fila;
+        }
+
+        function renderizarLista() {
+            listaConsultas.replaceChildren();
+            if (hayError) {
+                const error = document.createElement('p');
+                error.className = 'p-6 text-center text-red-600 text-sm';
+                error.textContent = 'No se pudieron cargar las consultas. Verificá las reglas de Firestore.';
+                listaConsultas.appendChild(error);
+                return;
+            }
+            if (consultas.length === 0) {
+                listaConsultas.appendChild(crearEstadoVacio('consultas-sin-consultas'));
+                return;
+            }
+            const visibles = filtrarPorEstado(consultas, filtroActual, estadoDeConsulta);
+            if (visibles.length === 0) {
+                listaConsultas.appendChild(crearEstadoVacio('filtro-sin-resultados'));
+                return;
+            }
+            visibles.forEach(consulta => listaConsultas.appendChild(crearFila(consulta)));
+        }
+
+        // --- Detalle ---
+        function mostrarDetalle(consulta) {
+            const estado = estadoDeConsulta(consulta);
+            const vista = presentacionDeEstado(estado);
+            const nombreTexto = consulta.nombre || 'Sin nombre';
+
+            detalleVacio.classList.add('hidden');
+            detalleCabecera.classList.remove('hidden');
+            detalleConsulta.classList.remove('hidden');
+            detalleAcciones.classList.remove('hidden');
+
+            detalleInicial.textContent = nombreTexto.charAt(0).toUpperCase();
+            detalleNombre.textContent = nombreTexto;
+            detalleEmail.textContent = consulta.email || 'Sin correo';
+            detalleEmail.href = `mailto:${consulta.email || ''}`;
+            detalleInsignia.className = 'text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ' + vista.clasesInsignia;
+            detalleInsignia.textContent = vista.etiqueta;
+            detalleMensaje.textContent = consulta.mensaje || '';
+            detalleMeta.textContent = `${formatearFecha(consulta.fecha)} · ${consulta.origen || 'origen desconocido'}`;
 
             const asunto = 'Respuesta a tu consulta en Evently';
             const cuerpo = `Hola ${consulta.nombre || ''},\n\nGracias por comunicarte con Evently.\n\n\nSaludos,\nEquipo Evently`;
-            const responder = document.createElement('a');
-            responder.className = 'px-3 py-2 rounded-lg text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white';
-            responder.href = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(consulta.email || '')}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-            responder.target = '_blank';
-            responder.rel = 'noopener noreferrer';
-            responder.textContent = 'Responder por Gmail';
-            acciones.appendChild(responder);
-
-            if (consulta.estado !== 'respondida') {
-                acciones.appendChild(crearBoton('Marcar como respondida', 'px-3 py-2 rounded-lg text-sm font-medium border border-green-300 text-green-800 hover:bg-green-50', () => actualizarEstado(consulta.id, 'respondida')));
-            }
-
-            card.append(encabezado, mensaje, metadata, acciones);
-            return card;
+            btnResponder.href = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(consulta.email || '')}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+            btnRespondida.classList.toggle('hidden', consulta.estado === 'respondida');
         }
 
-        function renderizarConsultas() {
-            const estado = filtroEstado.value;
-            const visibles = estado === 'todas' ? consultas : consultas.filter(consulta => consulta.estado === estado);
-            consultasContainer.replaceChildren();
+        function ocultarDetalle() {
+            consultaActualId = null;
+            detalleCabecera.classList.add('hidden');
+            detalleConsulta.classList.add('hidden');
+            detalleAcciones.classList.add('hidden');
+            detalleVacio.classList.remove('hidden');
+        }
 
-            if (visibles.length === 0) {
-                const vacio = document.createElement('p');
-                vacio.className = 'text-center text-gray-400 py-10';
-                vacio.textContent = 'No hay consultas para este filtro.';
-                consultasContainer.appendChild(vacio);
-                return;
+        function abrirConsulta(consultaId) {
+            const consulta = consultas.find(c => c.id === consultaId);
+            if (!consulta) return;
+            consultaActualId = consultaId;
+            mostrarDetalle(consulta);
+            renderizarLista();
+            if (window.innerWidth < 1024) {
+                panelLista.classList.add('hidden');
+                panelDetalle.classList.remove('hidden');
+                panelDetalle.classList.add('flex');
             }
+            // Abrir una consulta nueva la marca como leída (una sola vez: después deja de ser 'nueva')
+            if (consulta.estado === 'nueva') actualizarEstado(consultaId, 'leida');
+        }
 
-            visibles.forEach(consulta => consultasContainer.appendChild(crearConsultaCard(consulta)));
+        document.getElementById('btnVolverLista').addEventListener('click', () => {
+            panelLista.classList.remove('hidden');
+            panelDetalle.classList.add('hidden');
+            panelDetalle.classList.remove('flex');
+            ocultarDetalle();
+            renderizarLista();
+        });
+
+        btnRespondida.addEventListener('click', () => {
+            if (consultaActualId) actualizarEstado(consultaActualId, 'respondida');
+        });
+
+        function renderizarTodo() {
+            renderizarFiltros();
+            renderizarLista();
+            const actual = consultas.find(c => c.id === consultaActualId);
+            if (actual) mostrarDetalle(actual);
+            else if (consultaActualId) ocultarDetalle();
         }
 
         async function actualizarEstado(consultaId, estado) {
@@ -182,19 +380,19 @@
             }
         }
 
-        filtroEstado.addEventListener('change', renderizarConsultas);
-
         const consultasQuery = query(
             collection(db, 'consultas_publicas'),
             orderBy('fecha', 'desc')
         );
 
         onSnapshot(consultasQuery, snapshot => {
+            hayError = false;
             consultas = snapshot.docs.map(documento => ({ id: documento.id, ...documento.data() }));
-            renderizarConsultas();
+            renderizarTodo();
         }, error => {
             console.error('No se pudieron cargar las consultas públicas:', error);
-            consultasContainer.innerHTML = '<p class="text-center text-red-600 py-10">No se pudieron cargar las consultas. Verificá las reglas de Firestore.</p>';
+            hayError = true;
+            renderizarTodo();
         });
     </script>
     <script src="../shared/menu-rol.js"></script>
