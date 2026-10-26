@@ -237,6 +237,16 @@ export function eventosDeLaPersona(eventos, usuario, uid) {
         (ev.correo && usuario && usuario.email && ev.correo === usuario.email));
 }
 
+// Cuál es el evento activo: el de la dirección (?id=) y, si no hay, el recordado. "todos" nunca se toma de lo recordado.
+// Devuelve el id o '' si no hay ninguno. Lo usan el selector y la franja del evento activo.
+export function elegirEventoActivo(deLaDireccion, recordado) {
+    const limpio = (valor) => (typeof valor === 'string' ? valor.trim() : '');
+    const direccion = limpio(deLaDireccion);
+    if (direccion) return direccion;
+    const guardado = limpio(recordado);
+    return guardado === 'todos' ? '' : guardado;
+}
+
 // Las ventas de uno o varios eventos (por id)
 export function ventasDeEventos(ventas, ids) {
     const buscados = new Set(Array.isArray(ids) ? ids : [ids]);
@@ -341,7 +351,29 @@ export function seccionesDelPdf(elegidas) {
         .map((s, i) => ({ clave: s.clave, titulo: s.titulo, numero: i + 1 }));
 }
 
-const CLASE_DEL_TONO = { dinero: 'text-violet-600', pendiente: 'text-yellow-600', normal: 'text-gray-800' };
+// ======================================================================================================
+// Nombre del archivo del PDF de Reportes (cambio evento-activo-en-todo-el-panel). Función pura: se prueba con node.
+// ======================================================================================================
+
+const LARGO_MAXIMO_DEL_EVENTO = 40;
+
+// "Evently_Reporte_<evento>_<fecha>.pdf". El nombre del evento lo escribe un organizador: se le quitan tildes, espacios y
+// caracteres especiales (solo quedan letras, números y guiones) y se le pone un largo máximo. Sin nombre: "Todos-los-eventos".
+// `fecha` es un Date o un texto AAAA-MM-DD (se recibe para poder probarlo).
+export function nombreDeArchivoDeReporte(nombreEvento, fecha = new Date()) {
+    const limpio = (typeof nombreEvento === 'string' ? nombreEvento : '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^A-Za-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, LARGO_MAXIMO_DEL_EVENTO)
+        .replace(/-+$/g, '');
+    const dia = Object.prototype.toString.call(fecha) === '[object Date]' && Number.isFinite(fecha.getTime())
+        ? fecha.toISOString().slice(0, 10)
+        : (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha : new Date().toISOString().slice(0, 10));
+    return `Evently_Reporte_${limpio || 'Todos-los-eventos'}_${dia}.pdf`;
+}
+
+const CLASE_DEL_TONO ={ dinero: 'text-violet-600', pendiente: 'text-yellow-600', normal: 'text-gray-800' };
 const CLASE_DEL_ICONO = { pendiente: 'text-yellow-600' };
 const CLASE_DE_COLUMNAS = { 1: '', 2: 'sm:col-span-2', 4: 'sm:col-span-2 lg:col-span-4' };
 
