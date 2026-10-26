@@ -281,6 +281,7 @@
         const fila = document.createElement('div');
         fila.dataset.loteEdicion = 'true';
         fila.dataset.vendidas = String(Number(lote.vendidas) || 0);
+        if (lote.tipo === 'fechas' || lote.tipo === 'siempre') { fila.dataset.tipo = lote.tipo; fila.dataset.desde = lote.desde || ''; fila.dataset.hasta = lote.hasta || ''; }
         fila.className = 'grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-lg border border-gray-200 p-3';
 
         const nombre = document.createElement('input');
@@ -379,7 +380,9 @@
             precio: Number(fila.querySelector('[data-campo="precio"]').value),
             disponibles: Number.parseInt(fila.querySelector('[data-campo="disponibles"]').value, 10),
             vendidas: Number(fila.dataset.vendidas) || 0,
-            vigencia: fila.querySelector('[data-campo="vigencia"]').value.trim()
+            vigencia: fila.querySelector('[data-campo="vigencia"]').value.trim(),
+            // El tipo y las fechas no se editan acá: se conservan los que traía el lote
+            ...(fila.dataset.tipo ? { tipo: fila.dataset.tipo, desde: fila.dataset.desde || '', hasta: fila.dataset.hasta || '' } : {})
         }));
 
         if (lotes.length === 0 || lotes.some(lote => !lote.nombre || !Number.isFinite(lote.precio) || lote.precio <= 0 || !Number.isInteger(lote.disponibles) || lote.disponibles < 1)) {

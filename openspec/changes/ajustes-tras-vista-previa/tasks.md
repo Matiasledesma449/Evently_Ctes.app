@@ -10,11 +10,11 @@
 - [x] 2.2 `shared/cuentas-admin.js` (clave generada) y "Agregar admin" que crea la cuenta si no existe; aviso y confirmación si es de otra organización; "Quitar". Prueba de la clave con `node`; el resto con el navegador automático y Firebase falso.
 
 ## 3. Lotes
-- [ ] 3.1 `shared/lotes.js` con `estadoDeLote` y su prueba.
-- [ ] 3.2 Crear/Solicitar evento: tipo de lote y fechas con calendario.
-- [ ] 3.3 Página de compra: solo lotes disponibles; los próximos y finalizados se ven deshabilitados con su texto.
-- [ ] 3.4 Servidor (`server/compra.js`): rechaza lotes no disponibles; pruebas de pagos siguen pasando.
-- [ ] 3.5 Eventos (superadmin): "Editar lotes" con fechas y "Habilitar ahora".
+- [x] 3.1 `shared/lotes.js` con `estadoDeLote` y su prueba.
+- [x] 3.2 Crear/Solicitar evento: tipo de lote y fechas con calendario.
+- [x] 3.3 Página de compra: solo lotes disponibles; los próximos y finalizados se ven deshabilitados con su texto.
+- [x] 3.4 Servidor (`server/compra.js`): rechaza lotes no disponibles; pruebas de pagos siguen pasando.
+- [x] 3.5 Eventos (superadmin): "Editar lotes" con fechas y "Habilitar ahora".
 
 ## 4. Mapa
 - [ ] 4.1 Mapa siempre visible con marcador arrastrable y dirección automática.

@@ -131,6 +131,7 @@
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
+        import { estadoDeLote, hoyEnArgentina, textoDeVigencia, diaMes } from "../shared/lotes.js";
         import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
         import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
         import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
@@ -311,49 +312,62 @@
             if (await cargarLeaflet()) dibujarMapa(document.getElementById('mapaEvento'), ubicacion);
         }
 
+        // Los lotes: un lote "por fechas" se puede elegir solo entre sus fechas (o si el superadmin lo habilitó antes).
+        // Los que todavía no empezaron o ya terminaron se ven apagados con su texto. Nombres y fechas van escapados.
         function renderLotes(lotes) {
             if (!lotes || lotes.length === 0) {
                 lotesContainer.innerHTML = `<p class="text-gray-500">No hay lotes disponibles para este evento.</p>`;
                 return;
             }
+            const hoy = hoyEnArgentina();
             lotesContainer.innerHTML = lotes.map((lote, index) => {
                 const vendidas = Number(lote.vendidas) || 0;
                 const disponibles = Number(lote.disponibles) || 0;
                 const disponiblesRestantes = Math.max(0, disponibles - vendidas);
-                const disponibleTexto = disponiblesRestantes > 0 ? `${disponiblesRestantes} disponibles` : 'Agotado';
-                const selectedClass = index === 0 ? 'lote-selected border-2 border-violet-600' : 'border border-gray-200';
+                const estado = estadoDeLote(lote, hoy);
                 const precioNum = Number(lote.precio) || 0;
+                // Se puede tocar si está en fecha (si está agotado, al continuar se avisa, como siempre)
+                const elegible = estado === 'disponible';
+                const textoEstado = estado === 'proximo'
+                    ? `Disponible desde el ${diaMes(lote.desde)}`
+                    : estado === 'finalizado' ? 'Venta finalizada'
+                    : disponiblesRestantes > 0 ? `${disponiblesRestantes} disponibles` : 'Agotado';
+                const colorEstado = elegible && disponiblesRestantes > 0 ? 'text-green-600' : estado === 'proximo' ? 'text-amber-600' : 'text-red-500';
                 return `
-                    <div class="lote-card p-4 rounded-xl cursor-pointer transition ${selectedClass}" data-index="${index}">
-                        <div class="flex justify-between items-start">
+                    <div class="lote-card p-4 rounded-xl transition border border-gray-200 ${elegible ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed bg-gray-50'}" data-index="${index}" data-elegible="${elegible ? '1' : '0'}" ${elegible ? '' : 'aria-disabled="true"'}>
+                        <div class="flex justify-between items-start gap-3">
                             <div>
-                                <h4 class="font-semibold text-gray-800">${lote.nombre || 'Sin nombre'}</h4>
-                                <p class="text-sm text-gray-500">${lote.vigencia || ''}</p>
+                                <h4 class="font-semibold text-gray-800">${escaparHtml(lote.nombre || 'Sin nombre')}</h4>
+                                <p class="text-sm text-gray-500">${escaparHtml(textoDeVigencia(lote))}</p>
                             </div>
                             <span class="text-lg font-bold text-violet-600">$${precioNum.toLocaleString()}</span>
                         </div>
-                        <p class="text-sm ${disponiblesRestantes > 0 ? 'text-green-600' : 'text-red-500'} mt-2">${disponibleTexto}</p>
-                        ${disponiblesRestantes === 0 ? '<p class="text-xs text-red-400">Agotado</p>' : ''}
+                        <p class="text-sm ${colorEstado} mt-2">${escaparHtml(textoEstado)}</p>
                     </div>
                 `;
             }).join('');
 
-            const cards = lotesContainer.querySelectorAll('.lote-card');
-            if (cards.length > 0) {
-                cards.forEach((card, i) => {
-                    card.addEventListener('click', () => {
-                        cards.forEach(c => {
-                            c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
-                            c.classList.add('border', 'border-gray-200');
-                        });
-                        card.classList.add('lote-selected', 'border-2', 'border-violet-600');
-                        loteSeleccionado = i;
-                        errorPaso1.classList.add('hidden');
-                        actualizarTotal();
-                    });
+            const cards = [...lotesContainer.querySelectorAll('.lote-card')];
+            const marcar = (card) => {
+                cards.forEach(c => {
+                    c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
+                    c.classList.add('border', 'border-gray-200');
                 });
-                // Seleccionar el primero por defecto
-                cards[0].click();
+                card.classList.add('lote-selected', 'border-2', 'border-violet-600');
+                loteSeleccionado = Number(card.dataset.index);
+                errorPaso1.classList.add('hidden');
+                actualizarTotal();
+            };
+            cards.forEach((card) => {
+                if (card.dataset.elegible !== '1') return; // un lote que no está a la venta no se puede elegir
+                card.addEventListener('click', () => marcar(card));
+            });
+            // Se elige el primer lote que está a la venta (si no hay ninguno, no queda ninguno elegido)
+            const primero = cards.find((c) => c.dataset.elegible === '1');
+            if (primero) marcar(primero);
+            else {
+                loteSeleccionado = null;
+                mostrarTexto(errorPaso1, 'Por ahora no hay entradas a la venta para este evento.');
             }
         }
 

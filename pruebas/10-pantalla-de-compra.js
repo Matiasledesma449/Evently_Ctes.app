@@ -64,8 +64,12 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
   els.lotesContainer.querySelectorAll = (sel) => {
     if (sel !== '.lote-card') return [];
     const n = (els.lotesContainer.innerHTML.match(/class="lote-card/g) || []).length;
-    els.lotesContainer._cards = els.lotesContainer._cards || Array.from({ length: n }, () => {
-      const c = new El('card'); c.click = () => c.disparar('click'); return c;
+    // Cada tarjeta trae sus data-index y data-elegible, como en el navegador
+    const atributos = [...els.lotesContainer.innerHTML.matchAll(/class="lote-card[^"]*" data-index="(\d+)" data-elegible="(\d)"/g)];
+    els.lotesContainer._cards = els.lotesContainer._cards || Array.from({ length: n }, (_, i) => {
+      const c = new El('card'); c.click = () => c.disparar('click');
+      c.dataset = { index: atributos[i] ? atributos[i][1] : String(i), elegible: atributos[i] ? atributos[i][2] : '1' };
+      return c;
     });
     return els.lotesContainer._cards;
   };
@@ -91,7 +95,7 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
   vm.createContext(contexto);
   // Los modulos compartidos (escaparHtml, htmlDeImagenEvento) se cargan sin sus "export", como en las otras pruebas
   const compartido = (archivo) => fs.readFileSync(require('path').join(__dirname, '..', 'shared', archivo), 'utf8').replace(/^export /gm, '');
-  vm.runInContext(compartido('ventas-utils.js') + ';' + compartido('imagen-evento.js') + ';' + compartido('formas-de-pago.js') + ';' + compartido('evento-datos.js') + ';' + compartido('comision.js'), contexto);
+  vm.runInContext(compartido('ventas-utils.js') + ';' + compartido('imagen-evento.js') + ';' + compartido('formas-de-pago.js') + ';' + compartido('evento-datos.js') + ';' + compartido('comision.js') + ';' + compartido('lotes.js'), contexto);
   const js = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*$/gm, '');
   vm.runInContext(js, contexto);
   return { els, ubicacion, ventana, alertas, contexto };
@@ -264,6 +268,23 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     const orden = ['id="eventoContainer"', 'id="step1"', 'id="step2"', 'id="sobreEventoContainer"', 'id="dondeEsContainer"', 'id="loadingContainer"'].map((t) => html0.indexOf(t));
     verificar('V5 el orden de la página es afiche, entradas, datos, sobre el evento y dónde es', orden.every((n, i) => n > -1 && (i === 0 || n > orden[i - 1])), orden.join(','));
     verificar('V6 la página usa la cabecera común (su link al Centro de ayuda lleva el origen, ver la prueba 33)', /<header id="cabecera"/.test(html0) && /dibujarCabecera\(document\.getElementById\('cabecera'\), 'evento'\)/.test(html0));
+  }
+
+  {
+    // Lotes por fechas (cambio ajustes-tras-vista-previa): uno que todavía no empezó no se puede elegir
+    const conFechas = { ...EVENTO, lotes: [
+      { nombre: 'Preventa <b>2</b>', tipo: 'fechas', desde: '2099-01-01', hasta: '2099-02-01', precio: 5000, disponibles: 10 },
+      { nombre: 'Campo', tipo: 'siempre', precio: 8000, disponibles: 10 },
+    ] };
+    const pg = crearPagina({ evento: conFechas, fetchFn: respuesta(200, { ok: true }) });
+    await tick(); await tick();
+    const html = pg.els.lotesContainer.innerHTML;
+    verificar('L1 el lote que todavía no empezó dice desde cuándo y no se puede elegir', /Disponible desde el 01\/01/.test(html) && /data-index="0" data-elegible="0"/.test(html));
+    verificar('L2 el sector "siempre disponible" se puede elegir', /data-index="1" data-elegible="1"/.test(html));
+    verificar('L3 los nombres de los lotes se escapan', /Preventa &lt;b&gt;2&lt;\/b&gt;/.test(html) && !/<b>2<\/b>/.test(html));
+    await pg.els.lotesContainer.querySelectorAll('.lote-card')[0].click();
+    await pg.els.btnContinuarPaso1.disparar('click');
+    verificar('L4 tocar el lote que no empezó no lo elige: se sigue con "Campo"', /Campo/.test(pg.els.resumenLote.textContent), pg.els.resumenLote.textContent);
   }
 
   verificar('Z durante toda la prueba el JavaScript solo uso ids que existen en el HTML', problemas.length === 0, problemas.join(' | '));

@@ -19,3 +19,14 @@
 - Comprobación: `node pruebas/34-cuentas-admin.js`; navegador automático con Firebase falso: pestañas, menú, alta con la
   segunda app (cierra solo su sesión), clave visible, mover pide confirmar y no escribe antes, superadmin rechazado,
   quitar admin. `node pruebas/ejecutar-todas.js` pasa.
+
+## 2026-10-26 · tareas 3.1 a 3.5 · rama auto/organizaciones-y-correcciones-del-panel
+- Archivos: `shared/lotes.js`, `server/lotes.js`, `admin/editar-lotes.js` y `pruebas/35-lotes.js` (nuevos), `server/compra.js`
+  (rechaza lotes fuera de fecha al crear el pago; la confirmación no se toca), `admin/eventos.html` (tipo y fechas con
+  calendario), `admin/aprobaciones.js` (el editor de solicitudes conserva tipo y fechas), `public/evento.html` (lotes según
+  su fecha, nombres escapados: antes se ponían sin escapar), `admin/eventos-seleccion.html` ("Editar lotes"), `pruebas/10`.
+- "Editar lotes" guarda con una transacción y cambia solo tipo, fechas, "habilitar" y el texto de vigencia: precio, stock y
+  vendidas quedan como están en ese momento.
+- Comprobación: `node pruebas/35-lotes.js` (regla, navegador y servidor iguales, servidor de pagos rechaza fuera de fecha),
+  prueba 10 con casos nuevos, `node pruebas/ejecutar-todas.js`; navegador automático: hasta < desde avisa, "siempre" oculta
+  fechas, Editar lotes conserva vendidas, una organización no lo ve, la compra muestra "Disponible desde" y elige el lote a la venta.

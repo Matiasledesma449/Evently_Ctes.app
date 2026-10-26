@@ -217,8 +217,20 @@
                                     <input type="number" name="lote_precio[]" placeholder="Precio (ej. 15000)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="0">
                                     <input type="number" name="lote_disponibles[]" placeholder="Disponibles (ej. 300)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="1">
                                 </div>
-                                <div class="mt-2">
-                                    <input type="text" name="lote_vigencia[]" placeholder="Vigencia (ej. 01/12 — 15/12)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                <!-- Cuándo se vende: por fechas (preventa, con calendario) o siempre (sectores de un concierto: Campo, Platea, VIP) -->
+                                <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <label class="text-xs font-medium text-gray-500">Cuándo se vende
+                                        <select name="lote_tipo[]" class="mt-1 w-full bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                            <option value="fechas">Por fechas (preventa)</option>
+                                            <option value="siempre">Siempre disponible (sector)</option>
+                                        </select>
+                                    </label>
+                                    <label class="text-xs font-medium text-gray-500" data-fecha-lote>Desde
+                                        <input type="date" name="lote_desde[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                    </label>
+                                    <label class="text-xs font-medium text-gray-500" data-fecha-lote>Hasta
+                                        <input type="date" name="lote_hasta[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -331,6 +343,7 @@
         import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, armarDetalle } from "../shared/evento-datos.js";
         import { activarLugarConMapa } from "../shared/lugar-mapa.js";
+        import { validarFechasDeLote, textoDeVigencia } from "../shared/lotes.js";
 
         const form = document.getElementById('formSolicitud');
         const lotesContainer = document.getElementById('lotesContainer');
@@ -402,8 +415,20 @@
                         <input type="number" name="lote_precio[]" placeholder="Precio (ej. 15000)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="0">
                         <input type="number" name="lote_disponibles[]" placeholder="Disponibles (ej. 300)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="1">
                     </div>
-                    <div class="mt-2">
-                        <input type="text" name="lote_vigencia[]" placeholder="Vigencia (ej. 01/12 — 15/12)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                    <!-- Cuándo se vende: por fechas (preventa, con calendario) o siempre (sectores de un concierto: Campo, Platea, VIP) -->
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="text-xs font-medium text-gray-500">Cuándo se vende
+                            <select name="lote_tipo[]" class="mt-1 w-full bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                <option value="fechas">Por fechas (preventa)</option>
+                                <option value="siempre">Siempre disponible (sector)</option>
+                            </select>
+                        </label>
+                        <label class="text-xs font-medium text-gray-500" data-fecha-lote>Desde
+                            <input type="date" name="lote_desde[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
+                        <label class="text-xs font-medium text-gray-500" data-fecha-lote>Hasta
+                            <input type="date" name="lote_hasta[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
                     </div>
                 </div>
             `;
@@ -444,6 +469,13 @@
         }
 
         btnAgregarLote.addEventListener('click', agregarLote);
+
+        // "Siempre disponible" no lleva fechas: se ocultan los calendarios de ese lote
+        lotesContainer.addEventListener('change', (e) => {
+            const tipo = e.target.closest('select[name="lote_tipo[]"]');
+            if (!tipo) return;
+            tipo.closest('.lote-item').querySelectorAll('[data-fecha-lote]').forEach((campo) => campo.classList.toggle('hidden', tipo.value === 'siempre'));
+        });
         asignarEventosEliminar();
 
         // ============ DÍAS Y HORARIOS ============
@@ -659,18 +691,25 @@
                 const loteItems = lotesContainer.querySelectorAll('.lote-item');
                 const lotes = [];
                 let lotesValidos = true;
+                let problemaDeLotes = '';
                 loteItems.forEach(item => {
                     const nombreLote = item.querySelector('input[name="lote_nombre[]"]').value.trim();
                     const precio = parseFloat(item.querySelector('input[name="lote_precio[]"]').value);
                     const disponibles = parseInt(item.querySelector('input[name="lote_disponibles[]"]').value);
-                    const vigencia = item.querySelector('input[name="lote_vigencia[]"]').value.trim();
+                    const tipo = item.querySelector('select[name="lote_tipo[]"]').value === 'siempre' ? 'siempre' : 'fechas';
+                    const desde = tipo === 'fechas' ? item.querySelector('input[name="lote_desde[]"]').value : '';
+                    const hasta = tipo === 'fechas' ? item.querySelector('input[name="lote_hasta[]"]').value : '';
                     if (!nombreLote || isNaN(precio) || precio <= 0 || isNaN(disponibles) || disponibles <= 0) {
                         lotesValidos = false; return;
                     }
-                    lotes.push({ nombre: nombreLote, precio, disponibles, vendidas: 0, vigencia: vigencia || '' });
+                    const problemaFechas = validarFechasDeLote({ tipo, desde, hasta });
+                    if (problemaFechas && !problemaDeLotes) problemaDeLotes = `${nombreLote}: ${problemaFechas}`;
+                    const lote = { nombre: nombreLote, precio, disponibles, vendidas: 0, tipo, desde, hasta };
+                    lotes.push({ ...lote, vigencia: textoDeVigencia(lote) });
                 });
 
                 if (!lotesValidos || lotes.length === 0) throw new Error('Todos los lotes deben tener nombre, precio válido y cantidad disponible (mayor a 0).');
+                if (problemaDeLotes) throw new Error(problemaDeLotes);
                 if (imagenPreparando) throw new Error('La foto todavía se está preparando. Esperá a que termine.');
                 if (fileInput.files.length > 0 && !imagenUrl) throw new Error('La foto no está lista. Elegí otra o quitala con "Limpiar".');
 

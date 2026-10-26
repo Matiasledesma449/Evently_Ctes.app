@@ -3,6 +3,7 @@
 // Todo se calcula con los datos GUARDADOS del evento: nunca con lo que mande el navegador.
 
 const { categoriaDelEvento, calcularCostoServicio } = require('./comision');
+const { estadoDeLote, hoyEnArgentina } = require('./lotes');
 
 // Lee el evento en Firestore. Devuelve los datos o null si no existe.
 async function leerEvento(db, eventoId) {
@@ -28,11 +29,11 @@ function error(status, codigo, mensaje, extra) {
 }
 
 // Calcula la compra a partir del evento guardado y del pedido ya validado.
-// `config` es el documento de categorias de costo de servicio (o null: 0%).
+// `config` es el documento de categorias de costo de servicio (o null: 0%). `hoy` (AAAA-MM-DD) es para las pruebas.
 // Devuelve { ok: true, lote, loteIndex, precioUnitario, subtotal, costoServicio, comisionPorcentaje,
 //            comisionCategoria, total, disponibles }
 // o { ok: false, status, codigo, mensaje }. No escribe nada.
-function calcularCompra(evento, pedido, config = null) {
+function calcularCompra(evento, pedido, config = null, hoy = null) {
   if (!evento) {
     return error(404, 'EVENTO_NO_ENCONTRADO', 'No encontramos ese evento.');
   }
@@ -48,6 +49,16 @@ function calcularCompra(evento, pedido, config = null) {
   // Si el navegador dice cual lote eligio, tiene que ser el mismo que hay guardado.
   if (pedido.loteNombre && lote.nombre !== pedido.loteNombre) {
     return error(409, 'LOTE_CAMBIO', 'El lote cambió mientras comprabas. Recargá la página y elegí de nuevo.');
+  }
+
+  // Un lote "por fechas" solo se vende entre sus fechas (salvo que el superadmin lo haya habilitado antes).
+  // Solo se revisa al crear el pago: quien ya pagó no queda afuera si el lote termina mientras paga.
+  const estadoLote = estadoDeLote(lote, hoy || hoyEnArgentina());
+  if (estadoLote === 'proximo') {
+    return error(409, 'LOTE_NO_EMPEZO', 'Este lote todavía no está a la venta.');
+  }
+  if (estadoLote === 'finalizado') {
+    return error(409, 'LOTE_TERMINO', 'La venta de este lote ya terminó. Elegí otro.');
   }
 
   const precioUnitario = redondear2(aNumero(lote.precio));
