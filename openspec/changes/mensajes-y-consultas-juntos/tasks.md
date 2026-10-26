@@ -8,6 +8,6 @@
 
 ## 2. Revisión
 
-- [ ] 2.1 Actualizar la skill de auditoría (menú esperado sin "Consultas públicas") y correrla: sin problemas nuevos.
+- [x] 2.1 Actualizar la skill de auditoría (menú esperado sin "Consultas públicas") y correrla: sin problemas nuevos.
 - [x] 2.2 `node pruebas/ejecutar-todas.js`: todo pasa.
 - [ ] 2.3 Prueba a mano con la cuenta real (la persona).

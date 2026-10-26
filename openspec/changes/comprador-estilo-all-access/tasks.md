@@ -16,5 +16,5 @@
 
 ## 3. Revisión
 
-- [ ] 3.1 `node pruebas/ejecutar-todas.js` y la auditoría del sitio público: todo pasa.
+- [x] 3.1 `node pruebas/ejecutar-todas.js` y la auditoría del sitio público: todo pasa.
 - [ ] 3.2 La productora completa los datos marcados "A COMPLETAR" y revisa los textos legales (la persona).
