@@ -20,3 +20,20 @@ export function textoDeFormasDePago() {
     const nombres = FORMAS_DE_PAGO.map((f) => f.toLowerCase());
     return nombres.slice(0, -1).join(', ') + ' o ' + nombres[nombres.length - 1];
 }
+
+// La forma de pago de una venta para filtrar y agrupar en el panel: 'Transferencia', 'Débito', 'Crédito' u 'Otros'.
+// "Dinero en cuenta" (lo que guarda el servidor) cuenta como Transferencia. "Prepaga" y cualquier otro nombre van a 'Otros'.
+// Sin forma de pago (una venta pendiente todavía no la tiene) devuelve '': no entra en ninguna opción del filtro.
+export function claveDeFormaDePago(guardado) {
+    const nombre = nombreParaMostrar(guardado);
+    if (!nombre) return '';
+    return FORMAS_DE_PAGO.includes(nombre) ? nombre : 'Otros';
+}
+
+// Las opciones del filtro de forma de pago: siempre 'todos' y las tres formas (aunque no haya ventas),
+// y 'Otros' solo si alguna venta cae ahí. Efectivo nunca se ofrece como opción propia.
+export function opcionesDeFiltroDePago(ventas) {
+    const hayOtros = (Array.isArray(ventas) ? ventas : []).some((v) =>
+        v && typeof v.metodo_pago === 'string' && v.metodo_pago.trim() !== '' && claveDeFormaDePago(v.metodo_pago) === 'Otros');
+    return ['todos', ...FORMAS_DE_PAGO, ...(hayOtros ? ['Otros'] : [])];
+}

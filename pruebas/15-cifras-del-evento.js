@@ -38,11 +38,11 @@ const EVENTO = evento('E1', [{ nombre: 'Lote 1', disponibles: 100, vendidas: 7 }
   ];
   verificar('E1 el superadmin elige todos los eventos', igual(ids(U.eventosDeLaPersona(eventos, { rol: 'superadmin' }, 'u')), ['A', 'B', 'C', 'D', 'E']));
   const org = { rol: 'organizacion', organizacionId: 'orgX', email: 'ana@ejemplo.test' };
-  verificar('E2 una organizacion elige los de su organizacion, los que creo y los de su correo', igual(ids(U.eventosDeLaPersona(eventos, org, 'uid-1')), ['A', 'B', 'C']));
+  verificar('E2 una organizacion elige solo los de su organizacion (ya no por creadoPor ni por correo)', igual(ids(U.eventosDeLaPersona(eventos, org, 'uid-1')), ['A']));
   verificar('E3 una organizacion no ve los eventos de otras', !ids(U.eventosDeLaPersona(eventos, org, 'uid-1')).includes('D'));
   verificar('E4 sin organizacionId ni correo no coincide con eventos que tampoco los tienen (undefined no es igual a undefined)',
     igual(ids(U.eventosDeLaPersona(eventos, { rol: 'organizacion' }, 'uid-7')), []));
-  verificar('E5 por separado: solo por creadoPor', igual(ids(U.eventosDeLaPersona(eventos, { rol: 'organizacion' }, 'uid-1')), ['B']));
+  verificar('E5 creadoPor ya no alcanza: sin organizacionId no ve nada', igual(ids(U.eventosDeLaPersona(eventos, { rol: 'organizacion' }, 'uid-1')), []));
   verificar('E6 listas nulas y eventos nulos no fallan', igual(U.eventosDeLaPersona(null, org, 'u'), []) && igual(ids(U.eventosDeLaPersona([null, undefined, eventos[0]], org, 'u')), ['A']));
   verificar('E7 sin datos de la persona no se ve ningun evento ajeno', igual(U.eventosDeLaPersona(eventos, null, null), []));
 }
@@ -145,9 +145,9 @@ const EVENTO = evento('E1', [{ nombre: 'Lote 1', disponibles: 100, vendidas: 7 }
 
 // ---------- Todos los eventos de la persona ----------
 {
-  const eventos = [evento('E1', [{ nombre: 'Lote 1', disponibles: 100 }], { creadoPor: 'u-org' }), evento('E2', [{ nombre: 'Lote 1', disponibles: 50 }], { creadoPor: 'otra' })];
+  const eventos = [evento('E1', [{ nombre: 'Lote 1', disponibles: 100 }], { organizacionId: 'org-1' }), evento('E2', [{ nombre: 'Lote 1', disponibles: 50 }], { organizacionId: 'otra' })];
   const ventas = [conf(10, 1), conf(20, 2, { eventoId: 'E2' })];
-  const suyos = U.eventosDeLaPersona(eventos, { rol: 'organizacion' }, 'u-org');
+  const suyos = U.eventosDeLaPersona(eventos, { rol: 'organizacion', organizacionId: 'org-1' }, 'u-org');
   const cifras = U.cifrasDelEvento(suyos, U.ventasDeEventos(ventas, ids(suyos)));
   verificar('Z1 "Todos" de una organizacion suma solo sus eventos (capacidad 100, $10)', cifras.capacidad === 100 && cifras.recaudado === 10 && cifras.entradas === 1, JSON.stringify(cifras));
   const todos = U.eventosDeLaPersona(eventos, { rol: 'superadmin' }, 'x');

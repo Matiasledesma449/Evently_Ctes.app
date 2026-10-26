@@ -16,7 +16,7 @@ Se leyó el código de la rama `claude/nube-2026-10-26-0400`:
 ### 1. Una sola función de pertenencia: `shared/organizaciones.js`
 Funciones puras, sin red:
 - `eventosDeOrganizacion(eventos, organizacionId)`: los eventos cuyo `organizacionId` es exactamente ese. Sin `organizacionId` en la persona devuelve vacío.
-- `eventosParaVer({ eventos, rolEfectivo, organizacionId, organizacionElegida })`: superadmin sin vista → todos; vista de organización → los de `organizacionElegida` (o vacío si no eligió); organización → los de su `organizacionId`.
+- `eventosParaVer({ eventos, rolEfectivo, organizacionId, organizacionElegida })`: superadmin sin vista → todos; vista de organización → los de `organizacionElegida` (o vacío si no eligió); organización → los de su `organizacionId`. Recibe también `rolReal`: así una organización real nunca puede mirar otra pasando `organizacionElegida` (solo el superadmin en la vista).
 - `organizacionDeEvento(evento, organizaciones)`: la organización del evento o `null` ("Sin organización").
 - `validarOrganizacion({ nombre }, existentes)`: nombre entre 1 y 60 caracteres, sin repetir (sin distinguir mayúsculas ni espacios sobrantes).
 

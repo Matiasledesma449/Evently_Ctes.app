@@ -4,11 +4,11 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Funciones compartidas
 
-- [ ] 1.1 Crear `shared/organizaciones.js` con `eventosDeOrganizacion`, `eventosParaVer`, `organizacionDeEvento` y `validarOrganizacion` (ver `design.md`). Se comprueba leyendo el archivo: es puro, sin `innerHTML`, y la pertenencia usa solo `organizacionId`.
-- [ ] 1.2 Crear `pruebas/28-organizaciones.js`: un evento solo de su organización; evento sin `organizacionId` no lo ve ninguna; superadmin sin vista ve todos; vista de organización con y sin organización elegida; nombre vacío, largo o repetido ("Valigroup" y " valigroup "); nombre con etiquetas HTML. Se comprueba con `node pruebas/28-organizaciones.js`.
-- [ ] 1.3 Hacer que `eventosDeLaPersona` de `shared/ventas-utils.js` delegue en `eventosDeOrganizacion` y reescribir los casos de `pruebas/15-cifras-del-evento.js` que probaban `creadoPor` y correo (E2, E5 y los que dependan). Se comprueba con `node pruebas/15-cifras-del-evento.js`: pasa con el criterio nuevo y sigue probando que una organización no ve eventos ajenos.
-- [ ] 1.4 En `shared/formas-de-pago.js` agregar `claveDeFormaDePago` y `opcionesDeFiltroDePago`, y hacer que `filtrarVentas` compare por esa clave. Se comprueba leyendo el archivo.
-- [ ] 1.5 Ampliar `pruebas/18-formas-de-pago.js` (o crear `pruebas/29-filtro-de-formas-de-pago.js`): "Dinero en cuenta" cuenta como Transferencia; el filtro ofrece siempre las tres formas, aun sin ventas; no ofrece "Efectivo"; "Otros" solo aparece si hay ventas de otro método; los totales no cambian. Se comprueba con `node`.
+- [x] 1.1 Crear `shared/organizaciones.js` con `eventosDeOrganizacion`, `eventosParaVer`, `organizacionDeEvento` y `validarOrganizacion` (ver `design.md`). Se comprueba leyendo el archivo: es puro, sin `innerHTML`, y la pertenencia usa solo `organizacionId`.
+- [x] 1.2 Crear `pruebas/28-organizaciones.js`: un evento solo de su organización; evento sin `organizacionId` no lo ve ninguna; superadmin sin vista ve todos; vista de organización con y sin organización elegida; nombre vacío, largo o repetido ("Valigroup" y " valigroup "); nombre con etiquetas HTML. Se comprueba con `node pruebas/28-organizaciones.js`.
+- [x] 1.3 Hacer que `eventosDeLaPersona` de `shared/ventas-utils.js` delegue en `eventosDeOrganizacion` y reescribir los casos de `pruebas/15-cifras-del-evento.js` que probaban `creadoPor` y correo (E2, E5 y los que dependan). Se comprueba con `node pruebas/15-cifras-del-evento.js`: pasa con el criterio nuevo y sigue probando que una organización no ve eventos ajenos.
+- [x] 1.4 En `shared/formas-de-pago.js` agregar `claveDeFormaDePago` y `opcionesDeFiltroDePago`, y hacer que `filtrarVentas` compare por esa clave. Se comprueba leyendo el archivo.
+- [x] 1.5 Ampliar `pruebas/18-formas-de-pago.js` (o crear `pruebas/29-filtro-de-formas-de-pago.js`): "Dinero en cuenta" cuenta como Transferencia; el filtro ofrece siempre las tres formas, aun sin ventas; no ofrece "Efectivo"; "Otros" solo aparece si hay ventas de otro método; los totales no cambian. Se comprueba con `node`.
 
 ## 2. Ver como organización
 

@@ -150,10 +150,12 @@ function fechaEnMs(fecha) {
     return null;
 }
 
-// Las ventas que cumplen a la vez el filtro de estado y el de método ('todos' no filtra)
-export function filtrarVentas(ventas, estado = 'todos', metodo = 'todos') {
-    // El método se compara sin espacios sobrantes, igual que en metodosDePago, para que lo que se ofrece siempre filtre
-    const metodoDe = (v) => (typeof v.metodo_pago === 'string' ? v.metodo_pago.trim() : '');
+// Las ventas que cumplen a la vez el filtro de estado y el de método ('todos' no filtra).
+// `claveDe` convierte lo guardado en la opción del filtro: las pantallas pasan claveDeFormaDePago (shared/formas-de-pago.js),
+// así "Dinero en cuenta" filtra como "Transferencia". Sin `claveDe` se compara el texto guardado sin espacios sobrantes.
+export function filtrarVentas(ventas, estado = 'todos', metodo = 'todos', claveDe = null) {
+    const guardado = (v) => (typeof v.metodo_pago === 'string' ? v.metodo_pago.trim() : '');
+    const metodoDe = typeof claveDe === 'function' ? (v) => claveDe(v.metodo_pago) : guardado;
     return (Array.isArray(ventas) ? ventas : []).filter((v) =>
         v && (estado === 'todos' || v.estado === estado) && (metodo === 'todos' || metodoDe(v) === metodo));
 }
@@ -249,15 +251,15 @@ export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
 // Todo sale de las ventas confirmadas y de los lotes; los contadores "vendidas" guardados en los lotes NO se usan.
 // ======================================================================================================
 
-// Los eventos que una persona puede elegir. Superadmin: todos. Organización: los suyos, con los mismos tres criterios
-// que la lista de Eventos (misma organización, creados por ella o con su correo).
+// Los eventos que una persona puede elegir. Superadmin: todos. Organización: los de su organización (`organizacionId`),
+// la misma regla que eventosDeOrganizacion de shared/organizaciones.js (no se importa porque las pruebas cargan este
+// archivo sin módulos). `uid` ya no se usa: se deja para no cambiar las llamadas.
 export function eventosDeLaPersona(eventos, usuario, uid) {
     const lista = (Array.isArray(eventos) ? eventos : []).filter(Boolean);
     if (usuario && usuario.rol === 'superadmin') return lista;
-    return lista.filter((ev) =>
-        (ev.organizacionId && usuario && ev.organizacionId === usuario.organizacionId) ||
-        (ev.creadoPor && uid && ev.creadoPor === uid) ||
-        (ev.correo && usuario && usuario.email && ev.correo === usuario.email));
+    const suya = usuario && typeof usuario.organizacionId === 'string' ? usuario.organizacionId.trim() : '';
+    if (!suya) return [];
+    return lista.filter((ev) => typeof ev.organizacionId === 'string' && ev.organizacionId.trim() === suya);
 }
 
 // Cuál es el evento activo: el de la dirección (?id=) y, si no hay, el recordado. "todos" nunca se toma de lo recordado.
