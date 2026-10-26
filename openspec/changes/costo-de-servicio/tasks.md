@@ -29,13 +29,13 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 - [x] 4.2 Crear `pruebas/26-categorias-de-comision.js`: valores válidos e inválidos (80, "ocho", vacío, negativo, 3 decimales), ids que no se repiten, nombre con `<b>x</b>`. Se comprueba con `node`.
 - [x] 4.3 (hecho en el código; falta mirarlo a mano en 5.2) En `admin/eventos-seleccion.html` (solo superadmin) agregar el bloque "Costo de servicio" con la tabla de categorías, "Agregar categoría" y guardar por fila. Los nombres se escapan con `escaparHtml`. Se comprueba leyendo el archivo; a mano en 5.2.
 - [x] 4.4 (hecho en el código; falta mirarlo a mano en 5.2) En la tarjeta de cada evento (solo superadmin) agregar el selector "Costo de servicio" que guarda `comisionCategoriaId` y avisa. La organización no lo ve. Se comprueba leyendo el archivo; a mano en 5.2.
-- [ ] 4.5 Sumar `ingresoDeVenta(venta)` y `costoServicioDeVenta(venta)` a `shared/ventas-utils.js` (subtotal con respaldo en `monto_total`) y usarlas en `resumenDeVentas`, `tarjetasDelFiltro` y `cifrasDelEvento`. Se comprueba con las pruebas 14 y 15 ampliadas con ventas con y sin costo de servicio.
-- [ ] 4.6 En `admin/reportes.html` cambiar las sumas de `monto_total` para recaudado, por lote y por método por `ingresoDeVenta`, y que la columna del detalle diga lo mismo. Se comprueba leyendo el archivo (no queda ninguna suma de `monto_total` para recaudación) y con la prueba 17.
-- [ ] 4.7 En el detalle de una venta de `admin/ventas.html` mostrar entradas, costo de servicio y total pagado cuando hay costo. Se comprueba leyendo el archivo; a mano en 5.2.
+- [x] 4.5 (se probó con la prueba nueva `pruebas/27-ingresos-del-organizador.js`, sin tocar las 14 y 15) Sumar `ingresoDeVenta(venta)` y `costoServicioDeVenta(venta)` a `shared/ventas-utils.js` (subtotal con respaldo en `monto_total`) y usarlas en `resumenDeVentas`, `tarjetasDelFiltro` y `cifrasDelEvento`. Se comprueba con las pruebas 14 y 15 ampliadas con ventas con y sin costo de servicio.
+- [x] 4.6 (se comprueba con la prueba 27) En `admin/reportes.html` cambiar las sumas de `monto_total` para recaudado, por lote y por método por `ingresoDeVenta`, y que la columna del detalle diga lo mismo. Se comprueba leyendo el archivo (no queda ninguna suma de `monto_total` para recaudación) y con la prueba 17.
+- [x] 4.7 (la tabla de Ventas muestra el ingreso y el detalle el desglose; falta mirarlo a mano en 5.2) En el detalle de una venta de `admin/ventas.html` mostrar entradas, costo de servicio y total pagado cuando hay costo. Se comprueba leyendo el archivo; a mano en 5.2.
 
 ## 5. Revisión final
 
-- [ ] 5.1 Correr `node pruebas/ejecutar-todas.js`: todo pasa con las pruebas 24 a 26 incluidas.
+- [x] 5.1 Correr `node pruebas/ejecutar-todas.js`: todo pasa con las pruebas 24 a 27 incluidas.
 - [ ] 5.2 Prueba a mano en navegador (necesita navegador y una compra de prueba; no la hace la nube): crear dos categorías, asignar una a un evento, mirar la página del evento (con y sin categoría), pagar en Mercado Pago de prueba y comprobar que cobra el total con el renglón "Costo de servicio", la confirmación y el panel (recaudado sin el costo, detalle de la venta).
 - [ ] 5.3 La persona decide los porcentajes y los nombres de las categorías, y cuándo se publican las reglas de Firestore para `configuracion` (ver `design.md`, Riesgos).
-- [ ] 5.4 Actualizar `CLAUDE.md` con `configuracion/comisiones`, `server/comision.js` y `shared/comision.js`. Se comprueba leyendo el archivo.
+- [x] 5.4 Actualizar `CLAUDE.md` con `configuracion/comisiones`, `server/comision.js` y `shared/comision.js`. Se comprueba leyendo el archivo.

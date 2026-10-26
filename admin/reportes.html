@@ -190,7 +190,7 @@
     <script type="module">
         import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago, seccionesDelPdf, nombreDeArchivoDeReporte } from "../shared/ventas-utils.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago, seccionesDelPdf, nombreDeArchivoDeReporte, ingresoDeVenta } from "../shared/ventas-utils.js";
         import { nombreParaMostrar } from "../shared/formas-de-pago.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
@@ -401,7 +401,7 @@
             const ventasFiltradas = ventasFiltradasActuales(); // el mismo evento, lote y método que se ven en pantalla
 
             const totalVentas = ventasFiltradas.length;
-            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + ingresoDeVenta(v), 0);
             const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
 
             const capacidadTotal = cifrasActuales(ventasFiltradas).capacidad;
@@ -426,7 +426,7 @@
                 const metodo = v.metodo_pago || 'Desconocido';
                 if (!metodos[metodo]) metodos[metodo] = { transacciones: 0, monto: 0 };
                 metodos[metodo].transacciones += 1;
-                metodos[metodo].monto += (v.monto_total || 0);
+                metodos[metodo].monto += ingresoDeVenta(v);
             });
 
             const vendidasPorLote = {};
@@ -446,7 +446,7 @@
             const recaudacionPorLote = {};
             ventasFiltradas.forEach(v => {
                 const lote = claveDeLote(v);
-                recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + (v.monto_total || 0);
+                recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + ingresoDeVenta(v);
             });
             let loteMasRentable = { nombre: 'N/A', monto: 0 };
             Object.entries(recaudacionPorLote).forEach(([nombre, monto]) => {
@@ -550,7 +550,7 @@
                                 const ventas = ventasPorLote[nombreLote];
                                 const info = lotesInfo[nombreLote] || {};
                                 const vendidas = ventas.reduce((s, v) => s + (v.cantidad || 0), 0);
-                                const subtotal = ventas.reduce((s, v) => s + (v.monto_total || 0), 0);
+                                const subtotal = ventas.reduce((s, v) => s + ingresoDeVenta(v), 0);
                                 return `<tr style="background:${i%2===0?'#fff':'#f9fafb'};">
                                     <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-weight:600;">${escaparHtml(etiquetaDeLote(nombreLote))}</td>
                                     <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${info.vigencia || 'N/A'}</td>
@@ -593,7 +593,7 @@
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(v.loteNombre || 'N/A')}</td>
                                 <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;">${v.cantidad || 0}</td>
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${escaparHtml(nombreParaMostrar(v.metodo_pago) || 'N/A')}</td>
-                                <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">$${(v.monto_total||0).toLocaleString()}</td>
+                                <td style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb;font-weight:600;">$${ingresoDeVenta(v).toLocaleString()}</td>
                                 <td style="padding:8px;border-bottom:1px solid #e5e7eb;">
                                     <span style="padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;
                                         background:${v.estado === 'confirmada' ? '#dcfce7' : v.estado === 'pendiente' ? '#fef9c3' : '#fee2e2'};
@@ -752,7 +752,7 @@
                 const precio = info.precio || 0;
                 const disponibles = info.disponibles || 0;
                 const vendidas = ventas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
-                const subtotal = ventas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+                const subtotal = ventas.reduce((sum, v) => sum + ingresoDeVenta(v), 0);
                 totalVendidas += vendidas;
                 totalSubtotal += subtotal;
 
@@ -805,7 +805,7 @@
                         <td class="p-3">${escaparHtml(v.correo || v.comprador || 'N/A')}</td>
                         <td class="p-3 text-right">${v.cantidad || 0}</td>
                         <td class="p-3">${escaparHtml(nombreParaMostrar(v.metodo_pago) || 'N/A')}</td>
-                        <td class="p-3 text-right font-semibold">$${(v.monto_total || 0).toLocaleString()}</td>
+                        <td class="p-3 text-right font-semibold">$${ingresoDeVenta(v).toLocaleString()}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}">${escaparHtml(estado)}</span></td>
                     </tr>
                 `;
@@ -818,7 +818,7 @@
                 const metodo = v.metodo_pago || 'Desconocido';
                 if (!metodos[metodo]) metodos[metodo] = { transacciones: 0, monto: 0 };
                 metodos[metodo].transacciones += 1;
-                metodos[metodo].monto += (v.monto_total || 0);
+                metodos[metodo].monto += ingresoDeVenta(v);
             });
 
             const totalTrans = ventasFiltradas.length;
@@ -881,7 +881,7 @@
                 if (!evolucion[fecha]) evolucion[fecha] = { transacciones: 0, entradas: 0, monto: 0 };
                 evolucion[fecha].transacciones += 1;
                 evolucion[fecha].entradas += (v.cantidad || 0);
-                evolucion[fecha].monto += (v.monto_total || 0);
+                evolucion[fecha].monto += ingresoDeVenta(v);
             });
 
             const tbodyEvo = document.getElementById('tablaEvolucionBody');
@@ -906,7 +906,7 @@
         function renderIndicadores(ventasFiltradas) {
             const totalVentas = ventasFiltradas.length;
             const totalEntradas = ventasFiltradas.reduce((sum, v) => sum + (v.cantidad || 0), 0);
-            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + (v.monto_total || 0), 0);
+            const totalRecaudado = ventasFiltradas.reduce((sum, v) => sum + ingresoDeVenta(v), 0);
             
             const capacidadTotal = cifrasActuales(ventasFiltradas).capacidad;
             const aforoRestante = Math.max(0, capacidadTotal - totalEntradas);
@@ -932,7 +932,7 @@
             const recaudacionPorLote = {};
             ventasFiltradas.forEach(v => {
                 const lote = claveDeLote(v);
-                recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + (v.monto_total || 0);
+                recaudacionPorLote[lote] = (recaudacionPorLote[lote] || 0) + ingresoDeVenta(v);
             });
             let loteMasRentable = { nombre: 'N/A', monto: 0 };
             Object.entries(recaudacionPorLote).forEach(([nombre, monto]) => {

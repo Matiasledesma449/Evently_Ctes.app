@@ -85,7 +85,7 @@
                                 <th class="p-3 text-left">Comprador</th>
                                 <th class="p-3 text-left">Lote</th>
                                 <th class="p-3 text-right">Cantidad</th>
-                                <th class="p-3 text-right">Monto</th>
+                                <th class="p-3 text-right" title="Precio de las entradas, sin el costo de servicio">Monto</th>
                                 <th class="p-3 text-left">Método</th>
                                 <th class="p-3 text-left">Estado</th>
                             </tr>
@@ -153,7 +153,7 @@
         // Esta pantalla solo LEE las ventas: los estados los define el servidor a partir de Mercado Pago,
         // por eso ya no se importa ninguna funcion para escribir ni hay boton para confirmar a mano.
         import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro } from "../shared/ventas-utils.js";
+        import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro, ingresoDeVenta, textoDeMontoDeVenta } from "../shared/ventas-utils.js";
         import { nombreParaMostrar } from "../shared/formas-de-pago.js";
 
         // Elementos
@@ -246,7 +246,7 @@
                 const nombre = nombreDelComprador(v); // vacio en las ventas viejas de prueba
                 const motivo = v.estado === 'rechazada' ? textoDelMotivo(v.motivo) : '';
                 const avisos = avisosDeVenta(v);
-                const monto = v.monto_total ? Number(v.monto_total).toLocaleString() : '0';
+                const monto = ingresoDeVenta(v).toLocaleString(); // las entradas, sin el costo de servicio (ver el detalle)
 
                 return `
                     <tr class="venta-card cursor-pointer hover:bg-gray-50 transition" data-id="${escaparHtml(v.id)}" onclick="abrirDetalleVenta(this.dataset.id)">
@@ -278,7 +278,7 @@
             document.getElementById('modalVentaFecha').textContent = fecha;
             document.getElementById('modalVentaCorreo').textContent = nombre ? `${nombre} · ${venta.correo || 'N/A'}` : (venta.correo || 'N/A');
             document.getElementById('modalVentaLote').textContent = `${venta.loteNombre || 'N/A'} (${venta.cantidad || 0} u.)`;
-            document.getElementById('modalVentaMonto').textContent = `$${venta.monto_total ? Number(venta.monto_total).toLocaleString() : '0'} - ${nombreParaMostrar(venta.metodo_pago) || 'N/A'}`;
+            document.getElementById('modalVentaMonto').textContent = `${textoDeMontoDeVenta(venta)} - ${nombreParaMostrar(venta.metodo_pago) || 'N/A'}`;
 
             // Estado y motivo (se arman como nodos de texto, sin innerHTML)
             const contenedorEstado = document.getElementById('modalVentaEstadoContainer');
