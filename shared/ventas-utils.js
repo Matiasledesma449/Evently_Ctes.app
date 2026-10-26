@@ -279,7 +279,8 @@ export function ventasDeEventos(ventas, ids) {
 }
 
 // Las cifras de uno o varios eventos. `eventos` es una lista (con sus lotes) y `ventas` las ventas de esos eventos.
-export function cifrasDelEvento(eventos, ventas) {
+// `claveDe` (opcional) agrupa la forma de pago (claveDeFormaDePago: "Dinero en cuenta" cuenta como Transferencia).
+export function cifrasDelEvento(eventos, ventas, claveDe = null) {
     const lista = (Array.isArray(eventos) ? eventos : []).filter(Boolean);
     const todas = (Array.isArray(ventas) ? ventas : []).filter(Boolean);
     const confirmadas = soloConfirmadas(todas);
@@ -298,7 +299,7 @@ export function cifrasDelEvento(eventos, ventas) {
         dato.entradas += aNumero(v.cantidad);
         dato.dinero += ingresoDeVenta(v);
         porLote.set(lote, dato);
-        const metodo = v.metodo_pago || 'Desconocido';
+        const metodo = (typeof claveDe === 'function' ? claveDe(v.metodo_pago) : v.metodo_pago) || 'Desconocido';
         porMetodo.set(metodo, (porMetodo.get(metodo) || 0) + 1);
     }
     let loteMasVendido = null;

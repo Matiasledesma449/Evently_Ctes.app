@@ -28,7 +28,7 @@
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
     // 'eventos' también: el superadmin real siempre ve ahí su Crear evento y las solicitudes (superadmin.html redirige ahí)
-    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos'];
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
@@ -36,6 +36,13 @@
         let vista = null;
         try { vista = localStorage.getItem('vistaComo'); } catch (e) { /* sin almacenamiento */ }
         return rolReal === 'superadmin' && vista === 'organizacion' ? 'organizacion' : rolReal;
+    };
+
+    // La organización que el superadmin eligió mirar en la vista ('' si no eligió o si no está en la vista).
+    // Todas las pantallas la usan con eventosParaVer (shared/organizaciones.js) para mostrar los mismos eventos.
+    window.vistaOrganizacion = function () {
+        if (!vistaActiva) return '';
+        try { return (localStorage.getItem('vistaOrganizacionId') || '').trim(); } catch (e) { return ''; }
     };
 
     // Una página solo de superadmin abierta en la vista de organización lleva a la lista de Eventos
@@ -69,6 +76,7 @@
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
         { clave: 'consultas-publicas', rol: 'superadmin', clase: 'link-consultas', badge: 'badge-consultas-publicas', href: 'consultas-publicas.html', icono: 'contact_support', texto: 'Consultas públicas', corto: 'Consultas' },
+        { clave: 'organizaciones', rol: 'superadmin', href: 'organizaciones.html', icono: 'corporate_fare', texto: 'Organizaciones', corto: 'Organiz.' },
         { clave: 'ver-como-organizacion', rol: 'superadmin', id: 'btnVerComoOrganizacion', idMovil: 'btnVerComoOrganizacionMobile', href: '#', icono: 'visibility', texto: 'Ver como organización', corto: 'Ver como' }
     ];
 
@@ -164,8 +172,38 @@
         document.body.insertAdjacentHTML('afterbegin', `
     <div id="avisoVistaOrganizacion" role="status" class="fixed top-0 inset-x-0 z-[70] h-10 bg-violet-600 text-white text-sm flex items-center justify-center gap-3 px-3">
         <span id="textoVistaOrganizacion" class="truncate">${TEXTO_VISTA}</span>
+        <select id="selectorVistaOrganizacion" aria-label="Organización que se mira" class="flex-shrink-0 max-w-[40vw] bg-white text-violet-700 rounded-full px-2 py-0.5 text-xs font-semibold outline-none">
+            <option value="">Elegí una organización</option>
+        </select>
         <button id="btnVolverSuperadmin" type="button" class="flex-shrink-0 bg-white text-violet-700 rounded-full px-3 py-0.5 text-xs font-semibold hover:bg-violet-50">Volver a superadmin</button>
     </div>`);
+    }
+
+    // Las organizaciones del selector de la vista: se leen cuando Firebase está listo. Cada nombre va con new Option
+    // (textContent), nunca como HTML. Elegir una la recuerda y recarga la página para que todo la use.
+    function llenarSelectorVista() {
+        const selector = document.getElementById('selectorVistaOrganizacion');
+        if (!selector || !window.db || !window.getDocs || !window.collection) return;
+        window.getDocs(window.collection(window.db, 'organizaciones')).then((snap) => {
+            const elegida = window.vistaOrganizacion();
+            const lista = [];
+            snap.forEach((d) => lista.push({ id: d.id, nombre: (d.data() || {}).nombre || 'Sin nombre' }));
+            lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+            if (lista.length === 0) selector.options[0].textContent = 'No hay organizaciones';
+            lista.forEach((o) => selector.add(new Option(o.nombre, o.id, false, o.id === elegida)));
+            if (!lista.some((o) => o.id === elegida)) selector.value = '';
+        }).catch((error) => {
+            console.error('No se pudieron leer las organizaciones:', error);
+            selector.options[0].textContent = 'No se pudieron leer las organizaciones';
+        });
+        selector.addEventListener('change', () => {
+            try { localStorage.setItem('vistaOrganizacionId', selector.value); } catch (x) { /* sin almacenamiento */ }
+            location.reload();
+        });
+    }
+    if (vistaActiva) {
+        if (window.db && window.getDocs) llenarSelectorVista();
+        else window.addEventListener('firebase-ready', llenarSelectorVista, { once: true });
     }
 
     // Texto temporal en el aviso (por ejemplo, cuando se toca algo que solo usa una organización)
@@ -186,7 +224,7 @@
             return;
         }
         if (e.target.closest('#btnVolverSuperadmin')) {
-            try { localStorage.removeItem('vistaComo'); } catch (x) { /* sin almacenamiento */ }
+            try { localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); } catch (x) { /* sin almacenamiento */ }
             location.reload();
             return;
         }

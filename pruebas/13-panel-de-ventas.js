@@ -134,8 +134,8 @@ const $ = (n) => '$' + n.toLocaleString();
     verificar('V8 "Todos": entradas vendidas = 5 (solo confirmadas)', tarjeta(els, 'Entradas vendidas') === '5', tarjeta(els, 'Entradas vendidas'));
     verificar('V9 "Todos": "Ventas confirmadas" = 2 y "Pendientes de pago" = 1', tarjeta(els, 'Ventas confirmadas') === '2' && tarjeta(els, 'Pendientes de pago') === '1');
     verificar('V9b "Todos": la linea dice que se muestran las 6 ventas de todos los metodos', els.textoFiltro.textContent === 'Mostrando: Todas las ventas · Todos los métodos · 6 ventas', els.textoFiltro.textContent);
-    verificar('V9c el desplegable ofrece solo los metodos que existen en las ventas (Crédito, Débito y el viejo Efectivo)',
-      /^<option value="todos">Todos los métodos<\/option><option value="Crédito">Crédito<\/option><option value="Débito">Débito<\/option><option value="Efectivo">Efectivo<\/option>$/.test(els.filtroMetodo.innerHTML), els.filtroMetodo.innerHTML);
+    verificar('V9c el desplegable ofrece siempre Transferencia, Débito y Crédito, y "Otros" por la venta vieja en efectivo (nunca "Efectivo")',
+      /^<option value="todos">Todos los métodos<\/option><option value="Transferencia">Transferencia<\/option><option value="Débito">Débito<\/option><option value="Crédito">Crédito<\/option><option value="Otros">Otros<\/option>$/.test(els.filtroMetodo.innerHTML), els.filtroMetodo.innerHTML);
     verificar('V9d sin metodo elegido no hay aviso de pendientes', els.avisoMetodo.classList.contains('hidden') && els.avisoMetodo.textContent === '');
 
     const html = els.tablaVentasBody.innerHTML;
@@ -178,7 +178,7 @@ const $ = (n) => '$' + n.toLocaleString();
     p.contexto.aplicarFiltrosYRenderizar(VENTAS);
     verificar('V26 al llegar datos nuevos el metodo elegido se conserva mientras exista', els.filtroMetodo.value === 'Débito', els.filtroMetodo.value);
     p.contexto.aplicarFiltrosYRenderizar(VENTAS.filter((v) => v.metodo_pago !== 'Débito'));
-    verificar('V27 si el metodo elegido ya no existe, vuelve a "Todos los métodos" y el aviso desaparece', els.filtroMetodo.value === 'todos' && els.avisoMetodo.classList.contains('hidden'), els.filtroMetodo.value);
+    verificar('V27 sin ventas de débito, "Débito" se sigue ofreciendo y queda elegido (las tres formas están siempre)', els.filtroMetodo.value === 'Débito', els.filtroMetodo.value);
     await p.botones[0].clic();
     els.filtroMetodo.value = 'todos';
     await els.btnAplicarFiltros.clic();
@@ -205,8 +205,8 @@ const $ = (n) => '$' + n.toLocaleString();
     const html = p.els.tablaVentasBody.innerHTML;
     verificar('S1 correo, lote, nombre y metodo con HTML se muestran como texto en la tabla (sin etiquetas reales)', !/<img|<script|<svg|<b>raro|<i>/.test(html) && /&lt;img/.test(html) && /&lt;script&gt;/.test(html) && /&lt;svg/.test(html));
     verificar('S2 los atributos no se pueden romper con comillas', !/onerror=alert|onload=alert/.test(html.replace(/&quot;|&lt;|&gt;/g, '')) || !/"\s*onerror|"\s*onload/.test(html));
-    verificar('S1b un metodo de pago con HTML se muestra como texto en el desplegable y en las tarjetas',
-      !/<i>/.test(p.els.filtroMetodo.innerHTML) && /&lt;i&gt;m&lt;\/i&gt;/.test(p.els.filtroMetodo.innerHTML) && !/<i>|<svg|<script/.test(p.els.resumenVentas.innerHTML));
+    verificar('S1b un metodo de pago con HTML no llega al desplegable (cae en "Otros") ni a las tarjetas como etiqueta',
+      !/<i>/.test(p.els.filtroMetodo.innerHTML) && /value="Otros"/.test(p.els.filtroMetodo.innerHTML) && !/<i>|<svg|<script/.test(p.els.resumenVentas.innerHTML));
     p.ventana.abrirDetalleVenta('M1');
     verificar('S3 el detalle usa solo texto (nunca interpreta HTML)', p.els.modalVentaCorreo.textContent.includes('<img/src=x/onerror=alert(1)>@a.bc') && p.els.modalVentaLote.textContent.includes('<script>'));
     p.ventana.abrirDetalleVenta('M2');
@@ -239,12 +239,12 @@ const $ = (n) => '$' + n.toLocaleString();
     const html = leer('admin', 'reportes.html');
     const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '');
     verificar('R1 reportes: ya no hay ningun "[...ventas]" y soloConfirmadas se aplica en un unico lugar', !/\[\.\.\.ventas\]/.test(html) && (html.match(/soloConfirmadas\(ventas\)/g) || []).length === 1);
-    verificar('R2 reportes: el filtro de metodo sale de los datos (metodosDePago), sin metodos fijos en el HTML', /metodosDePago\(ventas\)/.test(html) && !/<option value="(Crédito|Débito|Prepaga|Dinero en cuenta|Efectivo|Transferencia|Mixto)"/.test(html));
+    verificar('R2 reportes: el filtro de metodo es la lista fija (opcionesDeFiltroDePago), sin opciones escritas en el HTML', /opcionesDeFiltroDePago\(ventas\)/.test(html) && !/<option value="(Crédito|Débito|Prepaga|Dinero en cuenta|Efectivo|Transferencia|Mixto)"/.test(html));
 
     // aplicarFiltros: se le pasa a cada seccion SOLO lo confirmado del lote y metodo elegidos
     const capturas = {};
     const nombresRender = ['renderResumen', 'renderDesglose', 'renderTransacciones', 'renderMetodos', 'renderComportamiento', 'renderIndicadores'];
-    const utils = vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento })');
+    const utils = vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, claveDeFormaDePago })');
     const ctx = { ventas: VENTAS, loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, textoFiltro: {}, datosListos: () => true, textoDeFiltros: () => 'x', ...utils };
     nombresRender.forEach((n) => { ctx[n] = (v) => { capturas[n] = v; }; });
     vm.createContext(ctx);
@@ -261,7 +261,7 @@ const $ = (n) => '$' + n.toLocaleString();
     // cifras: las mismas que Resumen (cifrasDelEvento), con la capacidad de los lotes elegidos y los pendientes aparte
     const kpi = { innerHTML: '' };
     const evento = { id: 'E', lotes: [{ nombre: 'General', disponibles: 100 }, { nombre: 'VIP', disponibles: 50 }] };
-    const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar })') };
+    const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar, claveDeFormaDePago })') };
     vm.createContext(ctx2);
     vm.runInContext(['cifrasActuales', 'dibujarTarjetas', 'renderResumen'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.renderResumen = renderResumen;', ctx2);
     ctx2.renderResumen(U.soloConfirmadas(VENTAS));

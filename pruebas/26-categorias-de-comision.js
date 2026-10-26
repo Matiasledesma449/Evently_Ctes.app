@@ -86,11 +86,25 @@ verificar('porcentaje en texto: 8 -> "8%" y 7,5 -> "7,5%"', textoDePorcentaje(8)
   try { new vm.Script(js.replace(/^\s*import .*$/gm, '')); } catch (e) { compila = false; console.log('     ' + e.message); }
   verificar('el JavaScript de la pantalla de eventos no tiene errores de sintaxis', js !== '' && compila);
   verificar('los nombres de categoría se escapan al armar el selector de cada evento', /<option value="\$\{escaparHtml\(c\.id\)\}"[^`]*escaparHtml\(c\.nombre\)/.test(js));
-  verificar('las filas de categorías se arman con value/textContent, no con innerHTML', !/listaCategorias\.innerHTML/.test(js));
-  verificar('el selector de costo de servicio solo se dibuja para el superadmin y en eventos publicados', /soySuperAdmin && estado === 'publicado' \? htmlSelectorServicio\(evento\)/.test(js));
-  verificar('el cambio de categoría solo se acepta si la persona es superadmin y la categoría existe', /!soySuperAdmin\) return/.test(js) && /categorias\.some\(\(c\) => c\.id === elegida\)/.test(js));
-  verificar('el panel de categorías empieza oculto y solo se muestra al superadmin', /id="panelServicio" class="hidden/.test(html) && /soySuperAdmin\) \{[\s\S]{0,400}panelServicio\.classList\.remove\('hidden'\)/.test(js));
+  verificar('el panel de categorías ya no está en Eventos (pasó a Crear evento)', !/panelServicio|formNuevaCategoria|setDoc/.test(html));
+  verificar('el selector de costo de servicio solo se dibuja para el superadmin real, sin la vista de organización, y en eventos publicados', /soySuperAdmin && superadminReal && estado === 'publicado' \? htmlSelectorServicio\(evento\)/.test(js));
+  verificar('el cambio de categoría solo se acepta si la persona es superadmin real y la categoría existe', /!soySuperAdmin \|\| !superadminReal\) return/.test(js) && /categorias\.some\(\(c\) => c\.id === elegida\)/.test(js));
   verificar('la pantalla no borra categorías ni eventos', !/deleteDoc|deleteField/.test(js));
+}
+
+// ---------- Crear evento (admin/eventos.html + admin/crear-evento-superadmin.js): categorías y categoría del evento ----------
+{
+  const html = fs.readFileSync(path.join(REPO, 'admin', 'eventos.html'), 'utf8');
+  const js = fs.readFileSync(path.join(REPO, 'admin', 'crear-evento-superadmin.js'), 'utf8');
+  let compila = true;
+  try { new vm.Script(js.replace(/^\s*import .*$/gm, '').replace(/^export /gm, '')); } catch (e) { compila = false; console.log('     ' + e.message); }
+  verificar('el JavaScript de Crear evento del superadmin no tiene errores de sintaxis', compila);
+  verificar('el panel de categorías y el bloque del superadmin empiezan ocultos', /id="panelServicio" class="hidden/.test(html) && /id="bloqueSuperadmin" class="hidden/.test(html));
+  verificar('solo se cargan en modo directo (el del superadmin)', /modoDirecto \? import\('\.\/crear-evento-superadmin\.js'\)/.test(html));
+  verificar('las filas de categorías se arman con value/textContent, no con innerHTML', !/innerHTML/.test(js));
+  verificar('el evento lleva la categoría solo si se eligió una que existe', /categoria && categorias\.some\(\(c\) => c\.id === categoria\) \? \{ comisionCategoriaId: categoria \}/.test(js));
+  verificar('no se puede publicar sin elegir la organización', /throw new Error\('Elegí la organización del evento\.'\)/.test(js));
+  verificar('Crear evento no borra categorías ni eventos', !/deleteDoc|deleteField/.test(js));
 }
 
 console.log(mal === 0 ? '\nTodo bien.' : '\nFALLARON ' + mal + ' casos.');

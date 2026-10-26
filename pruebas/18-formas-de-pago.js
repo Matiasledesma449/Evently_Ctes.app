@@ -39,10 +39,10 @@ verificar('T2 sin equivalencia la tarjeta muestra el nombre guardado', valorMeto
 verificar('T3 sin datos la tarjeta sigue mostrando "—"', valorMetodo(VU.tarjetasDeResumen(null, F.nombreParaMostrar)) === '—');
 for (const pantalla of ['admin/ventas.html', 'admin/reportes.html', 'admin/dashboard.html']) {
   const html = leer(pantalla);
-  verificar(`T4 ${pantalla} importa nombreParaMostrar de formas-de-pago.js`, /import \{ nombreParaMostrar \} from "\.\.\/shared\/formas-de-pago\.js"/.test(html));
+  verificar(`T4 ${pantalla} importa nombreParaMostrar de formas-de-pago.js`, /import \{ nombreParaMostrar[^}]*\} from "\.\.\/shared\/formas-de-pago\.js"/.test(html));
 }
 verificar('T5 Ventas y Reportes no muestran metodo_pago sin pasar por nombreParaMostrar', !/escaparHtml\(v\.metodo_pago \|\|/.test(leer('admin/ventas.html') + leer('admin/reportes.html')));
-verificar('T6 los desplegables guardan el nombre del servidor y muestran el otro', /<option value="\$\{escaparHtml\(m\)\}">\$\{escaparHtml\(nombreParaMostrar\(m\)\)\}<\/option>/.test(leer('admin/ventas.html')) && /<option value="\$\{escaparHtml\(m\)\}">\$\{escaparHtml\(nombreParaMostrar\(m\)\)\}<\/option>/.test(leer('admin/reportes.html')));
+verificar('T6 los desplegables ofrecen la lista fija (opcionesDeFiltroDePago) y filtran por claveDeFormaDePago', ['admin/ventas.html', 'admin/reportes.html'].every((f) => /opcionesDeFiltroDePago\(ventas\)/.test(leer(f)) && /claveDeFormaDePago/.test(leer(f)) && /<option value="\$\{escaparHtml\(m\)\}">/.test(leer(f))));
 verificar('T7 Dashboard y Reportes pasan nombreParaMostrar a las tarjetas', /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/dashboard.html')) && /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/reportes.html')));
 
 // ---------- Secciones del PDF de Reportes (tarea 3.1) ----------

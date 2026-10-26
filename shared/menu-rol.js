@@ -65,7 +65,7 @@ function initRoles() {
 
     window.onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
             aplicarRolVisual(null);
             mostrarNavegacion();
             return;
@@ -73,7 +73,7 @@ function initRoles() {
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (!userDoc.exists()) {
-                localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
+                localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
                 aplicarRolVisual(null);
                 mostrarNavegacion();
                 return;
@@ -83,7 +83,7 @@ function initRoles() {
             localStorage.setItem('eventlyRol', rol);
             // La vista "Ver como organización" solo vale para un superadmin real
             if (rol !== 'superadmin' && localStorage.getItem('vistaComo')) {
-                localStorage.removeItem('vistaComo');
+                localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
                 if (document.getElementById('avisoVistaOrganizacion')) { location.reload(); return; }
             }
             const esAdmin = (window.rolEfectivo ? window.rolEfectivo(rol) : rol) === 'superadmin';
@@ -95,7 +95,7 @@ function initRoles() {
             mostrarNavegacion();
         } catch (e) {
             console.error('Error al verificar rol:', e);
-            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
             aplicarRolVisual(null);
             mostrarNavegacion();
         }
@@ -269,7 +269,7 @@ document.addEventListener('click', async (e) => {
         e.preventDefault();
         try {
             await window.signOut(auth);
-            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
             // ✅ replace: elimina la página actual del historial
             window.location.replace('login.html');
         } catch (err) {

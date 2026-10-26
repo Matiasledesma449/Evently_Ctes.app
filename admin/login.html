@@ -117,7 +117,7 @@
 
                 await signInWithEmailAndPassword(auth, email, password);
                 // Al entrar de nuevo siempre se empieza en la vista normal (nunca en "Ver como organización")
-                try { localStorage.removeItem('vistaComo'); } catch (e) { /* sin almacenamiento */ }
+                try { localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); } catch (e) { /* sin almacenamiento */ }
                 try {
                     const perfil = await getDoc(doc(db, 'usuarios', auth.currentUser.uid));
                     if (perfil.exists()) localStorage.setItem('eventlyRol', perfil.data().rol || '');

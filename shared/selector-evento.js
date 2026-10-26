@@ -10,7 +10,8 @@
 //   3. Al elegir otro, recuerda el evento y vuelve a cargar la pantalla con el ?id= nuevo.
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { eventosDeLaPersona, escaparHtml, elegirEventoActivo } from "./ventas-utils.js";
+import { escaparHtml, elegirEventoActivo } from "./ventas-utils.js";
+import { eventosParaVer } from "./organizaciones.js";
 
 const contenedor = document.getElementById('selectorEvento');
 const desplegable = document.getElementById('selectorEventoSelect');
@@ -44,7 +45,12 @@ const TEXTO_ELEGIR = 'Elegí un evento para ver sus datos';
 function armar(eventos, usuario, uid) {
     if (!desplegable) return;
     const activo = leerEventoActivo();
-    const propios = eventosDeLaPersona(eventos, usuario, uid)
+    // Los mismos eventos que la lista de Eventos: según el rol con el que se mira ("Ver como organización" incluida)
+    const rolReal = usuario ? usuario.rol : '';
+    const propios = eventosParaVer({
+        eventos, rolReal, rolEfectivo: window.rolEfectivo ? window.rolEfectivo(rolReal) : rolReal,
+        organizacionId: usuario ? usuario.organizacionId : '', organizacionElegida: window.vistaOrganizacion ? window.vistaOrganizacion() : ''
+    })
         .slice()
         .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
 

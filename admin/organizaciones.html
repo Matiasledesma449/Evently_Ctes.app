@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Organizaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; overflow: hidden; height: 100vh; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+    </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+</head>
+<body>
+    <script type="module" src="../shared/firebase-init.js"></script>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="organizaciones"></script>
+
+        <main class="flex-1 min-w-0 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Organizaciones</h1>
+                <p class="text-sm text-gray-500">Las productoras que venden entradas en Evently. Cada evento es de una organización, y sus admins ven solo esos eventos.</p>
+            </div>
+
+            <!-- Crear una organización -->
+            <section class="bg-white rounded-xl border border-gray-200 p-5 mb-6" aria-labelledby="tituloNueva">
+                <h2 id="tituloNueva" class="text-lg font-bold text-gray-800 mb-3">Nueva organización</h2>
+                <form id="formNueva" class="flex flex-col sm:flex-row gap-2" novalidate>
+                    <input id="nombreNueva" type="text" maxlength="60" aria-label="Nombre de la organización nueva" placeholder="Nombre (ej: Valigroup)" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                    <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Crear organización</button>
+                </form>
+                <p id="mensajeNueva" role="status" class="hidden mt-3 text-sm"></p>
+            </section>
+
+            <!-- Lista: una tarjeta por organización, con su nombre editable, sus admins y el vínculo por correo -->
+            <section aria-labelledby="tituloLista">
+                <h2 id="tituloLista" class="text-lg font-bold text-gray-800 mb-3">Organizaciones creadas</h2>
+                <div id="listaOrganizaciones" class="grid grid-cols-1 xl:grid-cols-2 gap-4" aria-live="polite">
+                    <p class="text-gray-400">Cargando...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, doc, getDoc, getDocs, addDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { validarOrganizacion } from "../shared/organizaciones.js";
+
+        const lista = document.getElementById('listaOrganizaciones');
+        const formNueva = document.getElementById('formNueva');
+        const nombreNueva = document.getElementById('nombreNueva');
+        const mensajeNueva = document.getElementById('mensajeNueva');
+
+        let organizaciones = [];
+        let usuarios = []; // cuentas con rol organización (para mostrar y vincular admins)
+
+        // Todo lo que escribe una persona (nombres, correos) se pone con textContent o value: nunca como HTML
+        function avisar(caja, texto, esError) {
+            caja.textContent = texto;
+            caja.className = `mt-3 text-sm ${esError ? 'text-red-600' : 'text-green-700'}`;
+        }
+
+        const elemento = (etiqueta, clases, texto) => {
+            const e = document.createElement(etiqueta);
+            if (clases) e.className = clases;
+            if (texto !== undefined) e.textContent = texto;
+            return e;
+        };
+
+        // Solo el superadmin real (no en "Ver como organización": el menú ya lleva esta página a Eventos)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.replace('login.html'); return; }
+            try {
+                const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!perfil.exists() || perfil.data().rol !== 'superadmin') {
+                    window.location.replace('eventos-seleccion.html');
+                    return;
+                }
+            } catch (error) {
+                console.error('No se pudo verificar el rol:', error);
+                window.location.replace('eventos-seleccion.html');
+                return;
+            }
+            cargarUsuarios();
+            onSnapshot(collection(db, 'organizaciones'), (snap) => {
+                organizaciones = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+                dibujar();
+            }, (error) => {
+                console.error('No se pudieron leer las organizaciones:', error);
+                lista.replaceChildren(elemento('p', 'text-red-600 text-sm',
+                    'No se pudieron leer las organizaciones. Si es la primera vez, falta publicar la regla de Firestore de "organizaciones".'));
+            });
+        });
+
+        async function cargarUsuarios() {
+            try {
+                const snap = await getDocs(collection(db, 'usuarios'));
+                usuarios = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => u.rol === 'organizacion');
+                dibujar();
+            } catch (error) {
+                console.error('No se pudieron leer las cuentas:', error);
+            }
+        }
+
+        function dibujar() {
+            lista.replaceChildren();
+            if (organizaciones.length === 0) {
+                lista.appendChild(elemento('p', 'text-gray-400 text-sm', 'Todavía no hay organizaciones. Creá la primera arriba.'));
+                return;
+            }
+            organizaciones.forEach((org) => lista.appendChild(tarjeta(org)));
+        }
+
+        function tarjeta(org) {
+            const caja = elemento('article', 'bg-white rounded-xl border border-gray-200 p-5');
+
+            // Nombre editable
+            const filaNombre = elemento('div', 'flex flex-col sm:flex-row gap-2');
+            const nombre = elemento('input', 'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-violet-500 outline-none');
+            nombre.type = 'text';
+            nombre.maxLength = 60;
+            nombre.value = org.nombre || '';
+            nombre.setAttribute('aria-label', 'Nombre de la organización');
+            const guardar = elemento('button', 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition', 'Guardar nombre');
+            guardar.type = 'button';
+            filaNombre.append(nombre, guardar);
+
+            // Admins vinculados
+            const admins = usuarios.filter((u) => u.organizacionId === org.id);
+            const tituloAdmins = elemento('p', 'text-xs font-medium text-gray-500 mt-4 mb-1', 'Admins vinculados');
+            const listaAdmins = elemento('ul', 'text-sm text-gray-700 space-y-1');
+            if (admins.length === 0) listaAdmins.appendChild(elemento('li', 'text-gray-400', 'Ninguno todavía.'));
+            admins.forEach((u) => listaAdmins.appendChild(elemento('li', '', u.email || u.nombre || 'Cuenta sin correo')));
+
+            // Vincular un admin por correo (la cuenta tiene que existir y tener rol organización)
+            const formVincular = elemento('form', 'flex flex-col sm:flex-row gap-2 mt-3');
+            formVincular.noValidate = true;
+            const correo = elemento('input', 'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none');
+            correo.type = 'email';
+            correo.placeholder = 'Correo de la cuenta (ej: admin@productora.com)';
+            correo.setAttribute('aria-label', `Correo del admin a vincular a ${org.nombre || 'la organización'}`);
+            const vincular = elemento('button', 'bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition', 'Vincular admin');
+            vincular.type = 'submit';
+            formVincular.append(correo, vincular);
+
+            const mensaje = elemento('p', 'hidden');
+            mensaje.setAttribute('role', 'status');
+
+            guardar.addEventListener('click', async () => {
+                const problema = validarOrganizacion({ nombre: nombre.value }, organizaciones.filter((o) => o.id !== org.id));
+                if (problema) { avisar(mensaje, problema, true); return; }
+                guardar.disabled = true;
+                try {
+                    await updateDoc(doc(db, 'organizaciones', org.id), { nombre: nombre.value.trim().replace(/\s+/g, ' ') });
+                    avisar(mensaje, 'Nombre guardado.', false);
+                } catch (error) {
+                    console.error('No se pudo guardar el nombre:', error);
+                    avisar(mensaje, 'No se pudo guardar. Probá de nuevo.', true);
+                } finally {
+                    guardar.disabled = false;
+                }
+            });
+
+            formVincular.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const buscado = correo.value.trim().toLowerCase();
+                if (!buscado) { avisar(mensaje, 'Escribí el correo de la cuenta.', true); return; }
+                const cuenta = usuarios.find((u) => String(u.email || '').trim().toLowerCase() === buscado);
+                if (!cuenta) { avisar(mensaje, 'No hay ninguna cuenta de organización con ese correo. La cuenta tiene que existir antes de vincularla.', true); return; }
+                if (cuenta.organizacionId === org.id) { avisar(mensaje, 'Esa cuenta ya está vinculada a esta organización.', false); return; }
+                vincular.disabled = true;
+                try {
+                    await updateDoc(doc(db, 'usuarios', cuenta.id), { organizacionId: org.id });
+                    cuenta.organizacionId = org.id;
+                    avisar(mensaje, 'Admin vinculado. Desde ahora ve los eventos de esta organización.', false);
+                    correo.value = '';
+                    dibujar();
+                } catch (error) {
+                    console.error('No se pudo vincular la cuenta:', error);
+                    avisar(mensaje, 'No se pudo vincular. Probá de nuevo.', true);
+                } finally {
+                    vincular.disabled = false;
+                }
+            });
+
+            caja.append(filaNombre, tituloAdmins, listaAdmins, formVincular, mensaje);
+            return caja;
+        }
+
+        formNueva.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const problema = validarOrganizacion({ nombre: nombreNueva.value }, organizaciones);
+            if (problema) { avisar(mensajeNueva, problema, true); return; }
+            try {
+                await addDoc(collection(db, 'organizaciones'), { nombre: nombreNueva.value.trim().replace(/\s+/g, ' '), creadaEn: serverTimestamp() });
+                avisar(mensajeNueva, 'Organización creada. Ahora vinculale sus admins.', false);
+                nombreNueva.value = '';
+            } catch (error) {
+                console.error('No se pudo crear la organización:', error);
+                avisar(mensajeNueva, 'No se pudo crear. Si es la primera vez, falta publicar la regla de Firestore de "organizaciones".', true);
+            }
+        });
+    </script>
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>
