@@ -26,7 +26,7 @@ function elementoFalso(tag) {
   };
 }
 const contexto = { document: { createElement: elementoFalso } };
-const P = vm.runInNewContext(codigo + '\n;({ enlacesDelPie, dibujarPie, TEXTO_DE_DERECHOS, PAGINAS_CON_PIE })', contexto);
+const P = vm.runInNewContext(codigo + '\n;({ enlacesDelPie, enlacesLegales, dibujarPie, TEXTO_DE_DERECHOS, PAGINAS_CON_PIE })', contexto);
 
 const textos = (pagina) => Array.from(P.enlacesDelPie(pagina)).map((e) => e.texto).join('|');
 const hrefs = (pagina) => Array.from(P.enlacesDelPie(pagina)).map((e) => e.href).join('|');
@@ -37,19 +37,22 @@ verificar('L2 en el inicio no aparece Inicio', textos('inicio') === 'Centro de a
 verificar('L3 en soporte no aparece Centro de ayuda', textos('soporte') === 'Inicio|Enviar una consulta', textos('soporte'));
 verificar('L4 "Enviar una consulta" lleva al formulario (#contacto)', hrefs('evento') === 'index.html|soporte.html|soporte.html#contacto', hrefs('evento'));
 verificar('L5 una página desconocida o vacía recibe los tres links', textos('xyz') === textos('evento') && textos(undefined) === textos('evento'));
-verificar('L6 no hay links legales', !/legal|defensa|arrepentimiento|t[eé]rminos|privacidad/i.test(JSON.stringify(P.enlacesDelPie('evento'))));
-verificar('L7 las tres páginas del sitio tienen pie', Array.from(P.PAGINAS_CON_PIE).join(',') === 'inicio,evento,soporte');
+verificar('L6 los links de ayuda no mezclan los legales', !/arrepentimiento|t[eé]rminos|privacidad/i.test(JSON.stringify(P.enlacesDelPie('evento'))));
+verificar('L7 las páginas del comprador tienen pie, también las legales', Array.from(P.PAGINAS_CON_PIE).join(',') === 'inicio,evento,soporte,terminos,privacidad,arrepentimiento');
+const legales = (p) => Array.from(P.enlacesLegales(p)).map((e) => e.href).join('|');
+verificar('L8 los legales: términos, privacidad y arrepentimiento', legales('evento') === 'terminos.html|privacidad.html|arrepentimiento.html', legales('evento'));
+verificar('L9 en una página legal no se ofrece ir a ella misma', legales('terminos') === 'privacidad.html|arrepentimiento.html' && legales('arrepentimiento') === 'terminos.html|privacidad.html');
 
 // ---------- Dibujo del pie ----------
 const pie = elementoFalso('footer');
 pie.hijos.push(elementoFalso('span')); // contenido viejo que debe desaparecer
 P.dibujarPie(pie, 'evento');
-verificar('D1 el pie tiene los links y el texto de derechos', pie.hijos.length === 2 && pie.hijos[0].tag === 'nav' && pie.hijos[1]._texto === '© 2024 Evently by Bali Group');
+verificar('D1 el pie tiene los links de ayuda, los legales y el texto de derechos', pie.hijos.length === 3 && pie.hijos[0].tag === 'nav' && pie.hijos[1].tag === 'nav' && pie.hijos[1].hijos.length === 3 && pie.hijos[2]._texto === '© 2024 Evently by Bali Group');
 verificar('D2 se conserva el texto de derechos de siempre', P.TEXTO_DE_DERECHOS === '© 2024 Evently by Bali Group');
 const links = pie.hijos[0].hijos;
 verificar('D3 cada link es un <a> con su texto y su destino', links.length === 3 && links.every((a) => a.tag === 'a' && a.href && a._texto));
 P.dibujarPie(pie, 'soporte');
-verificar('D4 volver a dibujar reemplaza el pie y no lo duplica', pie.hijos.length === 2 && pie.hijos[0].hijos.length === 2);
+verificar('D4 volver a dibujar reemplaza el pie y no lo duplica', pie.hijos.length === 3 && pie.hijos[0].hijos.length === 2);
 let fallo = false;
 try { P.dibujarPie(null, 'evento'); P.dibujarPie(undefined, 'inicio'); } catch (e) { fallo = true; }
 verificar('D5 sin elemento no falla', !fallo);

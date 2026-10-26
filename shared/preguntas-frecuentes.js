@@ -10,11 +10,14 @@ export function normalizarTexto(texto) {
     return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-// Cada respuesta es una lista de párrafos (texto plano; la página los dibuja con textContent)
+// Cada respuesta es una lista de párrafos (texto plano; la página los dibuja con textContent).
+// `icono` es el nombre de un ícono de Material Symbols y `descripcion` la frase de la tarjeta del tema.
 export const TEMAS_DE_AYUDA = [
     {
         id: 'como-comprar',
         titulo: 'Cómo comprar',
+        icono: 'confirmation_number',
+        descripcion: 'Cómo comprar en Evently, cuántas entradas podés llevar y qué datos te pedimos.',
         preguntas: [
             {
                 pregunta: '¿Cómo compro entradas?',
@@ -32,6 +35,8 @@ export const TEMAS_DE_AYUDA = [
     {
         id: 'pagos',
         titulo: 'Pagos',
+        icono: 'credit_card',
+        descripcion: 'Formas de pago, Mercado Pago y qué hacer si tu compra figura pendiente.',
         preguntas: [
             {
                 pregunta: '¿Qué formas de pago hay?',
@@ -53,6 +58,8 @@ export const TEMAS_DE_AYUDA = [
     {
         id: 'mi-entrada',
         titulo: 'Mi entrada',
+        icono: 'qr_code_2',
+        descripcion: 'Dónde ver tu entrada con su código QR y qué hacer si perdiste el enlace.',
         preguntas: [
             {
                 pregunta: '¿Dónde veo mi entrada?',
@@ -70,6 +77,8 @@ export const TEMAS_DE_AYUDA = [
     {
         id: 'anulaciones',
         titulo: 'Anulaciones y cambios',
+        icono: 'sync',
+        descripcion: 'Qué hacer si querés anular una compra o cambiar tu entrada.',
         preguntas: [
             {
                 pregunta: '¿Puedo anular mi compra o cambiar mi entrada?',
@@ -80,10 +89,31 @@ export const TEMAS_DE_AYUDA = [
     {
         id: 'reprogramaciones',
         titulo: 'Reprogramaciones y cancelaciones',
+        icono: 'event_busy',
+        descripcion: 'Qué pasa con tus entradas si un evento se reprograma o se cancela.',
         preguntas: [
             {
                 pregunta: '¿Qué pasa si el evento se reprograma o se cancela?',
                 respuesta: ['Escribinos una consulta con el nombre del evento y el correo de tu compra; te respondemos con los pasos a seguir.']
+            }
+        ]
+    },
+    {
+        id: 'arrepentimiento',
+        titulo: 'Arrepentimiento de compra',
+        icono: 'undo',
+        descripcion: 'Cómo pedir la baja de una compra con el botón de arrepentimiento.',
+        preguntas: [
+            {
+                pregunta: '¿Cómo me arrepiento de una compra?',
+                respuesta: [
+                    'Usá el "Botón de arrepentimiento" que está al pie de todas las páginas. Completá tu correo, tu nombre y el número de compra, y te damos un código de gestión.',
+                    'Por ley tenés 10 días corridos desde que recibiste tu entrada, y tiene que ser al menos 24 horas antes del evento. No vale para entradas ya usadas.'
+                ]
+            },
+            {
+                pregunta: '¿Dónde encuentro el número de compra?',
+                respuesta: ['Está en la página de tu compra, la que ves al terminar el pago (la misma de los códigos QR).']
             }
         ]
     }

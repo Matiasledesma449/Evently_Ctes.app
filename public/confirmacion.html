@@ -115,6 +115,8 @@
                 lista.appendChild(p);
             };
             const e = v.evento || {};
+            // El número de compra (id de la venta, ya está en la dirección) sirve para el Centro de ayuda y el arrepentimiento
+            if (ventaId) fila('Número de compra', ventaId);
             fila('Evento', e.nombre || '-');
             if (e.fecha) fila('Fecha', e.fecha);
             if (e.lugar) fila('Lugar', e.lugar);
