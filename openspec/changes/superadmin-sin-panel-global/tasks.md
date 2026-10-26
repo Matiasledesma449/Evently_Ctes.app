@@ -9,15 +9,15 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 2. Quitar el Panel global
 
-- [ ] 2.1 En `shared/menu-admin.js`, sacar la sección `superadmin` del menú. Se comprueba leyendo el archivo y con la prueba de menús si existe.
-- [ ] 2.2 Dejar `admin/superadmin.html` como redirección a `eventos.html?modo=directo#solicitudes` y cambiar el `prefetch` de `admin/consultas-publicas.html`. Se comprueba leyendo los archivos.
-- [ ] 2.3 En `pruebas/13-panel-de-ventas.js`, sacar la sección del Panel global. Se comprueba con `node pruebas/ejecutar-todas.js`.
+- [x] 2.1 En `shared/menu-admin.js`, sacar la sección `superadmin` del menú. Se comprueba leyendo el archivo y con la prueba de menús si existe.
+- [x] 2.2 Dejar `admin/superadmin.html` como redirección a `eventos.html?modo=directo#solicitudes` y cambiar el `prefetch` de `admin/consultas-publicas.html`. Se comprueba leyendo los archivos.
+- [x] 2.3 En `pruebas/13-panel-de-ventas.js`, sacar la sección del Panel global. Se comprueba con `node pruebas/ejecutar-todas.js`.
 
 ## 3. Solicitudes en "Crear evento"
 
-- [ ] 3.1 En `admin/eventos.html`: pestañas "Crear evento" y "Solicitudes" (solo en `?modo=directo`), con la sección de solicitudes, sus filtros propios y los modales. Se comprueba leyendo el archivo: el formulario sigue igual y la organización no ve las pestañas.
-- [ ] 3.2 En `admin/aprobaciones.js`: usar los campos propios de la sección, cargarse desde `eventos.html` sin romper nada, y mostrar el número de pendientes en la pestaña. Se comprueba leyendo el archivo.
-- [ ] 3.3 En `admin/aprobaciones.js`: botón "Comentar" con historial, guardado con `arrayUnion`, y botones de contacto con `enlacesDeContacto`; todo con `textContent`. Se comprueba leyendo el archivo.
+- [x] 3.1 En `admin/eventos.html`: pestañas "Crear evento" y "Solicitudes" (solo en `?modo=directo`), con la sección de solicitudes, sus filtros propios y los modales. Se comprueba leyendo el archivo: el formulario sigue igual y la organización no ve las pestañas.
+- [x] 3.2 En `admin/aprobaciones.js`: usar los campos propios de la sección, cargarse desde `eventos.html` sin romper nada, y mostrar el número de pendientes en la pestaña. Se comprueba leyendo el archivo.
+- [x] 3.3 En `admin/aprobaciones.js`: botón "Comentar" con historial, guardado con `arrayUnion`, y botones de contacto con `enlacesDeContacto`; todo con `textContent`. Se comprueba leyendo el archivo.
 
 ## 4. Eventos del superadmin y comentarios de la organización
 

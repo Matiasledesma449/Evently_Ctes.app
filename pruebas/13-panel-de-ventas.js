@@ -305,27 +305,9 @@ const $ = (n) => '$' + n.toLocaleString();
       /bg-green-100 text-green-700">confirmada</.test(contenedor.innerHTML) && !/bg-red-100/.test(contenedor.innerHTML));
   }
 
-  // ====================== 5. Panel Global (superadmin) ======================
+  // ====================== 5. Reglas compartidas (el Panel global ya no existe) ======================
   {
-    const html = leer('admin', 'superadmin.html');
-    const ev = { id: 'Evt1', nombre: 'Fiesta', lugar: 'Costanera', fechaPublicacion: { seconds: 1760000000 } };
-    const contenedor = { innerHTML: '' };
-    const ctx = {
-      ventasGlobales: VENTAS.map((v) => ({ ...v, eventoId: 'Evt1' })).concat([{ id: 'Z', estado: 'confirmada', cantidad: 99, monto_total: 99999, eventoId: 'OtroEvento' }]),
-      filtroOrganizacion: { value: 'todas' },
-      document: { getElementById: () => contenedor },
-      organizacionesFiltradas: () => [{ id: 'org1', nombre: 'Org Uno' }],
-      eventosDeOrganizacion: () => [ev],
-      ...vm.runInNewContext(codigoUtils + '\n;({ soloConfirmadas })'),
-    };
-    vm.createContext(ctx);
-    vm.runInContext(extraerFuncion(html, 'renderizarEventosGlobales') + ';this.renderizarEventosGlobales = renderizarEventosGlobales;', ctx);
-    ctx.renderizarEventosGlobales();
-    verificar('G1 panel global: el evento muestra $25.000 y 5 entradas (solo confirmadas, y solo las de ese evento)', contenedor.innerHTML.includes('$' + (25000).toLocaleString('es-AR')) && /5 entradas/.test(contenedor.innerHTML), contenedor.innerHTML.replace(/\s+/g, ' ').slice(-260));
-    verificar('G2 panel global: no suma pendientes, rechazadas, la venta vieja ni otros eventos', !/99\.999|45\.000|\b11 entradas|\b17 entradas/.test(contenedor.innerHTML));
-    const h = html;
-    verificar('G3 panel global: el detalle por organizacion tambien filtra a las confirmadas', (h.match(/soloConfirmadas\(ventasGlobales\.filter/g) || []).length === 2);
-    verificar('G4 las cuatro pantallas importan las reglas compartidas', ['dashboard', 'reportes', 'superadmin', 'ventas'].every((n) => /shared\/ventas-utils\.js/.test(leer('admin', n + '.html'))));
+    verificar('G4 las tres pantallas importan las reglas compartidas', ['dashboard', 'reportes', 'ventas'].every((n) => /shared\/ventas-utils\.js/.test(leer('admin', n + '.html'))));
   }
 
   console.log(mal === 0 ? '\nTodos los casos dieron lo esperado.' : '\nFALLARON ' + mal + ' casos.');

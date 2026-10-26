@@ -2,7 +2,7 @@
 
 ## Datos que se guardan
 
-Una solicitud (`solicitudes_eventos`) suma un campo. Los que ya existían no cambian. Al aprobar, `admin/aprobaciones.js` copia la solicitud entera a `eventos`, así que el evento publicado también lo lleva (se ignora al mostrarlo).
+Una solicitud (`solicitudes_eventos`) suma un campo. Los que ya existían no cambian. Al aprobar, `admin/aprobaciones.js` copia la solicitud a `eventos` (que es público), pero **sin `comentarios`**: los comentarios son entre el superadmin y la organización. Por la misma razón, el teléfono de la organización no se guarda en la solicitud: se lee del perfil y se usa solo para armar el enlace.
 
 ```
 comentarios: [{ texto: "Falta la hora de fin", autor: "superadmin", fecha: "2026-10-26T14:30:00.000Z" }, ...]

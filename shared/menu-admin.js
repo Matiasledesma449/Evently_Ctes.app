@@ -27,7 +27,7 @@
     const vistaActiva = rol === 'superadmin' && vistaComo === 'organizacion';
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
-    const SOLO_SUPERADMIN = ['superadmin', 'consultas-publicas', 'mensajes'];
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
@@ -68,7 +68,6 @@
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
         { clave: 'consultas-publicas', rol: 'superadmin', clase: 'link-consultas', badge: 'badge-consultas-publicas', href: 'consultas-publicas.html', icono: 'contact_support', texto: 'Consultas públicas', corto: 'Consultas' },
-        { clave: 'superadmin', rol: 'superadmin', id: 'link-panel-global', idMovil: 'link-panel-global-mobile', href: 'superadmin.html', icono: 'admin_panel_settings', texto: 'Panel global', corto: 'Global' },
         { clave: 'ver-como-organizacion', rol: 'superadmin', id: 'btnVerComoOrganizacion', idMovil: 'btnVerComoOrganizacionMobile', href: '#', icono: 'visibility', texto: 'Ver como organización', corto: 'Ver como' }
     ];
 

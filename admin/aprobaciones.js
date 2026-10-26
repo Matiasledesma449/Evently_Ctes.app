@@ -1,15 +1,16 @@
     // ==========================================
     // admin/aprobaciones.js
-    // Lógica de solicitudes pendientes en superadmin.html
+    // Lógica de las solicitudes de eventos: pestaña "Solicitudes" de "Crear evento" (eventos.html?modo=directo)
     // ==========================================
 
     const db = window.db;
     const auth = window.auth;
 
     import { crearImagenEvento } from "../shared/imagen-evento.js";
+    import { armarComentario, comentariosDeSolicitud, ultimoComentario, enlacesDeContacto } from "../shared/solicitudes-evento.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
-        serverTimestamp, getDoc, getDocs, deleteField
+        serverTimestamp, getDoc, getDocs, deleteField, arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -35,6 +36,7 @@
     let accionPendiente = null;
     let solicitudSeleccionada = null;
     const organizacionesPorClave = new Map();
+    const organizacionPorSolicitud = new Map();
     let solicitudesCache = [];
     let estadoSolicitudesActual = 'pendiente';
     let solicitudEditando = null;
@@ -72,6 +74,14 @@
                     .filter(Boolean)
                     .forEach(clave => organizacionesPorClave.set(clave, organizacion));
             });
+
+            // Selector de organizaciones de la sección (una opción por organización, ordenadas por nombre)
+            const selector = document.getElementById('filtroOrganizacionSolicitud');
+            const unicas = new Map();
+            organizacionesPorClave.forEach(organizacion => unicas.set(organizacion.id, organizacion));
+            [...unicas.values()]
+                .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
+                .forEach(organizacion => selector.add(new Option(organizacion.nombre || organizacion.email || 'Sin nombre', organizacion.id)));
         } catch (error) {
             console.error('No se pudieron cargar las organizaciones para agrupar solicitudes:', error);
         }
@@ -83,6 +93,11 @@
     function inicializarSolicitudes() {
         onSnapshot(collection(db, 'solicitudes_eventos'), snapshot => {
             solicitudesCache = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+            const pendientes = solicitudesCache.filter(solicitud => (solicitud.estado || 'pendiente') === 'pendiente').length;
+            const insigniaPendientes = document.getElementById('pendientesSolicitudes');
+            insigniaPendientes.textContent = pendientes;
+            insigniaPendientes.classList.toggle('hidden', pendientes === 0);
+            insigniaPendientes.classList.toggle('flex', pendientes > 0);
             renderizarSolicitudes();
         }, error => {
             console.error('No se pudieron cargar solicitudes pendientes:', error);
@@ -91,9 +106,9 @@
     }
 
     function renderizarSolicitudes() {
-        const busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
-        const organizacionId = document.getElementById('filtroOrganizacion').value;
-        const periodo = document.getElementById('filtroPeriodo').value;
+        const busqueda = document.getElementById('buscarSolicitud').value.toLowerCase().trim();
+        const organizacionId = document.getElementById('filtroOrganizacionSolicitud').value;
+        const periodo = document.getElementById('filtroPeriodoSolicitud').value;
         const limite = new Date();
         if (periodo !== 'todos') limite.setDate(limite.getDate() - Number(periodo));
 
@@ -135,6 +150,8 @@
             const nombre = organizacion?.nombre || solicitud.nombreOrganizacion || solicitud.organizacionId || solicitud.correo || 'Organización no identificada';
             if (!grupos.has(clave)) grupos.set(clave, { nombre, solicitudes: [] });
             grupos.get(clave).solicitudes.push({ ...solicitud, nombreOrganizacion: organizacion?.nombre || nombre });
+            // El teléfono se guarda aparte: la solicitud se copia entera al evento público y no debe llevarlo
+            organizacionPorSolicitud.set(solicitud.id, organizacion || null);
         });
 
         [...grupos.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).forEach(grupo => {
@@ -155,8 +172,8 @@
         });
     }
 
-    ['searchInput', 'filtroOrganizacion', 'filtroPeriodo'].forEach(id => {
-        document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', renderizarSolicitudes);
+    ['buscarSolicitud', 'filtroOrganizacionSolicitud', 'filtroPeriodoSolicitud'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'buscarSolicitud' ? 'input' : 'change', renderizarSolicitudes);
     });
 
     // ==========================================
@@ -200,6 +217,39 @@
         detalle.textContent = `${fechaCorta} · ${solicitud.lugar || 'Lugar sin definir'}`;
         detalle.title = detalle.textContent;
 
+        // Último comentario del superadmin (como texto) y accesos a comentar y a contactar a la organización
+        const ultimo = ultimoComentario(solicitud);
+        const comentarioVisible = document.createElement('p');
+        comentarioVisible.className = ultimo ? 'text-xs text-gray-600 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2 mt-3 line-clamp-2' : 'hidden';
+        comentarioVisible.textContent = ultimo ? `Comentario: ${ultimo.texto}` : '';
+
+        const contacto = document.createElement('div');
+        contacto.className = 'flex flex-wrap gap-2 mt-3';
+        const comentar = document.createElement('button');
+        comentar.type = 'button';
+        comentar.className = 'px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1';
+        const cantidadComentarios = comentariosDeSolicitud(solicitud).length;
+        comentar.textContent = cantidadComentarios ? `Comentar (${cantidadComentarios})` : 'Comentar';
+        comentar.addEventListener('click', () => abrirModalComentarios(solicitud.id));
+        contacto.appendChild(comentar);
+
+        const organizacion = organizacionPorSolicitud.get(solicitud.id);
+        const enlaces = enlacesDeContacto({
+            correo: solicitud.correo || organizacion?.email,
+            telefono: organizacion?.telefono,
+            nombreEvento: solicitud.nombre
+        });
+        [['Escribir por correo', enlaces.correo], ['WhatsApp', enlaces.whatsapp]].forEach(([texto, href]) => {
+            if (!href) return;
+            const enlace = document.createElement('a');
+            enlace.href = href;
+            enlace.target = '_blank';
+            enlace.rel = 'noopener noreferrer';
+            enlace.className = 'px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold';
+            enlace.textContent = texto;
+            contacto.appendChild(enlace);
+        });
+
         const acciones = document.createElement('div');
         acciones.className = 'flex gap-2 mt-auto pt-4';
         if (pendiente) {
@@ -217,7 +267,7 @@
             acciones.append(rechazar, publicar);
         }
 
-        body.append(titulo, detalle, acciones);
+        body.append(titulo, detalle, comentarioVisible, contacto, acciones);
         cardElement.append(imagenFrame, body);
 
         contenedor.appendChild(cardElement);
@@ -362,6 +412,91 @@
     });
 
     // ==========================================
+    // 3b. COMENTARIOS DE UNA SOLICITUD
+    // ==========================================
+    const modalComentar = document.getElementById('modalComentarSolicitud');
+    const historialComentarios = document.getElementById('historialComentarios');
+    const formComentar = document.getElementById('formComentarSolicitud');
+    const textoComentar = document.getElementById('textoComentarSolicitud');
+    const errorComentar = document.getElementById('errorComentarSolicitud');
+    const btnGuardarComentar = document.getElementById('btnGuardarComentar');
+    let solicitudComentandoId = null;
+
+    // El historial se dibuja con textContent: el texto de un comentario nunca se interpreta como HTML
+    function dibujarHistorial(solicitud) {
+        historialComentarios.replaceChildren();
+        const comentarios = comentariosDeSolicitud(solicitud);
+        if (comentarios.length === 0) {
+            const vacio = document.createElement('p');
+            vacio.className = 'text-sm text-gray-400';
+            vacio.textContent = 'Todavía no hay comentarios en esta solicitud.';
+            historialComentarios.appendChild(vacio);
+            return;
+        }
+        comentarios.forEach(comentario => {
+            const caja = document.createElement('div');
+            caja.className = 'bg-violet-50 border border-violet-100 rounded-lg px-3 py-2';
+            const texto = document.createElement('p');
+            texto.className = 'text-sm text-gray-800 whitespace-pre-line';
+            texto.textContent = comentario.texto;
+            const cuando = document.createElement('p');
+            cuando.className = 'text-[11px] text-gray-400 mt-1';
+            const fecha = new Date(comentario.fecha);
+            cuando.textContent = Number.isNaN(fecha.getTime()) ? '' : fecha.toLocaleString('es-AR');
+            caja.append(texto, cuando);
+            historialComentarios.appendChild(caja);
+        });
+    }
+
+    function abrirModalComentarios(solicitudId) {
+        const solicitud = solicitudesCache.find(item => item.id === solicitudId);
+        if (!solicitud) return;
+        solicitudComentandoId = solicitudId;
+        document.getElementById('subtituloComentarSolicitud').textContent = solicitud.nombre || 'Solicitud sin título';
+        textoComentar.value = '';
+        errorComentar.classList.add('hidden');
+        dibujarHistorial(solicitud);
+        modalComentar.classList.remove('hidden');
+        modalComentar.classList.add('flex');
+        textoComentar.focus();
+    }
+
+    function cerrarModalComentarios() {
+        modalComentar.classList.add('hidden');
+        modalComentar.classList.remove('flex');
+        solicitudComentandoId = null;
+    }
+
+    document.getElementById('btnCerrarModalComentar').addEventListener('click', cerrarModalComentarios);
+    document.getElementById('btnCancelarComentar').addEventListener('click', cerrarModalComentarios);
+
+    formComentar.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!solicitudComentandoId) return;
+        const comentario = armarComentario(textoComentar.value, new Date());
+        if (!comentario) {
+            errorComentar.textContent = 'Escribí el comentario antes de guardar.';
+            errorComentar.classList.remove('hidden');
+            return;
+        }
+        errorComentar.classList.add('hidden');
+        btnGuardarComentar.disabled = true;
+        try {
+            // arrayUnion agrega sin pisar los comentarios anteriores. No cambia el estado de la solicitud.
+            await updateDoc(doc(db, 'solicitudes_eventos', solicitudComentandoId), { comentarios: arrayUnion(comentario) });
+            textoComentar.value = '';
+            const actualizada = solicitudesCache.find(item => item.id === solicitudComentandoId);
+            if (actualizada) dibujarHistorial({ ...actualizada, comentarios: [...(actualizada.comentarios || []), comentario] });
+        } catch (error) {
+            console.error('No se pudo guardar el comentario:', error);
+            errorComentar.textContent = 'No se pudo guardar el comentario. Intentá otra vez.';
+            errorComentar.classList.remove('hidden');
+        } finally {
+            btnGuardarComentar.disabled = false;
+        }
+    });
+
+    // ==========================================
     // 4. LÓGICA DEL MODAL DE CONFIRMACIÓN
     // ==========================================
     function abrirModal(accion, cardElement) {
@@ -429,6 +564,7 @@
 
         const dataEvento = { ...solicitud };
         delete dataEvento.id;
+        delete dataEvento.comentarios; // los comentarios son entre el superadmin y la organización: el evento es público
         dataEvento.imagen = typeof solicitud.imagen === 'string' ? solicitud.imagen.trim() : '';
         dataEvento.estado = 'publicado';
         dataEvento.fechaPublicacion = serverTimestamp();
