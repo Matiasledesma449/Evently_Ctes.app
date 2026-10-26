@@ -4,8 +4,8 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Funciones compartidas
 
-- [ ] 1.1 Crear `shared/solicitudes-evento.js` con `armarComentario`, `comentariosDeSolicitud`, `ultimoComentario` y `enlacesDeContacto` (ver `design.md`). Se comprueba con `node pruebas/20-solicitudes-evento.js`.
-- [ ] 1.2 Crear `pruebas/20-solicitudes-evento.js` con los casos de las especificaciones (comentario vacío, con etiquetas, texto largo, orden, solicitud sin comentarios, teléfono con símbolos, sin teléfono, sin correo). Se comprueba con `node pruebas/ejecutar-todas.js`.
+- [x] 1.1 Crear `shared/solicitudes-evento.js` con `armarComentario`, `comentariosDeSolicitud`, `ultimoComentario` y `enlacesDeContacto` (ver `design.md`). Se comprueba con `node pruebas/20-solicitudes-evento.js`.
+- [x] 1.2 Crear `pruebas/20-solicitudes-evento.js` con los casos de las especificaciones (comentario vacío, con etiquetas, texto largo, orden, solicitud sin comentarios, teléfono con símbolos, sin teléfono, sin correo). Se comprueba con `node pruebas/ejecutar-todas.js`.
 
 ## 2. Quitar el Panel global
 
