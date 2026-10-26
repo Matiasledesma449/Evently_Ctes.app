@@ -4,10 +4,10 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 ## 1. Funciones compartidas
 
-- [ ] 1.1 Crear `shared/preguntas-frecuentes.js` con los cinco temas, el borrador de preguntas (ver `design.md`; solo lo que el sitio hace, y las respuestas de anulaciones y reprogramaciones mandan al formulario), `normalizarTexto` y `buscarPreguntas(texto)`. La respuesta de formas de pago usa `textoDeFormasDePago()`. Se comprueba leyendo el archivo: no tiene `innerHTML` ni dependencias externas, y ninguna respuesta nombra plazos o reembolsos.
-- [ ] 1.2 Crear `pruebas/22-preguntas-frecuentes.js`: normaliza mayúsculas y acentos ("ENTRADA", "devolucion"), texto vacío devuelve todo, "todas las palabras deben aparecer", sin resultados devuelve vacío, `<b>hola</b>` no rompe ni coincide. Se comprueba con `node pruebas/22-preguntas-frecuentes.js`.
-- [ ] 1.3 Crear `shared/pie-publico.js` con `enlacesDelPie(paginaActual)` (Inicio, Centro de ayuda, Enviar una consulta, sin la página actual y sin links legales) y `dibujarPie(elemento, paginaActual)` con `textContent`/`createElement`, conservando el texto de derechos de hoy. Se comprueba leyendo el archivo.
-- [ ] 1.4 Crear `pruebas/23-pie-publico.js`: links en inicio, evento y soporte; la página actual no aparece; no hay links legales. Se comprueba con `node pruebas/23-pie-publico.js`.
+- [x] 1.1 Crear `shared/preguntas-frecuentes.js` con los cinco temas, el borrador de preguntas (ver `design.md`; solo lo que el sitio hace, y las respuestas de anulaciones y reprogramaciones mandan al formulario), `normalizarTexto` y `buscarPreguntas(texto)`. La respuesta de formas de pago usa `textoDeFormasDePago()`. Se comprueba leyendo el archivo: no tiene `innerHTML` ni dependencias externas, y ninguna respuesta nombra plazos o reembolsos.
+- [x] 1.2 Crear `pruebas/22-preguntas-frecuentes.js`: normaliza mayúsculas y acentos ("ENTRADA", "devolucion"), texto vacío devuelve todo, "todas las palabras deben aparecer", sin resultados devuelve vacío, `<b>hola</b>` no rompe ni coincide. Se comprueba con `node pruebas/22-preguntas-frecuentes.js`.
+- [x] 1.3 Crear `shared/pie-publico.js` con `enlacesDelPie(paginaActual)` (Inicio, Centro de ayuda, Enviar una consulta, sin la página actual y sin links legales) y `dibujarPie(elemento, paginaActual)` con `textContent`/`createElement`, conservando el texto de derechos de hoy. Se comprueba leyendo el archivo.
+- [x] 1.4 Crear `pruebas/23-pie-publico.js`: links en inicio, evento y soporte; la página actual no aparece; no hay links legales. Se comprueba con `node pruebas/23-pie-publico.js`.
 
 ## 2. Centro de ayuda (`public/soporte.html`)
 
