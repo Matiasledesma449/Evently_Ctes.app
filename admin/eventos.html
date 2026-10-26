@@ -399,13 +399,13 @@
         function eliminarLote(e) {
             const item = e.target.closest('.lote-item');
             if (item) {
-                const totalLotes = document.querySelectorAll('.lote-item').length;
+                const totalLotes = lotesContainer.querySelectorAll('.lote-item').length;
                 if (totalLotes <= 1) {
                     alert('Debe haber al menos un lote.');
                     return;
                 }
                 item.remove();
-                document.querySelectorAll('.lote-item').forEach((el, idx) => {
+                lotesContainer.querySelectorAll('.lote-item').forEach((el, idx) => {
                     el.querySelector('h4').textContent = `Lote ${idx + 1}`;
                 });
             }
@@ -623,7 +623,8 @@
                 if (!detalle.actividad) throw new Error('Contá cuál es la actividad del evento.');
                 if (!detalle.tipo) throw new Error('Elegí el tipo de evento (si es "Otro", escribí cuál).');
 
-                const loteItems = document.querySelectorAll('.lote-item');
+                // Solo los de la lista de lotes: los días usan el mismo estilo de tarjeta (.lote-item)
+                const loteItems = lotesContainer.querySelectorAll('.lote-item');
                 const lotes = [];
                 let lotesValidos = true;
                 loteItems.forEach(item => {
