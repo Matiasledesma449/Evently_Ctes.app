@@ -17,8 +17,8 @@
 - [x] 3.5 Eventos (superadmin): "Editar lotes" con fechas y "Habilitar ahora".
 
 ## 4. Mapa
-- [ ] 4.1 Mapa siempre visible con marcador arrastrable y dirección automática.
+- [x] 4.1 Mapa siempre visible con marcador arrastrable y dirección automática.
 
 ## 5. Revisión
-- [ ] 5.1 `node pruebas/ejecutar-todas.js` y auditoría completa.
+- [x] 5.1 `node pruebas/ejecutar-todas.js` y auditoría completa.
 - [ ] 5.2 Prueba a mano en la vista previa (la persona).

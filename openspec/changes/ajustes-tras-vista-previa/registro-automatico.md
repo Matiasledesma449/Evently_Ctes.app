@@ -30,3 +30,16 @@
 - Comprobación: `node pruebas/35-lotes.js` (regla, navegador y servidor iguales, servidor de pagos rechaza fuera de fecha),
   prueba 10 con casos nuevos, `node pruebas/ejecutar-todas.js`; navegador automático: hasta < desde avisa, "siempre" oculta
   fechas, Editar lotes conserva vendidas, una organización no lo ve, la compra muestra "Disponible desde" y elige el lote a la venta.
+
+## 2026-10-26 · tarea 4.1 · rama auto/organizaciones-y-correcciones-del-panel
+- Archivos: `shared/lugar-mapa.js` (mapa visible desde el inicio en Corrientes, marcador arrastrable, tocar el mapa mueve el
+  marcador, la dirección se pide a Nominatim `reverse` una vez por movimiento y completa el campo), `admin/eventos.html`
+  (texto de ayuda y mapa más alto). Vale para Solicitar evento (organización) y Crear evento (superadmin).
+- Comprobación: navegador automático con las dos cuentas, con Nominatim respondido por la prueba (no se consulta el servicio
+  real): el mapa se ve de entrada, tocarlo completa la dirección y deja "Punto marcado". `node pruebas/ejecutar-todas.js`.
+- Después de la revisión: corregir el texto de la dirección ya no borra un punto marcado en el mapa; la dirección se pide
+  cuando el marcador queda quieto (varios toques seguidos = una consulta); el mapa recalcula su tamaño si estaba oculto.
+
+## 2026-10-26 · tarea 5.1 · auditoría completa final
+- 55 combinaciones: sin problemas del sitio. Avisos: el tiempo del menú (igual que con la versión anterior, PC lenta) y
+  tres imágenes del mapa de OpenStreetMap que no bajaron en el celular simulado (vienen de internet). 35 archivos de pruebas pasan.
