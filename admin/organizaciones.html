@@ -60,11 +60,10 @@
     </div>
 
     <script type="module">
-        import { onAuthStateChanged, getAuth, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { validarOrganizacion } from "../shared/organizaciones.js";
-        import { generarClave, validarClave, decidirAlta, motivoDeErrorDeAlta, normalizarCorreo, correoValido, crearUsuarioDeAuth } from "../shared/cuentas-admin.js";
+        import { generarClave, validarClave, decidirAlta, normalizarCorreo, correoValido } from "../shared/cuentas-admin.js";
 
         const lista = document.getElementById('listaOrganizaciones');
         const formNueva = document.getElementById('formNueva');
@@ -289,33 +288,29 @@
                         avisar(mensaje, `Ese correo ya es admin de ${nombreDe(cuenta.organizacionId)}. Si querés que sea de esta, primero quitalo de ${nombreDe(cuenta.organizacionId)}.`, 'error');
                         return;
                     }
-                    // crear: cuenta nueva con la clave escrita o una generada (no cambia la sesión del superadmin)
+                    // crear: la cuenta la crea el servidor (/api/crear-admin), que comprueba que quien la pide es superadmin.
+                    // El proyecto de Firebase no deja crear cuentas desde la página, y está bien que sea así.
                     const claveElegida = clave.value.trim() ? clave.value : generarClave();
                     const problemaClave = validarClave(claveElegida);
                     if (problemaClave) { avisar(mensaje, problemaClave, 'error'); return; }
-                    let uid;
-                    try {
-                        uid = await crearUsuarioDeAuth({ initializeApp, getApps, getAuth, createUserWithEmailAndPassword, signOut }, db.app.options, buscado, claveElegida);
-                    } catch (errorAlta) {
-                        console.error('Firebase no creó la cuenta:', errorAlta);
-                        avisar(mensaje, motivoDeErrorDeAlta(errorAlta), 'error');
+                    const respuesta = await fetch('/api/crear-admin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await auth.currentUser.getIdToken()}` },
+                        body: JSON.stringify({ correo: buscado, clave: claveElegida, organizacionId: org.id })
+                    });
+                    const resultado = await respuesta.json().catch(() => ({}));
+                    if (!respuesta.ok || !resultado.ok) {
+                        const err = resultado && resultado.error ? resultado.error : {};
+                        avisar(mensaje, err.mensaje || `No se pudo crear la cuenta (error ${respuesta.status}).`, 'error');
                         return;
                     }
-                    const nueva = { email: buscado, rol: 'organizacion', organizacionId: org.id, nombre: org.nombre || '', creadoEn: serverTimestamp() };
-                    try {
-                        await setDoc(doc(db, 'usuarios', uid), nueva);
-                    } catch (errorGuardado) {
-                        // El acceso ya se creó: se muestra igual la clave para no perderla, con el aviso de qué falta
-                        console.error('Se creó el acceso pero no se guardó la cuenta:', errorGuardado);
-                        mostrarClaveNueva(org.id, buscado, claveElegida);
-                        avisar(mensaje, 'Se creó el acceso pero no se pudo guardar como admin. Anotá la clave y volvé a agregar el mismo correo más tarde.', 'error');
-                        return;
-                    }
-                    cuentas.push({ id: uid, ...nueva });
+                    cuentas.push({ id: resultado.uid, email: buscado, rol: 'organizacion', organizacionId: org.id, nombre: org.nombre || '' });
                     correo.value = '';
                     clave.value = '';
                     dibujar();
-                    mostrarClaveNueva(org.id, buscado, claveElegida);
+                    if (resultado.creada) mostrarClaveNueva(org.id, buscado, claveElegida);
+                    else avisar(lista.querySelector(`[data-organizacion="${CSS.escape(org.id)}"] [role="status"]`) || mensaje,
+                        'Ese correo ya tenía acceso a Evently: quedó como admin con su clave de siempre.');
                 } catch (error) {
                     console.error('No se pudo agregar el admin:', error);
                     avisar(mensaje, `No se pudo agregar el admin.${error && error.code ? ` (código: ${error.code})` : ''}`, 'error');

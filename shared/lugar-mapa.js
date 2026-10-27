@@ -88,11 +88,13 @@ export function activarLugarConMapa({ input, lista, mapa, aviso }) {
         }
     }
 
-    // Dibuja el mapa en el centro inicial, con un marcador que se puede arrastrar
+    let puntoInicial = null; // un punto ya guardado que llegó antes de que el mapa esté listo
+
+    // Dibuja el mapa en el centro inicial (o en el punto guardado), con un marcador que se puede arrastrar
     async function prepararMapa() {
         if (!(await cargarLeaflet())) { decir('No se pudo cargar el mapa. Podés escribir el lugar igual.'); return; }
-        if (!dibujarMapa(mapa, CENTRO_INICIAL, estadoMapa)) return;
-        estadoMapa.mapa.setZoom(13);
+        if (!dibujarMapa(mapa, puntoInicial || CENTRO_INICIAL, estadoMapa)) return;
+        if (!puntoInicial) estadoMapa.mapa.setZoom(13);
         estadoMapa.marcador.dragging.enable();
         estadoMapa.marcador.on('dragend', () => fijarPunto(estadoMapa.marcador.getLatLng()));
         estadoMapa.mapa.on('click', (e) => fijarPunto(e.latlng));
@@ -177,6 +179,15 @@ export function activarLugarConMapa({ input, lista, mapa, aviso }) {
 
     return {
         obtenerUbicacion: () => ubicacion,
+        // Pone un punto ya guardado (editar un evento): queda marcado y se mantiene si se corrige el texto
+        ponerUbicacion(u) {
+            const punto = u && armarUbicacion(u.lat, u.lng);
+            if (!punto) return;
+            ubicacion = punto;
+            puntoDelMapa = true;
+            puntoInicial = punto;
+            if (estadoMapa.mapa) dibujarMapa(mapa, punto, estadoMapa);
+        },
         limpiar() {
             clearTimeout(temporizador);
             version++;

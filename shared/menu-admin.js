@@ -28,7 +28,7 @@
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
     // 'eventos' también: el superadmin real siempre ve ahí su Crear evento y las solicitudes (superadmin.html redirige ahí)
-    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones'];
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones', 'sitio', 'finanzas'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
@@ -67,6 +67,7 @@
         { clave: 'eventos', rol: 'superadmin', href: 'eventos.html?modo=directo', icono: 'add_circle', texto: 'Crear evento', corto: 'Crear evento', anchoMovil: 82 },
         { clave: 'reportes', href: 'reportes.html', icono: 'bar_chart', texto: 'Reportes', corto: 'Reportes' },
         { clave: 'ventas', href: 'ventas.html', icono: 'payments', texto: 'Ventas', corto: 'Ventas' },
+        { clave: 'finanzas', rol: 'superadmin', href: 'finanzas.html', icono: 'account_balance', texto: 'Finanzas', corto: 'Finanzas' },
         { clave: 'escaner', href: 'escaner.html', icono: 'qr_code_scanner', texto: 'Escáner', corto: 'Escáner' },
         {
             // Soporte (organización) o Mensajes (superadmin): menu-rol.js lo ajusta con el rol confirmado
@@ -75,6 +76,8 @@
             icono: esAdmin ? 'chat' : 'support_agent',
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
+        { clave: 'sitio', rol: 'superadmin', href: 'sitio.html', icono: 'web', texto: 'Sitio', corto: 'Sitio' },
+        { clave: 'ver-sitio', href: '../public/index.html', externo: true, icono: 'storefront', texto: 'Ver sitio', corto: 'Ver sitio' },
         { clave: 'ver-como-organizacion', rol: 'superadmin', id: 'btnVerComoOrganizacion', idMovil: 'btnVerComoOrganizacionMobile', href: '#', icono: 'visibility', texto: 'Ver como organización', corto: 'Ver como' }
     ];
 
@@ -106,8 +109,9 @@
         const rolAttr = s.rol ? ` data-role="${s.rol}"` : '';
         const idAttr = s.id ? ` id="${s.id}"` : '';
         const actual = activo ? ' aria-current="page"' : '';
+        const nuevaPestana = s.externo ? ' target="_blank" rel="noopener"' : '';
         const limitado = vistaActiva && s.soloOrg ? ` data-solo-organizacion="${s.texto}"` : '';
-        return `<a${idAttr}${rolAttr}${limitado} data-nav-key="${s.clave}" href="${s.href}"${actual} class="${clases}"><span class="${icono}">${s.icono}</span>${texto}${badge}</a>`;
+        return `<a${idAttr}${rolAttr}${limitado} data-nav-key="${s.clave}" href="${s.href}"${actual}${nuevaPestana} class="${clases}"><span class="${icono}">${s.icono}</span>${texto}${badge}</a>`;
     }
 
     function enlaceMovil(s) {
@@ -122,8 +126,9 @@
         const rolAttr = s.rol ? ` data-role="${s.rol}"` : '';
         const idAttr = s.idMovil ? ` id="${s.idMovil}"` : '';
         const actual = activo ? ' aria-current="page"' : '';
+        const nuevaPestana = s.externo ? ' target="_blank" rel="noopener"' : '';
         const limitado = vistaActiva && s.soloOrg ? ` data-solo-organizacion="${s.texto}"` : '';
-        return `<a${idAttr}${rolAttr}${limitado} data-nav-key="${s.clave}" href="${s.href}"${actual} style="width:${ancho}px" class="${clases}"><span class="${icono}">${s.icono}</span>${texto}${badge}</a>`;
+        return `<a${idAttr}${rolAttr}${limitado} data-nav-key="${s.clave}" href="${s.href}"${actual}${nuevaPestana} style="width:${ancho}px" class="${clases}"><span class="${icono}">${s.icono}</span>${texto}${badge}</a>`;
     }
 
     // Si ya se conoce el rol de una visita anterior, el menú nace visible y completo;

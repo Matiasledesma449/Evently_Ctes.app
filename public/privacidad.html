@@ -75,10 +75,11 @@
     </main>
 
     <footer id="pie" class="footer bg-white border-t border-gray-200 py-4 text-center"></footer>
+    <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
-        dibujarPie(document.getElementById('pie'), 'privacidad');
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'privacidad'));
         dibujarCabecera(document.getElementById('cabecera'), 'privacidad');
     </script>
 </body>

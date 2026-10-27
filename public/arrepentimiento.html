@@ -69,11 +69,11 @@
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
         import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { armarArrepentimiento } from "../shared/solicitud-de-ayuda.js";
 
-        dibujarPie(document.getElementById('pie'), 'arrepentimiento');
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'arrepentimiento'));
         dibujarCabecera(document.getElementById('cabecera'), 'arrepentimiento');
 
         const form = document.getElementById('formArrepentimiento');

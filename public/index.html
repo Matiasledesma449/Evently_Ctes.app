@@ -203,10 +203,10 @@
     <script type="module">
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { imagenDelEvento } from "../shared/imagen-evento.js";
-        import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
 
-        dibujarPie(document.getElementById('pie'), 'inicio');
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'inicio'));
         dibujarCabecera(document.getElementById('cabecera'), 'inicio');
 
         const db = window.db;

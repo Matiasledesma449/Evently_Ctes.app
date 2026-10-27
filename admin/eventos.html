@@ -368,7 +368,7 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { addDoc, collection, serverTimestamp, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, armarDetalle } from "../shared/evento-datos.js";
         import { activarLugarConMapa } from "../shared/lugar-mapa.js";
         import { validarFechasDeLote, textoDeVigencia, diaMes, hoyEnArgentina } from "../shared/lotes.js";
@@ -696,6 +696,127 @@
             aviso: document.getElementById('lugarAviso')
         });
 
+        // ============ EDITAR UN EVENTO (superadmin): eventos.html?modo=directo&editar=<id> ============
+        // Carga el evento en este mismo formulario. Los lotes que ya existen no se pueden borrar ni renombrar
+        // (el servidor confirma cada venta por la posición y el nombre del lote); sí cambiar precio, fechas y cantidad.
+        const idAEditar = modoDirecto ? new URLSearchParams(window.location.search).get('editar') : null;
+        let eventoEditado = null;
+
+        function lotesDelFormulario() { return [...lotesContainer.querySelectorAll('.lote-item')]; }
+
+        async function cargarEventoParaEditar(id) {
+            const snap = await getDoc(doc(db, 'eventos', id));
+            if (!snap.exists()) throw new Error('No encontramos ese evento.');
+            const ev = snap.data();
+            eventoEditado = { id, ...ev };
+            document.title = 'Evently - Editar evento';
+            document.getElementById('tituloFormulario').textContent = 'Editar evento';
+            document.getElementById('descripcionFormulario').textContent = 'Corregí lo que haga falta y guardá. Los lotes que ya existen no se pueden borrar ni cambiar de nombre (pueden tener ventas).';
+            textoBotonEnviar.textContent = 'Guardar cambios';
+
+            document.getElementById('nombre').value = ev.nombre || '';
+            // Días
+            const dias = Array.isArray(ev.dias) && ev.dias.length > 0 ? ev.dias : [{ fecha: '', horaInicio: '', horaFin: '' }];
+            diasContainer.replaceChildren();
+            dias.forEach((d) => {
+                agregarDia();
+                const item = diasContainer.lastElementChild;
+                item.querySelector('[data-campo="fecha"]').value = d.fecha || '';
+                item.querySelector('[data-campo="horaInicio"]').value = d.horaInicio || '';
+                item.querySelector('[data-campo="horaFin"]').value = d.horaFin || '';
+            });
+            // Lugar y punto del mapa
+            document.getElementById('lugar').value = ev.lugar || '';
+            if (ev.ubicacion) lugarConMapa.ponerUbicacion(ev.ubicacion);
+            // Foto
+            if (ev.imagen) {
+                imagenUrlInput.value = ev.imagen;
+                previewImage.src = ev.imagen;
+                previewContainer.classList.remove('hidden');
+                nombreArchivo.textContent = 'Foto actual';
+            }
+            // Detalle
+            const detalle = ev.detalle || {};
+            document.getElementById('detalleActividad').value = detalle.actividad || '';
+            if (detalle.tipo && TIPOS_DE_EVENTO.includes(detalle.tipo)) selectTipo.value = detalle.tipo;
+            else if (detalle.tipo) { selectTipo.value = OTRO; inputTipoOtro.value = detalle.tipo; }
+            mostrarTipoOtro();
+            document.getElementById('detalleRequisitos').value = detalle.requisitos || '';
+            document.getElementById('detalleEdad').value = detalle.edad || '';
+            document.getElementById('descripcion').value = ev.descripcion || '';
+            // Venta: entrada única o lotes (al editar no se cambia de una forma a la otra)
+            const lotes = Array.isArray(ev.lotes) ? ev.lotes : [];
+            if (ev.ventaSimple === true && lotes[0]) {
+                form.querySelector('input[name="modoVenta"][value="unica"]').checked = true;
+                document.getElementById('unicaPrecio').value = lotes[0].precio || '';
+                document.getElementById('unicaCantidad').value = lotes[0].disponibles || '';
+                if (Number(lotes[0].vendidas) > 0) document.getElementById('unicaCantidad').min = String(Number(lotes[0].vendidas));
+                document.getElementById('unicaHasta').value = lotes[0].hasta || '';
+            } else {
+                lotesContainer.replaceChildren();
+                loteIndex = 0;
+                lotes.forEach((l) => {
+                    agregarLote();
+                    const item = lotesContainer.lastElementChild;
+                    item.dataset.existente = '1';
+                    const nombre = item.querySelector('input[name="lote_nombre[]"]');
+                    nombre.value = l.nombre || '';
+                    nombre.readOnly = true; // no se renombra un lote que ya existe
+                    nombre.classList.add('bg-gray-50');
+                    item.querySelector('input[name="lote_precio[]"]').value = l.precio || '';
+                    item.querySelector('input[name="lote_disponibles[]"]').value = l.disponibles || '';
+                    const vendidas = Number(l.vendidas) || 0;
+                    if (vendidas > 0) item.querySelector('input[name="lote_disponibles[]"]').min = String(vendidas);
+                    const tipo = item.querySelector('select[name="lote_tipo[]"]');
+                    tipo.value = l.tipo === 'fechas' || (!l.tipo && (l.desde || l.hasta)) ? 'fechas' : 'siempre';
+                    item.querySelector('input[name="lote_desde[]"]').value = l.desde || '';
+                    item.querySelector('input[name="lote_hasta[]"]').value = l.hasta || '';
+                    item.querySelectorAll('[data-fecha-lote]').forEach((c) => c.classList.toggle('hidden', tipo.value === 'siempre'));
+                    const quitar = item.querySelector('.remove-lote');
+                    if (quitar) quitar.remove(); // no se borra un lote que ya existe
+                });
+            }
+            form.querySelectorAll('input[name="modoVenta"]').forEach((r) => { r.disabled = true; });
+            mostrarModoDeVenta();
+            // Organización y costo de servicio del evento
+            (await superadmin).elegirDatosDelEvento({ organizacionId: ev.organizacionId, comisionCategoriaId: ev.comisionCategoriaId });
+            const main = document.querySelector('main');
+            if (main) main.scrollTo({ top: 0 });
+        }
+
+        if (idAEditar) {
+            cargarEventoParaEditar(idAEditar).catch((error) => {
+                console.error('No se pudo cargar el evento para editar:', error);
+                mensajeResultado.className = 'mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200';
+                mensajeResultado.textContent = error.message || 'No se pudo cargar el evento.';
+                mensajeResultado.classList.remove('hidden');
+            });
+        }
+
+        // Guarda los cambios de un evento con una transacción: conserva las vendidas de cada lote (las cambia el
+        // servidor al confirmar ventas) y no deja dejar menos lugares que los vendidos.
+        async function guardarEventoEditado(evento) {
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'eventos', eventoEditado.id);
+                const snap = await tx.get(ref);
+                if (!snap.exists()) throw new Error('El evento ya no existe.');
+                const viejos = Array.isArray(snap.data().lotes) ? snap.data().lotes : [];
+                if (evento.lotes.length < viejos.length) throw new Error('No se puede quitar un lote que ya existe.');
+                const lotes = evento.lotes.map((l, i) => {
+                    const previo = viejos[i];
+                    if (!previo) return l; // lote nuevo, al final
+                    if ((previo.nombre || '') !== l.nombre) throw new Error('No se puede cambiar el nombre de un lote que ya existe.');
+                    const vendidas = Number(previo.vendidas) || 0;
+                    if (l.disponibles < vendidas) throw new Error(`${l.nombre}: ya se vendieron ${vendidas} entradas, no podés poner menos lugares.`);
+                    return { ...previo, ...l, vendidas, habilitadoManual: previo.habilitadoManual === true };
+                });
+                // Se conservan quién lo creó, su estado y su fecha de publicación
+                const { estado, creadoPor, correo, fechaPublicacion, fechaSolicitud, ...cambios } = evento;
+                // Sin categoría elegida, el evento queda sin costo de servicio (0%)
+                tx.update(ref, { ...cambios, comisionCategoriaId: cambios.comisionCategoriaId || '', lotes, fechaEdicion: serverTimestamp() });
+            });
+        }
+
         // ============ ENVÍO ============
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -798,6 +919,14 @@
                         : { fechaSolicitud: serverTimestamp() })
                 };
 
+                if (eventoEditado) {
+                    await guardarEventoEditado(evento);
+                    mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';
+                    mensajeResultado.textContent = 'Cambios guardados. Volviendo a Eventos...';
+                    mensajeResultado.classList.remove('hidden');
+                    setTimeout(() => { window.location.href = 'eventos-seleccion.html'; }, 800);
+                    return;
+                }
                 const eventoRef = await addDoc(collection(db, modoDirecto ? 'eventos' : 'solicitudes_eventos'), evento);
 
                 mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';

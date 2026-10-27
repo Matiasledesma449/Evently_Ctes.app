@@ -126,7 +126,7 @@
     <script type="module">
         import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { buscarPreguntas, TEMAS_DE_AYUDA } from "../shared/preguntas-frecuentes.js";
-        import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { armarSolicitud } from "../shared/solicitud-de-ayuda.js";
 
@@ -199,7 +199,7 @@
         const temaDeLaDireccion = location.hash.startsWith('#tema-') ? location.hash.slice(6) : '';
         if (TEMAS_DE_AYUDA.some((t) => t.id === temaDeLaDireccion)) temaElegido = temaDeLaDireccion;
         dibujarPreguntas();
-        dibujarPie(document.getElementById('pie'), 'soporte');
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'soporte'));
         dibujarCabecera(document.getElementById('cabecera'), 'soporte');
 
         // ---------- Formulario: se abre desde "Enviar una solicitud" o con el link "Enviar una consulta" del pie ----------

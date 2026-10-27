@@ -22,11 +22,12 @@ function elementoFalso(tag) {
     set textContent(v) { this._texto = v; if (v === '') this.hijos = []; },
     get textContent() { return this._texto; },
     appendChild(h) { this.hijos.push(h); return h; },
+    append(...hs) { hs.forEach((h) => this.hijos.push(h)); },
     setAttribute(k, v) { this.atributos[k] = v; }
   };
 }
 const contexto = { document: { createElement: elementoFalso } };
-const P = vm.runInNewContext(codigo + '\n;({ enlacesDelPie, enlacesLegales, dibujarPie, TEXTO_DE_DERECHOS, PAGINAS_CON_PIE })', contexto);
+const P = vm.runInNewContext(codigo + '\n;({ enlacesDelPie, enlacesLegales, dibujarPie, dibujarLogos, logoValido, TEXTO_DE_DERECHOS, PAGINAS_CON_PIE })', contexto);
 
 const textos = (pagina) => Array.from(P.enlacesDelPie(pagina)).map((e) => e.texto).join('|');
 const hrefs = (pagina) => Array.from(P.enlacesDelPie(pagina)).map((e) => e.href).join('|');
@@ -43,19 +44,40 @@ const legales = (p) => Array.from(P.enlacesLegales(p)).map((e) => e.href).join('
 verificar('L8 los legales: términos, privacidad y arrepentimiento', legales('evento') === 'terminos.html|privacidad.html|arrepentimiento.html', legales('evento'));
 verificar('L9 en una página legal no se ofrece ir a ella misma', legales('terminos') === 'privacidad.html|arrepentimiento.html' && legales('arrepentimiento') === 'terminos.html|privacidad.html');
 
-// ---------- Dibujo del pie ----------
+// ---------- Dibujo del pie (oscuro, estilo All Access) ----------
+// Estructura: footer > contenedor > [arriba (logo + logos), línea, nav de links, derechos]
 const pie = elementoFalso('footer');
 pie.hijos.push(elementoFalso('span')); // contenido viejo que debe desaparecer
-P.dibujarPie(pie, 'evento');
-verificar('D1 el pie tiene los links de ayuda, los legales y el texto de derechos', pie.hijos.length === 3 && pie.hijos[0].tag === 'nav' && pie.hijos[1].tag === 'nav' && pie.hijos[1].hijos.length === 3 && pie.hijos[2]._texto === '© 2024 Evently by Bali Group');
+const zonaLogos = P.dibujarPie(pie, 'evento');
+const cont = pie.hijos[0];
+const [arriba, linea, nav, derechos] = cont.hijos;
+verificar('D1 el pie tiene arriba (logo y logos), una línea, los links y los derechos', pie.hijos.length === 1 && cont.hijos.length === 4 && linea.tag === 'hr' && nav.tag === 'nav' && derechos._texto === '© 2024 Evently by Bali Group');
 verificar('D2 se conserva el texto de derechos de siempre', P.TEXTO_DE_DERECHOS === '© 2024 Evently by Bali Group');
-const links = pie.hijos[0].hijos;
-verificar('D3 cada link es un <a> con su texto y su destino', links.length === 3 && links.every((a) => a.tag === 'a' && a.href && a._texto));
+verificar('D3 el logo de Evently lleva al inicio', arriba.hijos[0].tag === 'a' && arriba.hijos[0].href === 'index.html' && arriba.hijos[0]._texto === 'Evently');
+verificar('D4 los links juntan ayuda y legales (6 desde el evento), cada uno con texto y destino', nav.hijos.length === 6 && nav.hijos.every((a) => a.tag === 'a' && a.href && a._texto));
+verificar('D5 dibujarPie devuelve el lugar de los logos', zonaLogos === arriba.hijos[1]);
 P.dibujarPie(pie, 'soporte');
-verificar('D4 volver a dibujar reemplaza el pie y no lo duplica', pie.hijos.length === 3 && pie.hijos[0].hijos.length === 2);
+verificar('D6 volver a dibujar reemplaza el pie y no lo duplica', pie.hijos.length === 1 && pie.hijos[0].hijos[2].hijos.length === 5);
 let fallo = false;
 try { P.dibujarPie(null, 'evento'); P.dibujarPie(undefined, 'inicio'); } catch (e) { fallo = true; }
-verificar('D5 sin elemento no falla', !fallo);
+verificar('D7 sin elemento no falla', !fallo);
+
+// ---------- Logos que carga el superadmin ----------
+const PNG = 'data:image/png;base64,iVBORw0KGgo=';
+verificar('G1 un logo válido es una imagen guardada (png, jpeg o webp en base64)', P.logoValido({ imagen: PNG }) && P.logoValido({ imagen: 'data:image/webp;base64,AAAA' }));
+verificar('G2 no se aceptan direcciones, "javascript:" ni SVG', ['https://x.co/a.png', 'javascript:alert(1)', 'data:image/svg+xml;base64,AAAA', '', null].every((i) => !P.logoValido({ imagen: i })));
+const zona = elementoFalso('div');
+P.dibujarLogos(zona, [
+  { nombre: 'Personal', imagen: PNG, enlace: 'https://personal.com.ar' },
+  { nombre: 'Sin enlace', imagen: PNG },
+  { nombre: 'Mal enlace', imagen: PNG, enlace: 'javascript:alert(1)' },
+  { nombre: 'Malo', imagen: 'javascript:alert(1)' },
+]);
+verificar('G3 se dibujan los válidos y se ignora el inválido', zona.hijos.length === 3);
+verificar('G4 con enlace https va dentro de un link que abre en otra pestaña', zona.hijos[0].tag === 'a' && zona.hijos[0].href === 'https://personal.com.ar' && zona.hijos[0].rel === 'noopener noreferrer' && zona.hijos[0].hijos[0].alt === 'Personal');
+verificar('G5 un enlace que no es https se ignora (queda solo la imagen)', zona.hijos[2].tag === 'img');
+P.dibujarLogos(zona, null);
+verificar('G6 sin logos el lugar queda vacío y no falla', zona.hijos.length === 0);
 
 // ---------- El módulo no arma HTML ----------
 verificar('M1 el módulo usa textContent y no innerHTML ni insertAdjacentHTML', /textContent/.test(fuente) && !/innerHTML|insertAdjacentHTML|document\.write/.test(fuente.replace(/\/\/.*$/gm, '')));

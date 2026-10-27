@@ -17,6 +17,7 @@ const selectCategoria = document.getElementById('categoriaEvento');
 
 let organizaciones = [];
 let categorias = [];
+let elegidosAlEditar = null; // { organizacionId, comisionCategoriaId } del evento que se edita (las listas llegan después)
 
 panelServicio.classList.remove('hidden');
 bloqueSuperadmin.classList.remove('hidden');
@@ -31,7 +32,8 @@ onSnapshot(collection(db, 'organizaciones'), (snap) => {
     const elegida = selectOrganizacion.value;
     selectOrganizacion.replaceChildren(new Option(organizaciones.length ? 'Elegí la organización' : 'No hay organizaciones: creá una en "Organizaciones"', ''));
     organizaciones.forEach((o) => selectOrganizacion.add(new Option(o.nombre, o.id)));
-    selectOrganizacion.value = organizaciones.some((o) => o.id === elegida) ? elegida : '';
+    const buscada = elegida || (elegidosAlEditar && elegidosAlEditar.organizacionId) || '';
+    selectOrganizacion.value = organizaciones.some((o) => o.id === buscada) ? buscada : '';
 }, (error) => {
     console.error('No se pudieron leer las organizaciones:', error);
     selectOrganizacion.replaceChildren(new Option('No se pudieron leer las organizaciones', ''));
@@ -56,7 +58,8 @@ function llenarSelectorCategoria() {
     const elegida = selectCategoria.value;
     selectCategoria.replaceChildren(new Option('Sin categoría (0%)', ''));
     categorias.forEach((c) => selectCategoria.add(new Option(`${c.nombre} (${textoDePorcentaje(c.porcentaje)})`, c.id)));
-    selectCategoria.value = categorias.some((c) => c.id === elegida) ? elegida : '';
+    const buscada = elegida || (elegidosAlEditar && elegidosAlEditar.comisionCategoriaId) || '';
+    selectCategoria.value = categorias.some((c) => c.id === buscada) ? buscada : '';
 }
 
 function crearCampoCategoria(valor, etiqueta, clases, extra = {}) {
@@ -129,6 +132,13 @@ formNuevaCategoria.addEventListener('submit', async (e) => {
         avisoServicio('No se pudo agregar. Probá de nuevo.', true);
     }
 });
+
+// Al editar un evento: deja elegidas su organización y su categoría (ahora o cuando lleguen las listas)
+export function elegirDatosDelEvento({ organizacionId, comisionCategoriaId } = {}) {
+    elegidosAlEditar = { organizacionId: organizacionId || '', comisionCategoriaId: comisionCategoriaId || '' };
+    if (organizaciones.some((o) => o.id === organizacionId)) selectOrganizacion.value = organizacionId;
+    if (categorias.some((c) => c.id === comisionCategoriaId)) selectCategoria.value = comisionCategoriaId;
+}
 
 // Lo que el formulario agrega al evento: la organización (obligatoria) y la categoría (solo si se eligió una que existe)
 export function datosDelSuperadmin() {

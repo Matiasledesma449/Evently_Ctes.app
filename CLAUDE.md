@@ -7,7 +7,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - `admin/`: panel Admin y SuperAdmin (login, eventos, ventas, reportes, mensajes, soporte, escáner QR).
 - `shared/`: código común (`firebase-init.js`, `menu-admin.js` y `menu-rol.js` del menú del panel, `ventas-utils.js`, `ui-utils.js`, `i18n.js`, estilos).
 - `validador.html`: validación de entradas por QR, en la raíz.
-- `api/`: funciones serverless (Vercel): `crear-pago.js`, `mp-webhook.js`, `venta.js`.
+- `api/`: funciones serverless (Vercel): `crear-pago.js`, `mp-webhook.js`, `venta.js` y `crear-admin.js` (el superadmin crea la cuenta del admin de una organización; el proyecto de Firebase no deja crear cuentas desde la página).
 - `server/`: lógica de los pagos que usan las funciones de `api/` (configuración, Mercado Pago, firma del webhook, Firestore con `firebase-admin`, validaciones).
 - `pruebas/`: pruebas simuladas (pagos y funciones puras del panel): `node pruebas/ejecutar-todas.js`.
 - `herramientas/`: `limpiar-datos.js` vacía los datos de prueba; la corre solo la persona, con su clave fuera del repo (ver `herramientas/LEEME.md`). Claude no la ejecuta.
@@ -36,6 +36,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Backend: Firebase (Auth, Firestore, Storage), inicializado en `shared/firebase-init.js`.
 - Colecciones que se usan en el código: `usuarios`, `eventos`, `ventas`, `mensajes`, `conversaciones`, `consultas_publicas`, `solicitudes_eventos`, `solicitudes_password`, `organizaciones`, `configuracion` (categorías del costo de servicio).
 - El rol se lee del campo `rol` en `usuarios`. Valores vistos: `superadmin`, `cliente`, `usuario`, `organizacion` (organizador de eventos; aparece en el menú del panel).
+- Panel del superadmin: **Finanzas** (`admin/finanzas.html`: balance por período con gráficos SVG propios en `shared/grafico-barras.js` y liquidaciones por organización con `shared/finanzas.js`) y **Sitio** (`admin/sitio.html`: logos del pie, guardados en `configuracion/sitio`). Sin librerías de gráficos.
 - Organizaciones: cada productora es un documento de `organizaciones` (lo crea el superadmin en el panel). Un evento es de una organización **solo** por su campo `organizacionId` (ya no por `creadoPor` ni por correo); una cuenta `organizacion` ve los eventos del `organizacionId` de su documento en `usuarios`. La regla está en `shared/organizaciones.js` (`eventosParaVer`): todas las listas del panel la usan.
 
 ## Convenciones que se ven en el código

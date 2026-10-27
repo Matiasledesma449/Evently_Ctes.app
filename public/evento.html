@@ -135,11 +135,11 @@
         import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
         import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
         import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
-        import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { categoriaDeComision, desgloseDeCompra } from "../shared/comision.js";
 
-        dibujarPie(document.getElementById('pie'), 'evento');
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'evento'));
         dibujarCabecera(document.getElementById('cabecera'), 'evento');
 
         // El aviso del paso de pago nombra las formas de pago desde la lista compartida

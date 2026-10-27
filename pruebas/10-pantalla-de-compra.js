@@ -81,6 +81,7 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
     window: ventana, URLSearchParams, URL, console: { error() {}, log() {}, warn() {} }, setTimeout, Promise,
     alert: (m) => alertas.push(m),
     dibujarPie: () => {}, // el pie comun se prueba aparte (23-pie-publico.js)
+    cargarLogosDelPie: () => {},
     dibujarCabecera: () => {}, // la cabecera comun se prueba aparte (33-cabecera-publica.js)
     db: {}, doc: (db, col, id) => ({ col, id }),
     getDoc: async (ref) => {

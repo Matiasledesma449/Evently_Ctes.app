@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Sitio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; overflow: hidden; height: 100vh; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+    </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+</head>
+<body>
+    <script type="module" src="../shared/firebase-init.js"></script>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="sitio"></script>
+
+        <main class="flex-1 min-w-0 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Sitio</h1>
+                    <p class="text-sm text-gray-500">Lo que se ve en la página de Evently y no depende de un evento.</p>
+                </div>
+                <a href="../public/index.html" target="_blank" rel="noopener" class="inline-flex items-center gap-2 border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium self-start">
+                    <span class="material-symbols-outlined text-base">open_in_new</span> Ver cómo queda
+                </a>
+            </div>
+
+            <section class="bg-white rounded-xl border border-gray-200 p-5" aria-labelledby="tituloLogos">
+                <h2 id="tituloLogos" class="text-lg font-bold text-gray-800">Logos del pie de página</h2>
+                <p class="text-sm text-gray-500 mt-1">Aparecen arriba a la derecha del pie, en todas las páginas del comprador (por ejemplo, las marcas que acompañan). Hasta 8. Se achican solos.</p>
+
+                <ul id="listaLogos" class="mt-4 divide-y divide-gray-100" aria-live="polite"></ul>
+
+                <form id="formLogo" class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3" novalidate>
+                    <label class="text-xs font-medium text-gray-500">Nombre de la marca
+                        <input id="nombreLogo" type="text" maxlength="60" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none" placeholder="Ej: Personal">
+                    </label>
+                    <label class="text-xs font-medium text-gray-500">Enlace <span class="font-normal">(opcional, https)</span>
+                        <input id="enlaceLogo" type="url" maxlength="300" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none" placeholder="https://...">
+                    </label>
+                    <label class="text-xs font-medium text-gray-500">Imagen (PNG, JPG, WebP o SVG)
+                        <input id="archivoLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="mt-1 w-full text-sm">
+                    </label>
+                    <div class="sm:col-span-3 flex flex-wrap items-center gap-3">
+                        <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Agregar logo</button>
+                        <p id="mensajeLogos" role="status" class="text-sm"></p>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { achicarLogo, esImagenGuardada } from "../shared/achicar-imagen.js";
+
+        const MAXIMO = 8;
+        const lista = document.getElementById('listaLogos');
+        const form = document.getElementById('formLogo');
+        const mensaje = document.getElementById('mensajeLogos');
+        let logos = [];
+
+        // Todo lo que escribe una persona se pone con textContent o value: nunca como HTML
+        const crear = (etiqueta, clases, texto) => { const e = document.createElement(etiqueta); if (clases) e.className = clases; if (texto !== undefined) e.textContent = texto; return e; };
+        const avisar = (texto, error) => { mensaje.textContent = texto; mensaje.className = `text-sm ${error ? 'text-red-600' : 'text-green-700'}`; };
+        const enlaceValido = (e) => e === '' || /^https:\/\/[^\s"'<>]+$/.test(e);
+
+        // Solo el superadmin real (en "Ver como organización" el menú ya lleva esta página a Eventos)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.replace('login.html'); return; }
+            try {
+                const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!perfil.exists() || perfil.data().rol !== 'superadmin') { window.location.replace('eventos-seleccion.html'); return; }
+                const sitio = await getDoc(doc(db, 'configuracion', 'sitio'));
+                logos = sitio.exists() && Array.isArray(sitio.data().logosPie) ? sitio.data().logosPie.filter((l) => l && esImagenGuardada(l.imagen)) : [];
+                dibujar();
+            } catch (error) {
+                console.error('No se pudo leer la configuración del sitio:', error);
+                avisar('No se pudo leer la configuración. Revisá que esté publicada la regla de Firestore de "configuracion/sitio".', true);
+            }
+        });
+
+        async function guardar(texto) {
+            try {
+                await setDoc(doc(db, 'configuracion', 'sitio'), { logosPie: logos }, { merge: true });
+                avisar(texto, false);
+            } catch (error) {
+                console.error('No se pudieron guardar los logos:', error);
+                avisar('No se pudo guardar. Revisá que esté publicada la regla de Firestore de "configuracion/sitio".', true);
+            }
+            dibujar();
+        }
+
+        function dibujar() {
+            lista.replaceChildren();
+            if (logos.length === 0) { lista.appendChild(crear('li', 'py-3 text-sm text-gray-400', 'Todavía no hay logos: el pie muestra solo el de Evently.')); return; }
+            logos.forEach((logo, i) => {
+                const fila = crear('li', 'py-3 flex flex-wrap items-center gap-3');
+                const caja = crear('div', 'w-28 h-14 rounded-lg bg-[#15101f] flex items-center justify-center p-2');
+                const img = crear('img', 'max-h-full max-w-full object-contain');
+                img.src = logo.imagen; img.alt = logo.nombre || '';
+                caja.appendChild(img);
+                const textos = crear('div', 'flex-1 min-w-0');
+                textos.append(crear('p', 'text-sm font-semibold text-gray-800', logo.nombre || 'Sin nombre'), crear('p', 'text-xs text-gray-500 break-all', logo.enlace || 'Sin enlace'));
+                const botones = crear('div', 'flex gap-1');
+                const mover = (desde, hasta) => { const [l] = logos.splice(desde, 1); logos.splice(hasta, 0, l); guardar('Orden guardado.'); };
+                const subir = crear('button', 'px-2 py-1 rounded border border-gray-200 text-sm disabled:opacity-40', '↑'); subir.type = 'button'; subir.disabled = i === 0;
+                subir.setAttribute('aria-label', `Subir ${logo.nombre || 'logo'}`); subir.addEventListener('click', () => mover(i, i - 1));
+                const bajar = crear('button', 'px-2 py-1 rounded border border-gray-200 text-sm disabled:opacity-40', '↓'); bajar.type = 'button'; bajar.disabled = i === logos.length - 1;
+                bajar.setAttribute('aria-label', `Bajar ${logo.nombre || 'logo'}`); bajar.addEventListener('click', () => mover(i, i + 1));
+                const quitar = crear('button', 'px-3 py-1 rounded text-sm text-red-600 hover:bg-red-50', 'Quitar'); quitar.type = 'button';
+                quitar.setAttribute('aria-label', `Quitar ${logo.nombre || 'logo'}`);
+                quitar.addEventListener('click', () => { logos.splice(i, 1); guardar('Logo quitado.'); });
+                botones.append(subir, bajar, quitar);
+                fila.append(caja, textos, botones);
+                lista.appendChild(fila);
+            });
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('nombreLogo').value.trim();
+            const enlace = document.getElementById('enlaceLogo').value.trim();
+            const archivo = document.getElementById('archivoLogo').files[0];
+            if (logos.length >= MAXIMO) { avisar(`Ya hay ${MAXIMO} logos: quitá uno antes de agregar otro.`, true); return; }
+            if (!nombre) { avisar('Escribí el nombre de la marca.', true); return; }
+            if (!enlaceValido(enlace)) { avisar('El enlace tiene que empezar con https://', true); return; }
+            if (!archivo) { avisar('Elegí la imagen del logo.', true); return; }
+            avisar('Preparando la imagen...', false);
+            try {
+                const imagen = await achicarLogo(archivo);
+                logos.push({ id: `logo-${Date.now()}`, nombre, enlace, imagen });
+                form.reset();
+                await guardar('Logo agregado.');
+            } catch (error) {
+                avisar(error.message || 'No se pudo agregar el logo.', true);
+            }
+        });
+    </script>
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>

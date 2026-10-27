@@ -11,7 +11,7 @@ const verificar = (nombre, condicion, detalle = '') => {
 };
 
 const codigo = fs.readFileSync(path.join(__dirname, '..', 'shared', 'cuentas-admin.js'), 'utf8').replace(/^export /gm, '');
-const A = vm.runInNewContext(codigo + '\n;({ generarClave, validarClave, decidirAlta, motivoDeErrorDeAlta, normalizarCorreo, correoValido, crearUsuarioDeAuth })', { crypto: crypto.webcrypto, Uint32Array });
+const A = vm.runInNewContext(codigo + '\n;({ generarClave, validarClave, decidirAlta, normalizarCorreo, correoValido })', { crypto: crypto.webcrypto, Uint32Array });
 
 // Clave
 const claves = Array.from({ length: 200 }, () => A.generarClave());
@@ -37,35 +37,13 @@ verificar('D7 una cuenta sin rol tampoco (no quedaría como admin)', A.decidirAl
 // Clave escrita por el superadmin
 verificar('C1 una clave buena se acepta', A.validarClave('Bali2026!') === '');
 verificar('C2 corta, sin mayúscula, sin número, sin símbolo o con espacios: se rechaza', ['Ab1!', 'bali2026!', 'Baliiiii!', 'Bali2026', 'Bali 2026!'].every((c) => A.validarClave(c) !== ''));
-// Motivos de error de Firebase
-verificar('M1 cada error conocido dice su motivo y su código', /símbolo/.test(A.motivoDeErrorDeAlta({ code: 'auth/password-does-not-meet-requirements' })) && /código: auth\/admin-restricted-operation/.test(A.motivoDeErrorDeAlta({ code: 'auth/admin-restricted-operation' })));
-verificar('M2 un error desconocido muestra igual su código', /código: auth\/otra-cosa/.test(A.motivoDeErrorDeAlta({ code: 'auth/otra-cosa' })) && A.motivoDeErrorDeAlta(null) === 'No se pudo crear la cuenta.');
 
 // Correo
 verificar('E1 el correo se compara sin espacios ni mayúsculas', A.normalizarCorreo('  Ana@Ejemplo.TEST ') === 'ana@ejemplo.test');
 verificar('E2 correos válidos e inválidos', A.correoValido('a@b.co') && !A.correoValido('a@b') && !A.correoValido('') && !A.correoValido(null));
 
-// Alta con la segunda app: no toca la sesión principal y cierra la de la segunda app
 (async () => {
-  const llamadas = [];
-  const firebase = {
-    apps: [],
-    getApps() { return this.apps; },
-    initializeApp(op, nombre) { const app = { name: nombre, op }; this.apps.push(app); llamadas.push('init:' + nombre); return app; },
-    getAuth(app) { return { app }; },
-    async createUserWithEmailAndPassword(auth, correo, clave) { llamadas.push(`alta:${auth.app.name}:${correo}`); return { user: { uid: 'uid-nuevo' } }; },
-    async signOut(auth) { llamadas.push('salir:' + auth.app.name); },
-  };
-  const uid = await A.crearUsuarioDeAuth(firebase, { projectId: 'x' }, ' Nuevo@Ejemplo.test ', 'Clave123abc');
-  verificar('F1 crea el usuario en la segunda app con el correo limpio y devuelve su uid', uid === 'uid-nuevo' && llamadas.includes('alta:altas-de-admins:nuevo@ejemplo.test'));
-  verificar('F2 cierra la sesión de la segunda app (no la del superadmin)', llamadas[llamadas.length - 1] === 'salir:altas-de-admins');
-  await A.crearUsuarioDeAuth(firebase, { projectId: 'x' }, 'otro@ejemplo.test', 'Clave123abc');
-  verificar('F3 la segunda app se crea una sola vez', llamadas.filter((l) => l.startsWith('init:')).length === 1);
-  const fallaAlta = { ...firebase, apps: [], async createUserWithEmailAndPassword() { throw new Error('auth/email-already-in-use'); }, async signOut() { llamadas.push('salir-tras-error'); } };
-  let error = '';
-  try { await A.crearUsuarioDeAuth(fallaAlta, {}, 'x@y.co', 'Clave123abc'); } catch (e) { error = e.message; }
-  verificar('F4 si el alta falla, el error llega y la sesión de la segunda app igual se cierra', error === 'auth/email-already-in-use' && llamadas.includes('salir-tras-error'));
-  verificar('F5 el módulo no usa innerHTML ni guarda la clave', !/innerHTML|localStorage|setDoc|addDoc/.test(codigo.replace(/\/\/.*$/gm, '')));
+  verificar('F5 el módulo no usa innerHTML, no guarda la clave y no crea cuentas (lo hace el servidor)', !/innerHTML|localStorage|setDoc|addDoc|createUserWithEmailAndPassword/.test(codigo.replace(/\/\/.*$/gm, '')));
 
   console.log(mal ? `\n${mal} verificaciones fallaron` : '\nTodas las verificaciones pasaron');
   process.exit(mal ? 1 : 0);
