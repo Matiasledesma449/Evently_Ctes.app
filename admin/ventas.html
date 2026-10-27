@@ -153,8 +153,8 @@
         // Esta pantalla solo LEE las ventas: los estados los define el servidor a partir de Mercado Pago,
         // por eso ya no se importa ninguna funcion para escribir ni hay boton para confirmar a mano.
         import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro, ingresoDeVenta, textoDeMontoDeVenta } from "../shared/ventas-utils.js";
-        import { nombreParaMostrar } from "../shared/formas-de-pago.js";
+        import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, tarjetasDelFiltro, ingresoDeVenta, textoDeMontoDeVenta } from "../shared/ventas-utils.js";
+        import { nombreParaMostrar, claveDeFormaDePago, opcionesDeFiltroDePago } from "../shared/formas-de-pago.js";
 
         // Elementos
         const tablaBody = document.getElementById('tablaVentasBody');
@@ -214,20 +214,20 @@
             });
         }
 
-        // El desplegable ofrece solo los métodos que tienen las ventas del evento. Reconstruirlo borra lo elegido,
-        // así que se guarda la selección y se vuelve a poner si ese método todavía existe.
+        // El desplegable ofrece siempre Transferencia, Débito y Crédito (y "Otros" solo si hay ventas de otro método).
+        // Reconstruirlo borra lo elegido, así que se guarda la selección y se vuelve a poner si esa opción todavía existe.
         function actualizarOpcionesDeMetodo(ventas) {
             const elegido = filtroMetodo.value;
-            const metodos = metodosDePago(ventas);
+            const metodos = opcionesDeFiltroDePago(ventas);
             filtroMetodo.innerHTML = ['<option value="todos">Todos los métodos</option>']
-                .concat(metodos.map(m => `<option value="${escaparHtml(m)}">${escaparHtml(nombreParaMostrar(m))}</option>`)).join('');
+                .concat(metodos.map(m => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
             filtroMetodo.value = metodos.includes(elegido) ? elegido : 'todos';
         }
 
         // Aplicar filtros y renderizar. La tabla y las tarjetas usan EXACTAMENTE la misma lista filtrada.
         function aplicarFiltrosYRenderizar(ventas) {
             actualizarOpcionesDeMetodo(ventas);
-            const filtradas = filtrarVentas(ventas, filtroEstado, filtroMetodo.value);
+            const filtradas = filtrarVentas(ventas, filtroEstado, filtroMetodo.value, claveDeFormaDePago);
             renderizarVentas(filtradas);
             actualizarResumen(filtradas);
         }

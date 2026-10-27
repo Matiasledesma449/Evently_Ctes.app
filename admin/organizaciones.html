@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Organizaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎟️</text></svg>" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+    </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+</head>
+<body>
+
+    <!-- Solo el superadmin real entra acá; cualquier otra cuenta vuelve a la lista de Eventos -->
+    <script type="module" src="../shared/firebase-init.js"></script>
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+            if (!perfil.exists() || perfil.data().rol !== 'superadmin') window.location.replace('eventos-seleccion.html');
+        });
+    </script>
+
+    <div class="flex min-h-screen">
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="organizaciones"></script>
+
+        <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-2xl font-bold text-gray-800">Organizaciones</h1>
+                <p class="text-sm text-gray-500 mb-6">Cada productora es una organización. Sus eventos y sus admins quedan unidos a ella: un admin ve solo los eventos de su organización.</p>
+
+                <!-- Crear una organización -->
+                <section class="bg-white rounded-xl border border-gray-200 p-5 mb-6" aria-labelledby="tituloNueva">
+                    <h2 id="tituloNueva" class="text-lg font-bold text-gray-800 mb-3">Nueva organización</h2>
+                    <form id="formNuevaOrganizacion" class="flex flex-col sm:flex-row gap-2" novalidate>
+                        <input id="nuevaOrganizacionNombre" type="text" maxlength="60" aria-label="Nombre de la organización nueva" placeholder="Nombre (ej: Valigroup)" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                        <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Crear organización</button>
+                    </form>
+                    <p id="mensajeOrganizaciones" role="status" class="hidden mt-3 text-sm"></p>
+                </section>
+
+                <!-- Lista -->
+                <div id="listaOrganizaciones" class="space-y-4">
+                    <p class="text-center text-gray-400 py-8">Cargando...</p>
+                </div>
+
+                <!-- Cuentas de organización que todavía no tienen organización -->
+                <section id="cuentasSinOrganizacion" class="hidden mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-5" aria-labelledby="tituloSinOrganizacion">
+                    <h2 id="tituloSinOrganizacion" class="text-base font-bold text-yellow-900">Cuentas sin organización</h2>
+                    <p class="text-sm text-yellow-800 mb-2">Estas cuentas no ven ningún evento hasta que las vincules a una organización (escribí su correo en la organización que corresponda).</p>
+                    <ul id="listaSinOrganizacion" class="text-sm text-yellow-900 list-disc pl-5"></ul>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { collection, onSnapshot, addDoc, updateDoc, doc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { validarOrganizacion, organizacionesOrdenadas } from "../shared/organizaciones.js";
+
+        const lista = document.getElementById('listaOrganizaciones');
+        const mensaje = document.getElementById('mensajeOrganizaciones');
+        const bloqueSinOrganizacion = document.getElementById('cuentasSinOrganizacion');
+        const listaSinOrganizacion = document.getElementById('listaSinOrganizacion');
+
+        let organizaciones = [];
+        let cuentas = []; // cuentas de acceso con rol "organizacion": { id, email, organizacionId }
+
+        // Todo lo que viene de las personas (nombres, correos) entra con textContent: nunca se interpreta como HTML
+        function aviso(texto, esError) {
+            mensaje.textContent = texto;
+            mensaje.className = `mt-3 text-sm ${esError ? 'text-red-600' : 'text-green-700'}`;
+        }
+
+        function nodo(etiqueta, clases, texto) {
+            const el = document.createElement(etiqueta);
+            if (clases) el.className = clases;
+            if (texto !== undefined) el.textContent = texto;
+            return el;
+        }
+
+        const CLASE_CAMPO = 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none';
+        const CLASE_BOTON = 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition';
+
+        async function guardarNombre(organizacion, nombre, boton) {
+            const r = validarOrganizacion({ nombre }, organizaciones, organizacion.id);
+            if (!r.ok) { aviso(r.mensaje, true); return; }
+            boton.disabled = true;
+            try {
+                await updateDoc(doc(db, 'organizaciones', organizacion.id), { nombre: r.datos.nombre });
+                aviso(`Guardado: ${r.datos.nombre}.`, false);
+            } catch (error) {
+                console.error('No se pudo guardar la organización:', error);
+                aviso('No se pudo guardar. Probá de nuevo.', true);
+            } finally {
+                boton.disabled = false;
+            }
+        }
+
+        // Vincula una cuenta que ya existe (rol "organizacion") a la organización, buscándola por correo
+        async function vincularPorCorreo(organizacion, correo, boton) {
+            const buscado = String(correo || '').trim();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buscado)) { aviso('Escribí un correo válido.', true); return; }
+            boton.disabled = true;
+            try {
+                let encontrada = null;
+                for (const variante of new Set([buscado, buscado.toLowerCase()])) {
+                    const resultado = await getDocs(query(collection(db, 'usuarios'), where('email', '==', variante)));
+                    resultado.forEach((d) => { if (!encontrada) encontrada = { id: d.id, ...d.data() }; });
+                    if (encontrada) break;
+                }
+                if (!encontrada) { aviso('No hay ninguna cuenta con ese correo. Primero hay que crearla (como hasta ahora, en Firebase).', true); return; }
+                if (encontrada.rol !== 'organizacion') { aviso('Esa cuenta no es de una organización, así que no se puede vincular.', true); return; }
+                await updateDoc(doc(db, 'usuarios', encontrada.id), { organizacionId: organizacion.id });
+                aviso(`Listo: ${encontrada.email} ahora es admin de ${organizacion.nombre}.`, false);
+            } catch (error) {
+                console.error('No se pudo vincular la cuenta:', error);
+                aviso('No se pudo vincular la cuenta. Probá de nuevo.', true);
+            } finally {
+                boton.disabled = false;
+            }
+        }
+
+        function tarjetaDeOrganizacion(organizacion) {
+            const tarjeta = nodo('section', 'bg-white rounded-xl border border-gray-200 p-5');
+
+            const filaNombre = nodo('div', 'flex flex-col sm:flex-row gap-2');
+            const campoNombre = nodo('input', `flex-1 ${CLASE_CAMPO}`);
+            campoNombre.type = 'text';
+            campoNombre.value = organizacion.nombre;
+            campoNombre.maxLength = 60;
+            campoNombre.setAttribute('aria-label', `Nombre de la organización ${organizacion.nombre}`);
+            const botonNombre = nodo('button', CLASE_BOTON, 'Guardar nombre');
+            botonNombre.type = 'button';
+            botonNombre.addEventListener('click', () => guardarNombre(organizacion, campoNombre.value, botonNombre));
+            filaNombre.append(campoNombre, botonNombre);
+
+            const admins = cuentas.filter((c) => c.organizacionId === organizacion.id);
+            const titulo = nodo('p', 'text-xs font-medium text-gray-500 mt-4', admins.length === 1 ? '1 admin' : `${admins.length} admins`);
+            const listaAdmins = nodo('ul', 'text-sm text-gray-700 mt-1 list-disc pl-5');
+            if (admins.length === 0) listaAdmins.appendChild(nodo('li', 'text-gray-400 list-none -ml-5', 'Todavía no tiene admins.'));
+            admins.forEach((c) => listaAdmins.appendChild(nodo('li', '', c.email || c.id)));
+
+            const filaVinculo = nodo('div', 'flex flex-col sm:flex-row gap-2 mt-3');
+            const campoCorreo = nodo('input', `flex-1 ${CLASE_CAMPO}`);
+            campoCorreo.type = 'email';
+            campoCorreo.setAttribute('aria-label', `Correo de la cuenta a vincular con ${organizacion.nombre}`);
+            campoCorreo.placeholder = 'Correo de una cuenta que ya existe';
+            const botonVinculo = nodo('button', CLASE_BOTON, 'Vincular admin');
+            botonVinculo.type = 'button';
+            botonVinculo.addEventListener('click', async () => {
+                await vincularPorCorreo(organizacion, campoCorreo.value, botonVinculo);
+                campoCorreo.value = '';
+            });
+            filaVinculo.append(campoCorreo, botonVinculo);
+
+            tarjeta.append(filaNombre, titulo, listaAdmins, filaVinculo);
+            return tarjeta;
+        }
+
+        function dibujar() {
+            lista.replaceChildren();
+            if (organizaciones.length === 0) {
+                lista.appendChild(nodo('p', 'text-center text-gray-400 py-8', 'Todavía no hay organizaciones. Creá la primera arriba.'));
+            } else {
+                organizaciones.forEach((o) => lista.appendChild(tarjetaDeOrganizacion(o)));
+            }
+            const existentes = new Set(organizaciones.map((o) => o.id));
+            const sueltas = cuentas.filter((c) => !c.organizacionId || !existentes.has(c.organizacionId));
+            listaSinOrganizacion.replaceChildren();
+            sueltas.forEach((c) => listaSinOrganizacion.appendChild(nodo('li', '', c.email || c.id)));
+            bloqueSinOrganizacion.classList.toggle('hidden', sueltas.length === 0);
+        }
+
+        document.getElementById('formNuevaOrganizacion').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const campo = document.getElementById('nuevaOrganizacionNombre');
+            const r = validarOrganizacion({ nombre: campo.value }, organizaciones);
+            if (!r.ok) { aviso(r.mensaje, true); return; }
+            try {
+                await addDoc(collection(db, 'organizaciones'), { nombre: r.datos.nombre, creadaEn: serverTimestamp() });
+                campo.value = '';
+                aviso(`Organización creada: ${r.datos.nombre}.`, false);
+            } catch (error) {
+                console.error('No se pudo crear la organización:', error);
+                aviso('No se pudo crear. Si es la primera vez, falta publicar la regla de "organizaciones" en Firestore.', true);
+            }
+        });
+
+        // Se escucha recién cuando hay sesión (las listas no son públicas)
+        auth.onAuthStateChanged((user) => {
+            if (!user) return;
+            onSnapshot(collection(db, 'organizaciones'), (snap) => {
+                const crudas = [];
+                snap.forEach((d) => crudas.push({ id: d.id, ...d.data() }));
+                organizaciones = organizacionesOrdenadas(crudas);
+                dibujar();
+            }, (error) => {
+                console.error('No se pudieron leer las organizaciones:', error);
+                lista.replaceChildren(nodo('p', 'text-center text-red-500 py-8', 'No se pudieron leer las organizaciones. Revisá que las reglas de Firestore de "organizaciones" estén publicadas.'));
+            });
+            onSnapshot(query(collection(db, 'usuarios'), where('rol', '==', 'organizacion')), (snap) => {
+                cuentas = [];
+                snap.forEach((d) => {
+                    const datos = d.data();
+                    cuentas.push({ id: d.id, email: typeof datos.email === 'string' ? datos.email : '', organizacionId: typeof datos.organizacionId === 'string' ? datos.organizacionId : '' });
+                });
+                dibujar();
+            }, (error) => {
+                console.error('No se pudieron leer las cuentas:', error);
+            });
+        });
+    </script>
+
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>

@@ -8,6 +8,7 @@
 
     import { crearImagenEvento } from "../shared/imagen-evento.js";
     import { armarComentario, comentariosDeSolicitud, ultimoComentario, enlacesDeContacto } from "../shared/solicitudes-evento.js";
+    import { eventosDeOrganizacion, organizacionesOrdenadas } from "../shared/organizaciones.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
         serverTimestamp, getDoc, getDocs, deleteField, arrayUnion
@@ -35,7 +36,8 @@
 
     let accionPendiente = null;
     let solicitudSeleccionada = null;
-    const organizacionesPorClave = new Map();
+    const organizacionesPorClave = new Map();      // id de organización -> { id, nombre }
+    const contactoPorOrganizacion = new Map();     // id de organización -> { email, telefono } de su cuenta vinculada
     const organizacionPorSolicitud = new Map();
     let solicitudesCache = [];
     let estadoSolicitudesActual = 'pendiente';
@@ -61,30 +63,34 @@
         }
     });
 
+    // La organización de una solicitud es SOLO su organizacionId (la misma regla que el resto del panel).
+    // Para escribirle a la organización se usa la cuenta de acceso vinculada a ella (correo y teléfono).
     async function cargarOrganizaciones() {
         try {
-            const organizacionesSnap = await getDocs(query(
-                collection(db, 'usuarios'),
-                where('rol', '==', 'organizacion')
-            ));
+            const organizacionesSnap = await getDocs(collection(db, 'organizaciones'));
+            const lista = [];
+            organizacionesSnap.forEach(orgSnap => lista.push({ id: orgSnap.id, ...orgSnap.data() }));
+            organizacionesOrdenadas(lista).forEach(organizacion => organizacionesPorClave.set(organizacion.id, organizacion));
 
-            organizacionesSnap.forEach(orgSnap => {
-                const organizacion = { id: orgSnap.id, ...orgSnap.data() };
-                [organizacion.id, organizacion.organizacionId, organizacion.email?.toLowerCase()]
-                    .filter(Boolean)
-                    .forEach(clave => organizacionesPorClave.set(clave, organizacion));
+            const cuentasSnap = await getDocs(query(collection(db, 'usuarios'), where('rol', '==', 'organizacion')));
+            cuentasSnap.forEach(cuentaSnap => {
+                const cuenta = cuentaSnap.data();
+                if (cuenta.organizacionId && !contactoPorOrganizacion.has(cuenta.organizacionId)) {
+                    contactoPorOrganizacion.set(cuenta.organizacionId, { email: cuenta.email, telefono: cuenta.telefono });
+                }
             });
 
             // Selector de organizaciones de la sección (una opción por organización, ordenadas por nombre)
             const selector = document.getElementById('filtroOrganizacionSolicitud');
-            const unicas = new Map();
-            organizacionesPorClave.forEach(organizacion => unicas.set(organizacion.id, organizacion));
-            [...unicas.values()]
-                .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'))
-                .forEach(organizacion => selector.add(new Option(organizacion.nombre || organizacion.email || 'Sin nombre', organizacion.id)));
+            organizacionesOrdenadas(lista).forEach(organizacion => selector.add(new Option(organizacion.nombre || 'Sin nombre', organizacion.id)));
         } catch (error) {
             console.error('No se pudieron cargar las organizaciones para agrupar solicitudes:', error);
         }
+    }
+
+    // La organización de una solicitud (o undefined si no tiene o ya no existe)
+    function organizacionDeSolicitud(solicitud) {
+        return eventosDeOrganizacion([solicitud], solicitud.organizacionId).length ? organizacionesPorClave.get(solicitud.organizacionId.trim()) : undefined;
     }
 
     // ==========================================
@@ -113,9 +119,7 @@
         if (periodo !== 'todos') limite.setDate(limite.getDate() - Number(periodo));
 
         const visibles = solicitudesCache.filter(solicitud => {
-            const org = organizacionesPorClave.get(solicitud.organizacionId)
-                || organizacionesPorClave.get(solicitud.creadoPor)
-                || organizacionesPorClave.get(solicitud.correo?.toLowerCase());
+            const org = organizacionDeSolicitud(solicitud);
             const coincideEstado = (solicitud.estado || 'pendiente') === estadoSolicitudesActual;
             const coincideOrg = organizacionId === 'todas' || org?.id === organizacionId;
             const coincideBusqueda = !busqueda || [solicitud.nombre, solicitud.correo, org?.nombre]
@@ -143,15 +147,13 @@
 
         const grupos = new Map();
         visibles.forEach(solicitud => {
-            const organizacion = organizacionesPorClave.get(solicitud.organizacionId)
-                || organizacionesPorClave.get(solicitud.creadoPor)
-                || organizacionesPorClave.get(solicitud.correo?.toLowerCase());
-            const clave = organizacion?.id || solicitud.organizacionId || solicitud.creadoPor || solicitud.correo || 'sin-organizacion';
-            const nombre = organizacion?.nombre || solicitud.nombreOrganizacion || solicitud.organizacionId || solicitud.correo || 'Organización no identificada';
+            const organizacion = organizacionDeSolicitud(solicitud);
+            const clave = organizacion?.id || 'sin-organizacion';
+            const nombre = organizacion?.nombre || 'Sin organización';
             if (!grupos.has(clave)) grupos.set(clave, { nombre, solicitudes: [] });
-            grupos.get(clave).solicitudes.push({ ...solicitud, nombreOrganizacion: organizacion?.nombre || nombre });
+            grupos.get(clave).solicitudes.push({ ...solicitud, nombreOrganizacion: nombre });
             // El teléfono se guarda aparte: la solicitud se copia entera al evento público y no debe llevarlo
-            organizacionPorSolicitud.set(solicitud.id, organizacion || null);
+            organizacionPorSolicitud.set(solicitud.id, organizacion ? { ...organizacion, ...(contactoPorOrganizacion.get(organizacion.id) || {}) } : null);
         });
 
         [...grupos.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).forEach(grupo => {
@@ -562,8 +564,14 @@
         const solicitudRef = doc(db, 'solicitudes_eventos', solicitud.id);
         const eventoRef = doc(db, 'eventos', solicitud.id);
 
+        // El evento hereda el organizacionId de la solicitud. Sin él ninguna organización lo vería: no se publica así.
+        if (!eventosDeOrganizacion([solicitud], solicitud.organizacionId).length) {
+            throw new Error('Esta solicitud no tiene organización. Vinculá la cuenta a una organización en "Organizaciones" y pedile que envíe la solicitud de nuevo.');
+        }
+
         const dataEvento = { ...solicitud };
         delete dataEvento.id;
+        delete dataEvento.nombreOrganizacion; // solo sirve para mostrar la lista
         delete dataEvento.comentarios; // los comentarios son entre el superadmin y la organización: el evento es público
         dataEvento.imagen = typeof solicitud.imagen === 'string' ? solicitud.imagen.trim() : '';
         dataEvento.estado = 'publicado';

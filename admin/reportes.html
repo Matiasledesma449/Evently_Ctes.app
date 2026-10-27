@@ -190,8 +190,9 @@
     <script type="module">
         import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, metodosDePago, seccionesDelPdf, nombreDeArchivoDeReporte, ingresoDeVenta } from "../shared/ventas-utils.js";
-        import { nombreParaMostrar } from "../shared/formas-de-pago.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, ventasDeEventos, seccionesDelPdf, nombreDeArchivoDeReporte, ingresoDeVenta } from "../shared/ventas-utils.js";
+        import { eventosParaVer } from "../shared/organizaciones.js";
+        import { nombreParaMostrar, claveDeFormaDePago, opcionesDeFiltroDePago } from "../shared/formas-de-pago.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
         let eventos = [];
@@ -224,7 +225,16 @@
         // Pone en `eventos` y `ventas` lo que corresponde a lo elegido y vuelve a dibujar
         function repartirDatos() {
             if (EN_TODOS) {
-                eventos = eventosDeLaPersona(eventosDeBase, usuarioActual, uidActual);
+                // Los mismos eventos que Eventos, Ventas y el selector: según el rol con el que se mira y la organización elegida
+                const rolReal = usuarioActual && usuarioActual.rol;
+                const rolMirado = window.rolEfectivo ? window.rolEfectivo(rolReal) : rolReal;
+                eventos = eventosParaVer({
+                    eventos: eventosDeBase,
+                    rolEfectivo: rolMirado,
+                    organizacionId: usuarioActual && usuarioActual.organizacionId,
+                    organizacionElegida: window.vistaOrganizacion ? window.vistaOrganizacion() : '',
+                    vistaDeSuperadmin: rolReal === 'superadmin' && rolMirado === 'organizacion'
+                });
                 ventas = ventasDeEventos(ventasDeBase, eventos.map((ev) => ev.id));
             } else {
                 eventos = eventosDeBase;
@@ -295,12 +305,12 @@
             });
         }
 
-        // Los métodos que tienen las ventas, sin una lista fija. Reconstruir el desplegable borra lo elegido: se guarda y se vuelve a poner
+        // Siempre Transferencia, Débito y Crédito ("Otros" solo si hay ventas de otro método). Reconstruir el desplegable borra lo elegido: se guarda y se vuelve a poner
         function actualizarFiltroMetodos() {
             const elegido = metodoFilter.value;
-            const metodos = metodosDePago(ventas);
+            const metodos = opcionesDeFiltroDePago(ventas);
             metodoFilter.innerHTML = ['<option value="todos">Todos</option>']
-                .concat(metodos.map((m) => `<option value="${escaparHtml(m)}">${escaparHtml(nombreParaMostrar(m))}</option>`)).join('');
+                .concat(metodos.map((m) => `<option value="${escaparHtml(m)}">${escaparHtml(m)}</option>`)).join('');
             metodoFilter.value = metodos.includes(elegido) ? elegido : 'todos';
         }
 
@@ -309,7 +319,7 @@
         function ventasFiltradasActuales() {
             let filtradas = soloConfirmadas(ventas);
             if (loteFilter.value !== 'todos') filtradas = filtradas.filter(v => v.loteNombre === loteFilter.value);
-            if (metodoFilter.value !== 'todos') filtradas = filtradas.filter(v => v.metodo_pago === metodoFilter.value);
+            if (metodoFilter.value !== 'todos') filtradas = filtradas.filter(v => claveDeFormaDePago(v.metodo_pago) === metodoFilter.value);
             return filtradas;
         }
 
@@ -318,7 +328,7 @@
         function cifrasActuales(ventasFiltradas) {
             const lote = loteFilter.value;
             const eventosElegidos = eventos.map((ev) => ({ ...ev, lotes: (Array.isArray(ev.lotes) ? ev.lotes : []).filter((l) => lote === 'todos' || l.nombre === lote) }));
-            const cifras = cifrasDelEvento(eventosElegidos, ventasFiltradas);
+            const cifras = cifrasDelEvento(eventosElegidos, ventasFiltradas, claveDeFormaDePago);
             const pendientes = resumenDeVentas(ventas.filter((v) => lote === 'todos' || v.loteNombre === lote)).pendientes;
             return { ...cifras, pendientes };
         }
@@ -423,7 +433,7 @@
 
             const metodos = {};
             ventasFiltradas.forEach(v => {
-                const metodo = v.metodo_pago || 'Desconocido';
+                const metodo = claveDeFormaDePago(v.metodo_pago);
                 if (!metodos[metodo]) metodos[metodo] = { transacciones: 0, monto: 0 };
                 metodos[metodo].transacciones += 1;
                 metodos[metodo].monto += ingresoDeVenta(v);
@@ -460,7 +470,7 @@
 
             const metodoCount = {};
             ventasFiltradas.forEach(v => {
-                const m = v.metodo_pago || 'Desconocido';
+                const m = claveDeFormaDePago(v.metodo_pago);
                 metodoCount[m] = (metodoCount[m] || 0) + 1;
             });
             let metodoMasUsado = { nombre: 'N/A', porcentaje: 0 };
@@ -815,7 +825,7 @@
         function renderMetodos(ventasFiltradas) {
             const metodos = {};
             ventasFiltradas.forEach(v => {
-                const metodo = v.metodo_pago || 'Desconocido';
+                const metodo = claveDeFormaDePago(v.metodo_pago);
                 if (!metodos[metodo]) metodos[metodo] = { transacciones: 0, monto: 0 };
                 metodos[metodo].transacciones += 1;
                 metodos[metodo].monto += ingresoDeVenta(v);
@@ -952,7 +962,7 @@
 
             const metodoCount = {};
             ventasFiltradas.forEach(v => {
-                const metodo = v.metodo_pago || 'Desconocido';
+                const metodo = claveDeFormaDePago(v.metodo_pago);
                 metodoCount[metodo] = (metodoCount[metodo] || 0) + 1;
             });
             let metodoMasUsado = { nombre: 'N/A', porcentaje: 0 };

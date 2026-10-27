@@ -151,9 +151,15 @@ function fechaEnMs(fecha) {
 }
 
 // Las ventas que cumplen a la vez el filtro de estado y el de método ('todos' no filtra)
-export function filtrarVentas(ventas, estado = 'todos', metodo = 'todos') {
+// `claveDe` (opcional) convierte lo guardado en la clave del filtro: el panel pasa claveDeFormaDePago
+// (formas-de-pago.js) para que "Dinero en cuenta" cuente como Transferencia. Sin ella se compara el texto guardado.
+export function filtrarVentas(ventas, estado = 'todos', metodo = 'todos', claveDe = null) {
     // El método se compara sin espacios sobrantes, igual que en metodosDePago, para que lo que se ofrece siempre filtre
-    const metodoDe = (v) => (typeof v.metodo_pago === 'string' ? v.metodo_pago.trim() : '');
+    // Una venta sin método (las pendientes) no coincide con ningún método elegido, tampoco con "Otros"
+    const metodoDe = (v) => {
+        const guardado = typeof v.metodo_pago === 'string' ? v.metodo_pago.trim() : '';
+        return guardado !== '' && typeof claveDe === 'function' ? claveDe(guardado) : guardado;
+    };
     return (Array.isArray(ventas) ? ventas : []).filter((v) =>
         v && (estado === 'todos' || v.estado === estado) && (metodo === 'todos' || metodoDe(v) === metodo));
 }
@@ -249,15 +255,16 @@ export function tarjetasDelFiltro(estado, ventas, ahora = Date.now()) {
 // Todo sale de las ventas confirmadas y de los lotes; los contadores "vendidas" guardados en los lotes NO se usan.
 // ======================================================================================================
 
-// Los eventos que una persona puede elegir. Superadmin: todos. Organización: los suyos, con los mismos tres criterios
-// que la lista de Eventos (misma organización, creados por ella o con su correo).
+// Los eventos que una persona puede elegir. Superadmin: todos. Organización: los de su organización.
+// La única regla de pertenencia es el `organizacionId` (la misma de eventosDeOrganizacion en organizaciones.js;
+// se repite acá para que este archivo no dependa de otro y se pueda cargar solo en las pruebas).
+// El parámetro `uid` ya no se usa: se conserva para no cambiar las llamadas existentes.
 export function eventosDeLaPersona(eventos, usuario, uid) {
     const lista = (Array.isArray(eventos) ? eventos : []).filter(Boolean);
     if (usuario && usuario.rol === 'superadmin') return lista;
-    return lista.filter((ev) =>
-        (ev.organizacionId && usuario && ev.organizacionId === usuario.organizacionId) ||
-        (ev.creadoPor && uid && ev.creadoPor === uid) ||
-        (ev.correo && usuario && usuario.email && ev.correo === usuario.email));
+    const propia = usuario && typeof usuario.organizacionId === 'string' ? usuario.organizacionId.trim() : '';
+    if (!propia) return [];
+    return lista.filter((ev) => typeof ev.organizacionId === 'string' && ev.organizacionId.trim() === propia);
 }
 
 // Cuál es el evento activo: el de la dirección (?id=) y, si no hay, el recordado. "todos" nunca se toma de lo recordado.
@@ -277,7 +284,9 @@ export function ventasDeEventos(ventas, ids) {
 }
 
 // Las cifras de uno o varios eventos. `eventos` es una lista (con sus lotes) y `ventas` las ventas de esos eventos.
-export function cifrasDelEvento(eventos, ventas) {
+// `claveDeMetodo` (opcional) agrupa los métodos de pago: el panel pasa claveDeFormaDePago para que "Dinero en cuenta"
+// y "Transferencia" cuenten juntos. Sin ella se agrupa por el texto guardado.
+export function cifrasDelEvento(eventos, ventas, claveDeMetodo = null) {
     const lista = (Array.isArray(eventos) ? eventos : []).filter(Boolean);
     const todas = (Array.isArray(ventas) ? ventas : []).filter(Boolean);
     const confirmadas = soloConfirmadas(todas);
@@ -296,7 +305,7 @@ export function cifrasDelEvento(eventos, ventas) {
         dato.entradas += aNumero(v.cantidad);
         dato.dinero += ingresoDeVenta(v);
         porLote.set(lote, dato);
-        const metodo = v.metodo_pago || 'Desconocido';
+        const metodo = v.metodo_pago ? (typeof claveDeMetodo === 'function' ? claveDeMetodo(v.metodo_pago) : v.metodo_pago) : 'Desconocido';
         porMetodo.set(metodo, (porMetodo.get(metodo) || 0) + 1);
     }
     let loteMasVendido = null;
