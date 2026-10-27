@@ -33,7 +33,8 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 
 ## Datos y roles
 - Backend: Firebase (Auth, Firestore, Storage), inicializado en `shared/firebase-init.js`.
-- Colecciones que se usan en el código: `usuarios`, `eventos`, `ventas`, `mensajes`, `conversaciones`, `consultas_publicas`, `solicitudes_eventos`, `solicitudes_password`.
+- Colecciones que se usan en el código: `usuarios`, `eventos`, `ventas`, `mensajes`, `conversaciones`, `consultas_publicas`, `solicitudes_eventos`, `solicitudes_password`, `organizaciones`, `configuracion`.
+- Organizaciones: cada productora es un documento de `organizaciones` (`nombre`). Un evento (o solicitud) pertenece a una organización **solo por su `organizacionId`**; no se usa `creadoPor` ni el correo para eso. Las cuentas de acceso (`usuarios` con rol `organizacion`) llevan el mismo `organizacionId`. La regla vive en `shared/organizaciones.js` (`eventosParaVer`); Eventos, Resumen, Ventas y Reportes arman su lista con esa función. En "Ver como organización" el superadmin elige qué organización mira (`vistaOrganizacion()` en `shared/menu-admin.js`).
 - El rol se lee del campo `rol` en `usuarios`. Valores vistos: `superadmin`, `cliente`, `usuario`, `organizacion` (organizador de eventos; aparece en el menú del panel).
 
 ## Convenciones que se ven en el código

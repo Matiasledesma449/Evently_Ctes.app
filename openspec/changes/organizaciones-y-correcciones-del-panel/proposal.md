@@ -4,6 +4,15 @@
 
 La persona probó la vista previa del panel y encontró cosas que confunden: con "Ver como organización" todavía se ven las categorías de porcentaje y el filtro "Todas las organizaciones"; las categorías están en la lista de Eventos y no en "Crear evento"; el Dashboard muestra más eventos que la lista de Eventos; y Transferencia, Débito y Crédito no se reflejan igual en todas las páginas. Todo eso viene de un mismo problema de fondo: una "organización" hoy no existe como cosa propia (es solo un usuario con rol `organizacion`), y cada pantalla decide a su manera de quién es un evento. Se arregla ahora, antes de cargar datos nuevos, para empezar de cero con una estructura clara: una productora (por ejemplo Valigroup) es una organización, con sus eventos y sus admins.
 
+## Respuestas de la persona
+
+La persona no contestó estas preguntas en el PR #37, pero pidió (en los PRs #24 y #25) que el trabajo siga de largo sin esperar y que se pare solo por algo sensible. El 27/10/2026 la nube aplicó la opción recomendada en las preguntas 1, 3 y 4, y dejó la pregunta 2 abierta para la parte que borra datos:
+
+1. Cuentas de las organizaciones: **A** (a mano en Firebase; el superadmin las vincula por correo). *Decidido por la nube (recomendada).*
+2. Eventos de hoy sin `organizacionId`: **los admins dejan de verlos** (el superadmin los ve como "Sin organización"). La herramienta de limpieza (sección 7 de `tasks.md`) **no se hizo**: borra datos y espera la respuesta de la persona en el PR.
+3. "Ver como organización": **A** (el superadmin elige qué organización mira). *Decidido por la nube (recomendada).*
+4. "Prepaga": **queda en "Otros"** (recomendada: se cambia en un solo lugar, `claveDeFormaDePago`). *Decidido por la nube.*
+
 ## What Changes
 
 - **Ver como organización de verdad**: las pantallas del panel usan el rol con el que se está mirando (`window.rolEfectivo`) y no el rol real. En esa vista no aparecen las categorías de porcentaje ni el filtro de organizaciones. Los permisos reales no cambian. Además, en esa vista el superadmin **elige qué organización mira** y las listas muestran solo los eventos de esa organización (hoy muestran todos).
