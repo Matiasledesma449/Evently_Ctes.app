@@ -308,9 +308,7 @@
                     correo.value = '';
                     clave.value = '';
                     dibujar();
-                    if (resultado.creada) mostrarClaveNueva(org.id, buscado, claveElegida);
-                    else avisar(lista.querySelector(`[data-organizacion="${CSS.escape(org.id)}"] [role="status"]`) || mensaje,
-                        'Ese correo ya tenía acceso a Evently: quedó como admin con su clave de siempre.');
+                    mostrarClaveNueva(org.id, buscado, claveElegida);
                 } catch (error) {
                     console.error('No se pudo agregar el admin:', error);
                     avisar(mensaje, `No se pudo agregar el admin.${error && error.code ? ` (código: ${error.code})` : ''}`, 'error');

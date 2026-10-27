@@ -25,7 +25,9 @@ function falsos({ authUsuarios = {}, errorAlCrear = null } = {}) {
     verifyIdToken: async (t) => { if (t === 'tok-super') return { uid: 'u-super' }; if (t === 'tok-org') return { uid: 'u-org' }; throw new Error('token'); },
     getUserByEmail: async (correo) => { if (authUsuarios[correo]) return authUsuarios[correo]; const e = new Error('no'); e.code = 'auth/user-not-found'; throw e; },
     createUser: async ({ email, password }) => { if (errorAlCrear) throw errorAlCrear; auth.creados.push({ email, largo: password.length }); return { uid: 'nuevo-' + email }; },
-    creados: [],
+    updateUser: async (uid, { password }) => { auth.claves.push({ uid, largo: password.length }); },
+    revokeRefreshTokens: async (uid) => { auth.revocados.push(uid); },
+    creados: [], claves: [], revocados: [],
   };
   return { deps: { db, auth, ahora: () => 'AHORA' }, escrituras, auth };
 }
@@ -56,7 +58,8 @@ const bien = { correo: ' Duenio@Productora.TEST ', clave: 'Bali2026!', organizac
   // Correo con acceso pero sin cuenta de Evently: se vincula sin cambiarle la clave
   f = falsos({ authUsuarios: { 'suelto@x.co': { uid: 'u-suelto' } } });
   const r2 = await pedir(f, 'tok-super', { ...bien, correo: 'suelto@x.co' });
-  verificar('B1 correo con acceso y sin cuenta: se vincula (creada = false) sin crear otro usuario', r2.status === 200 && r2.cuerpo.creada === false && f.auth.creados.length === 0 && f.escrituras[0].id === 'u-suelto');
+  verificar('B1 correo con acceso y sin cuenta: se vincula sin crear otro usuario', r2.status === 200 && r2.cuerpo.creada === false && f.auth.creados.length === 0 && f.escrituras[0].id === 'u-suelto');
+  verificar('B1b a ese acceso se le pone la clave elegida y se cierran sus sesiones (nadie más puede entrar)', f.auth.claves.length === 1 && f.auth.claves[0].uid === 'u-suelto' && f.auth.claves[0].largo === 9 && f.auth.revocados[0] === 'u-suelto');
   f = falsos({ authUsuarios: { 'org@x.co': { uid: 'u-org' } } });
   verificar('B2 correo que ya es cuenta de Evently: 409 y no escribe', (await pedir(f, 'tok-super', { ...bien, correo: 'org@x.co' })).status === 409 && f.escrituras.length === 0);
 

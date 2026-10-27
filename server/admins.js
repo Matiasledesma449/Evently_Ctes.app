@@ -79,7 +79,9 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
   if (!org.exists || (org.data() || {}).eliminada === true) return error(404, 'ORGANIZACION_INVALIDA', 'Esa organización no existe o está eliminada.');
   const nombreOrg = (org.data() || {}).nombre || '';
 
-  // 3) La cuenta: si el correo ya tiene acceso pero no es cuenta de Evently, solo se vincula (con su clave de siempre)
+  // 3) La cuenta. Si el correo ya tiene acceso pero no es cuenta de Evently, NO se vincula tal cual (alguien podría haber
+  //    creado ese acceso antes con el correo de otro): se le pone la clave elegida por el superadmin y se cierran todas
+  //    sus sesiones, así solo entra quien recibe esa clave.
   let usuario = null;
   let creada = false;
   try {
@@ -90,6 +92,12 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
   if (usuario) {
     const existente = await d.db.collection('usuarios').doc(usuario.uid).get();
     if (existente.exists) return error(409, 'YA_ES_CUENTA', 'Ese correo ya es una cuenta de Evently: agregalo sin clave desde la organización.');
+    try {
+      await d.auth.updateUser(usuario.uid, { password: datos.clave });
+      await d.auth.revokeRefreshTokens(usuario.uid);
+    } catch (e) {
+      return errorDeAuth(e);
+    }
   } else {
     try {
       usuario = await d.auth.createUser({ email: correo, password: datos.clave, emailVerified: false });
@@ -110,7 +118,7 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
     console.error('crear-admin: no se pudo guardar la cuenta', e && e.code ? e.code : 'sin código');
     return error(500, 'ERROR_GUARDADO', 'No se pudo guardar la cuenta. No se creó nada: probá de nuevo.');
   }
-  // creada: false = el correo ya tenía acceso y conserva su clave de siempre (la escrita no se usó)
+  // En los dos casos la clave que vale es la elegida por el superadmin (se muestra una sola vez en el panel)
   return respuesta(200, { ok: true, uid: usuario.uid, creada });
 }
 
