@@ -60,7 +60,7 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
   if (!token) return error(401, 'SIN_SESION', 'Tu sesión expiró. Volvé a iniciar sesión.');
   let uidPide;
   try {
-    uidPide = (await d.auth.verifyIdToken(token)).uid;
+    uidPide = (await d.auth.verifyIdToken(token, true)).uid; // true: rechaza sesiones cerradas
   } catch (e) {
     return error(401, 'SIN_SESION', 'Tu sesión expiró. Volvé a iniciar sesión.');
   }
@@ -79,9 +79,9 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
   if (!org.exists || (org.data() || {}).eliminada === true) return error(404, 'ORGANIZACION_INVALIDA', 'Esa organización no existe o está eliminada.');
   const nombreOrg = (org.data() || {}).nombre || '';
 
-  // 3) La cuenta. Si el correo ya tiene acceso pero no es cuenta de Evently, NO se vincula tal cual (alguien podría haber
-  //    creado ese acceso antes con el correo de otro): se le pone la clave elegida por el superadmin y se cierran todas
-  //    sus sesiones, así solo entra quien recibe esa clave.
+  // 3) La cuenta. Si el correo ya tiene un acceso que no es cuenta de Evently, NO se reutiliza: alguien podría haberlo
+  //    creado antes con el correo de otro (y seguir entrando con otra forma de acceso o con una sesión abierta).
+  //    Se avisa para que el superadmin lo borre en Firebase y lo vuelva a agregar: así la cuenta nace nueva.
   let usuario = null;
   let creada = false;
   try {
@@ -92,12 +92,7 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
   if (usuario) {
     const existente = await d.db.collection('usuarios').doc(usuario.uid).get();
     if (existente.exists) return error(409, 'YA_ES_CUENTA', 'Ese correo ya es una cuenta de Evently: agregalo sin clave desde la organización.');
-    try {
-      await d.auth.updateUser(usuario.uid, { password: datos.clave });
-      await d.auth.revokeRefreshTokens(usuario.uid);
-    } catch (e) {
-      return errorDeAuth(e);
-    }
+    return error(409, 'ACCESO_VIEJO', 'Ese correo ya tiene un acceso en Firebase que no es una cuenta de Evently. Por seguridad no se reutiliza: borralo en la consola de Firebase (Authentication → Usuarios) y volvé a agregarlo.');
   } else {
     try {
       usuario = await d.auth.createUser({ email: correo, password: datos.clave, emailVerified: false });
@@ -118,7 +113,7 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
     console.error('crear-admin: no se pudo guardar la cuenta', e && e.code ? e.code : 'sin código');
     return error(500, 'ERROR_GUARDADO', 'No se pudo guardar la cuenta. No se creó nada: probá de nuevo.');
   }
-  // En los dos casos la clave que vale es la elegida por el superadmin (se muestra una sola vez en el panel)
+  // La cuenta es nueva: la clave que vale es la elegida por el superadmin (se muestra una sola vez en el panel)
   return respuesta(200, { ok: true, uid: usuario.uid, creada });
 }
 
