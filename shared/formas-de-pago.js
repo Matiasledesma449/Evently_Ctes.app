@@ -15,6 +15,22 @@ export function nombreParaMostrar(guardado) {
     return Object.prototype.hasOwnProperty.call(NOMBRE_PARA_MOSTRAR, nombre) ? NOMBRE_PARA_MOSTRAR[nombre] : nombre;
 }
 
+// A qué forma del filtro pertenece lo que guardó el servidor: 'Transferencia', 'Débito', 'Crédito' u 'Otros'.
+// "Dinero en cuenta" cuenta como Transferencia. Lo demás (Prepaga, Efectivo viejo, vacío, desconocido) va a 'Otros'.
+// Es el único lugar donde se decide la agrupación: filtro, tarjetas y gráficos usan esta función.
+export function claveDeFormaDePago(guardado) {
+    const nombre = nombreParaMostrar(guardado);
+    return FORMAS_DE_PAGO.includes(nombre) ? nombre : 'Otros';
+}
+
+// Las opciones del filtro de forma de pago: siempre las tres formas, y 'Otros' solo si alguna venta con un método
+// guardado cae ahí (las pendientes no tienen método y no cuentan)
+export function opcionesDeFiltroDePago(ventas) {
+    const hayOtros = (Array.isArray(ventas) ? ventas : []).some((v) =>
+        v && typeof v.metodo_pago === 'string' && v.metodo_pago.trim() !== '' && claveDeFormaDePago(v.metodo_pago) === 'Otros');
+    return hayOtros ? [...FORMAS_DE_PAGO, 'Otros'] : [...FORMAS_DE_PAGO];
+}
+
 // "Transferencia, débito o crédito" (la última con "o"), para el aviso del paso de pago
 export function textoDeFormasDePago() {
     const nombres = FORMAS_DE_PAGO.map((f) => f.toLowerCase());
