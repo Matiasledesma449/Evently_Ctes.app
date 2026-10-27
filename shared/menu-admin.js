@@ -27,7 +27,7 @@
     const vistaActiva = rol === 'superadmin' && vistaComo === 'organizacion';
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
-    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes'];
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'organizaciones'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
@@ -66,6 +66,7 @@
         },
         { clave: 'eventos', rol: 'organizacion', soloOrg: true, href: 'eventos.html', icono: 'add_circle', texto: 'Solicitar evento', corto: 'Solicitar', anchoMovil: 82 },
         { clave: 'eventos', rol: 'superadmin', href: 'eventos.html?modo=directo', icono: 'add_circle', texto: 'Crear evento', corto: 'Crear evento', anchoMovil: 82 },
+        { clave: 'organizaciones', rol: 'superadmin', href: 'organizaciones.html', icono: 'corporate_fare', texto: 'Organizaciones', corto: 'Organiz.' },
         { clave: 'reportes', href: 'reportes.html', icono: 'bar_chart', texto: 'Reportes', corto: 'Reportes' },
         { clave: 'ventas', href: 'ventas.html', icono: 'payments', texto: 'Ventas', corto: 'Ventas' },
         { clave: 'escaner', href: 'escaner.html', icono: 'qr_code_scanner', texto: 'Escáner', corto: 'Escáner' },

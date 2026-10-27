@@ -10,7 +10,8 @@
 //   3. Al elegir otro, recuerda el evento y vuelve a cargar la pantalla con el ?id= nuevo.
 import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { eventosDeLaPersona, escaparHtml, elegirEventoActivo } from "./ventas-utils.js";
+import { escaparHtml, elegirEventoActivo } from "./ventas-utils.js";
+import { eventosParaVer } from "./organizaciones.js";
 
 const contenedor = document.getElementById('selectorEvento');
 const desplegable = document.getElementById('selectorEventoSelect');
@@ -41,10 +42,23 @@ try {
 
 const TEXTO_ELEGIR = 'Elegí un evento para ver sus datos';
 
-function armar(eventos, usuario, uid) {
+// Los mismos eventos que muestran Eventos, Ventas y Reportes: depende del rol con el que se mira y, en la vista de organización, de la organización elegida
+function eventosVisibles(eventos, usuario) {
+    const rolReal = usuario && usuario.rol;
+    const rolEfectivo = window.rolEfectivo ? window.rolEfectivo(rolReal) : rolReal;
+    return eventosParaVer({
+        eventos,
+        rolEfectivo,
+        organizacionId: usuario && usuario.organizacionId,
+        organizacionElegida: window.vistaOrganizacion ? window.vistaOrganizacion() : '',
+        vistaDeSuperadmin: rolReal === 'superadmin' && rolEfectivo === 'organizacion'
+    });
+}
+
+function armar(eventos, usuario) {
     if (!desplegable) return;
     const activo = leerEventoActivo();
-    const propios = eventosDeLaPersona(eventos, usuario, uid)
+    const propios = eventosVisibles(eventos, usuario)
         .slice()
         .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
 
@@ -60,7 +74,8 @@ function armar(eventos, usuario, uid) {
     desplegable.disabled = propios.length === 0 && !conTodos;
 
     if (aviso) {
-        aviso.textContent = valido ? '' : TEXTO_ELEGIR; // textContent: nunca se interpreta como HTML
+        const faltaOrganizacion = !!window.rolEfectivo && usuario && usuario.rol === 'superadmin' && window.rolEfectivo(usuario.rol) === 'organizacion' && !window.vistaOrganizacion();
+        aviso.textContent = valido ? '' : (faltaOrganizacion ? 'Elegí una organización en la barra violeta de arriba' : TEXTO_ELEGIR); // textContent: nunca se interpreta como HTML
         if (valido) aviso.classList.add('hidden'); else aviso.classList.remove('hidden');
     }
 }
@@ -83,7 +98,7 @@ if (contenedor && typeof auth !== 'undefined' && typeof db !== 'undefined') {
             const [perfil, instantanea] = await Promise.all([getDoc(doc(db, 'usuarios', user.uid)), getDocs(collection(db, 'eventos'))]);
             const eventos = [];
             instantanea.forEach((d) => eventos.push({ id: d.id, ...d.data() }));
-            armar(eventos, perfil.exists() ? perfil.data() : null, user.uid);
+            armar(eventos, perfil.exists() ? perfil.data() : null);
         } catch (e) {
             console.error('No se pudo cargar la lista de eventos del selector:', e);
         }

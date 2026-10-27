@@ -190,7 +190,8 @@
     <script type="module">
         import { onSnapshot, collection, query, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, eventosDeLaPersona, ventasDeEventos, seccionesDelPdf, nombreDeArchivoDeReporte, ingresoDeVenta } from "../shared/ventas-utils.js";
+        import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, ventasDeEventos, seccionesDelPdf, nombreDeArchivoDeReporte, ingresoDeVenta } from "../shared/ventas-utils.js";
+        import { eventosParaVer } from "../shared/organizaciones.js";
         import { nombreParaMostrar, claveDeFormaDePago, opcionesDeFiltroDePago } from "../shared/formas-de-pago.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
@@ -224,7 +225,16 @@
         // Pone en `eventos` y `ventas` lo que corresponde a lo elegido y vuelve a dibujar
         function repartirDatos() {
             if (EN_TODOS) {
-                eventos = eventosDeLaPersona(eventosDeBase, usuarioActual, uidActual);
+                // Los mismos eventos que Eventos, Ventas y el selector: según el rol con el que se mira y la organización elegida
+                const rolReal = usuarioActual && usuarioActual.rol;
+                const rolMirado = window.rolEfectivo ? window.rolEfectivo(rolReal) : rolReal;
+                eventos = eventosParaVer({
+                    eventos: eventosDeBase,
+                    rolEfectivo: rolMirado,
+                    organizacionId: usuarioActual && usuarioActual.organizacionId,
+                    organizacionElegida: window.vistaOrganizacion ? window.vistaOrganizacion() : '',
+                    vistaDeSuperadmin: rolReal === 'superadmin' && rolMirado === 'organizacion'
+                });
                 ventas = ventasDeEventos(ventasDeBase, eventos.map((ev) => ev.id));
             } else {
                 eventos = eventosDeBase;
