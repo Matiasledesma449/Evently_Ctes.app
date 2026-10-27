@@ -77,7 +77,7 @@ verificar('sin configuración devuelve lista vacía', categoriasOrdenadas(null).
 // ---------- Texto ----------
 verificar('porcentaje en texto: 8 -> "8%" y 7,5 -> "7,5%"', textoDePorcentaje(8) === '8%' && textoDePorcentaje(7.5) === '7,5%' && textoDePorcentaje('x') === '0%');
 
-// ---------- Pantalla del superadmin (admin/eventos-seleccion.html): revisión del archivo ----------
+// ---------- Lista de Eventos (admin/eventos-seleccion.html): solo el selector de categoría por evento ----------
 {
   const html = fs.readFileSync(path.join(REPO, 'admin', 'eventos-seleccion.html'), 'utf8');
   const modulos = [...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((m) => m[1]);
@@ -86,10 +86,24 @@ verificar('porcentaje en texto: 8 -> "8%" y 7,5 -> "7,5%"', textoDePorcentaje(8)
   try { new vm.Script(js.replace(/^\s*import .*$/gm, '')); } catch (e) { compila = false; console.log('     ' + e.message); }
   verificar('el JavaScript de la pantalla de eventos no tiene errores de sintaxis', js !== '' && compila);
   verificar('los nombres de categoría se escapan al armar el selector de cada evento', /<option value="\$\{escaparHtml\(c\.id\)\}"[^`]*escaparHtml\(c\.nombre\)/.test(js));
+  verificar('el selector de costo de servicio solo se dibuja para el superadmin real, mirando como superadmin, y en eventos publicados', /soySuperAdmin && miraComoSuperadmin\(\) && estado === 'publicado' \? htmlSelectorServicio\(evento\)/.test(js));
+  verificar('el cambio de categoría solo se acepta si la persona es superadmin (real y en su vista) y la categoría existe', /!soySuperAdmin \|\| !miraComoSuperadmin\(\)\) return/.test(js) && /categorias\.some\(\(c\) => c\.id === elegida\)/.test(js));
+  verificar('el panel de categorías ya no está en la lista de Eventos', !/panelServicio|listaCategorias|formNuevaCategoria/.test(html));
+  verificar('la pantalla no borra categorías ni eventos', !/deleteDoc|deleteField/.test(js));
+}
+
+// ---------- Crear evento (admin/eventos.html?modo=directo): el panel de categorías y su elección ----------
+{
+  const html = fs.readFileSync(path.join(REPO, 'admin', 'eventos.html'), 'utf8');
+  const modulos = [...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const js = modulos.find((m) => m.includes('iniciarCamposDeSuperadmin')) || '';
+  let compila = true;
+  try { new vm.Script(js.replace(/^\s*import .*$/gm, '')); } catch (e) { compila = false; console.log('     ' + e.message); }
+  verificar('el JavaScript de Crear evento no tiene errores de sintaxis', js !== '' && compila);
   verificar('las filas de categorías se arman con value/textContent, no con innerHTML', !/listaCategorias\.innerHTML/.test(js));
-  verificar('el selector de costo de servicio solo se dibuja para el superadmin y en eventos publicados', /soySuperAdmin && estado === 'publicado' \? htmlSelectorServicio\(evento\)/.test(js));
-  verificar('el cambio de categoría solo se acepta si la persona es superadmin y la categoría existe', /!soySuperAdmin\) return/.test(js) && /categorias\.some\(\(c\) => c\.id === elegida\)/.test(js));
-  verificar('el panel de categorías empieza oculto y solo se muestra al superadmin', /id="panelServicio" class="hidden/.test(html) && /soySuperAdmin\) \{[\s\S]{0,400}panelServicio\.classList\.remove\('hidden'\)/.test(js));
+  verificar('el panel de categorías empieza oculto y solo se muestra en el modo directo del superadmin', /id="panelServicio" class="hidden/.test(html) && /function iniciarCamposDeSuperadmin\(\) \{[\s\S]{0,200}panelServicio'\)\.classList\.remove\('hidden'\)/.test(js) && /if \(modoDirecto\) iniciarCamposDeSuperadmin\(\)/.test(js));
+  verificar('el desplegable de categoría empieza en "Sin categoría" y el evento lleva comisionCategoriaId solo si se eligió una que existe',
+    /<option value="">Sin categoría \(0%\)<\/option>/.test(html) && /\.\.\.\(comisionCategoriaId \? \{ comisionCategoriaId \} : \{\}\)/.test(js) && /categorias\.some\(\(c\) => c\.id === comisionCategoriaId\)/.test(js));
   verificar('la pantalla no borra categorías ni eventos', !/deleteDoc|deleteField/.test(js));
 }
 

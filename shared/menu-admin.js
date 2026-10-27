@@ -37,6 +37,15 @@
         return rolReal === 'superadmin' && vista === 'organizacion' ? 'organizacion' : rolReal;
     };
 
+    // La organización que el superadmin eligió mirar en la vista de organización ('' si no eligió o si la vista no está activa).
+    // Las pantallas la usan junto con rolEfectivo para decidir qué eventos mostrar (shared/organizaciones.js, eventosParaVer).
+    window.vistaOrganizacion = function () {
+        if (!vistaActiva) return '';
+        let elegida = '';
+        try { elegida = localStorage.getItem('vistaOrganizacionId') || ''; } catch (e) { /* sin almacenamiento */ }
+        return elegida;
+    };
+
     // Una página solo de superadmin abierta en la vista de organización lleva a la lista de Eventos
     if (vistaActiva && SOLO_SUPERADMIN.includes(pagina)) {
         location.replace('eventos-seleccion.html');
@@ -163,8 +172,67 @@
         document.body.insertAdjacentHTML('afterbegin', `
     <div id="avisoVistaOrganizacion" role="status" class="fixed top-0 inset-x-0 z-[70] h-10 bg-violet-600 text-white text-sm flex items-center justify-center gap-3 px-3">
         <span id="textoVistaOrganizacion" class="truncate">${TEXTO_VISTA}</span>
+        <select id="selectorOrganizacionVista" aria-label="Organización que se mira" class="flex-shrink-0 max-w-[10rem] sm:max-w-[16rem] rounded-full bg-white text-violet-700 text-xs font-semibold px-2 py-0.5 outline-none"><option value="">Elegí una organización…</option></select>
         <button id="btnVolverSuperadmin" type="button" class="flex-shrink-0 bg-white text-violet-700 rounded-full px-3 py-0.5 text-xs font-semibold hover:bg-violet-50">Volver a superadmin</button>
     </div>`);
+    }
+
+    // Texto fijo del aviso: si todavía no se eligió organización, lo dice
+    function textoFijo() {
+        return window.vistaOrganizacion() ? TEXTO_VISTA : `${TEXTO_VISTA}. Elegí una organización`;
+    }
+    if (vistaActiva) {
+        const caja = document.getElementById('textoVistaOrganizacion');
+        if (caja) caja.textContent = textoFijo();
+    }
+
+    // Desplegable de organizaciones de la barra violeta. Se llena cuando hay sesión, con textContent
+    // (el nombre de cada organización lo escribe una persona: nunca se interpreta como HTML).
+    function llenarOrganizaciones() {
+        const selector = document.getElementById('selectorOrganizacionVista');
+        if (!selector || !window.db || !window.auth || !window.onAuthStateChanged) return;
+        window.onAuthStateChanged(window.auth, async (user) => {
+            if (!user) return;
+            try {
+                const instantanea = await window.getDocs(window.collection(window.db, 'organizaciones'));
+                const lista = [];
+                instantanea.forEach((d) => {
+                    const datos = d.data();
+                    lista.push({ id: d.id, nombre: datos && typeof datos.nombre === 'string' ? datos.nombre : '' });
+                });
+                lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+                const elegida = window.vistaOrganizacion();
+                selector.replaceChildren();
+                const primera = document.createElement('option');
+                primera.value = '';
+                primera.textContent = lista.length ? 'Elegí una organización…' : 'Todavía no hay organizaciones';
+                selector.appendChild(primera);
+                lista.forEach((o) => {
+                    const op = document.createElement('option');
+                    op.value = o.id;
+                    op.textContent = o.nombre || 'Sin nombre';
+                    selector.appendChild(op);
+                });
+                selector.value = lista.some((o) => o.id === elegida) ? elegida : '';
+            } catch (e) {
+                console.error('No se pudieron cargar las organizaciones:', e);
+                mostrarAviso('No se pudieron cargar las organizaciones.');
+            }
+        });
+    }
+    if (vistaActiva) {
+        if (window.db) llenarOrganizaciones();
+        else window.addEventListener('firebase-ready', llenarOrganizaciones, { once: true });
+        const selector = document.getElementById('selectorOrganizacionVista');
+        if (selector) {
+            selector.addEventListener('change', () => {
+                try {
+                    if (selector.value) localStorage.setItem('vistaOrganizacionId', selector.value);
+                    else localStorage.removeItem('vistaOrganizacionId');
+                } catch (e) { /* sin almacenamiento */ }
+                location.reload();
+            });
+        }
     }
 
     // Texto temporal en el aviso (por ejemplo, cuando se toca algo que solo usa una organización)
@@ -174,7 +242,7 @@
         if (!caja) return;
         caja.textContent = texto; // textContent: nunca se interpreta como HTML
         clearTimeout(temporizadorAviso);
-        temporizadorAviso = setTimeout(() => { caja.textContent = TEXTO_VISTA; }, 5000);
+        temporizadorAviso = setTimeout(() => { caja.textContent = textoFijo(); }, 5000);
     }
 
     document.addEventListener('click', (e) => {

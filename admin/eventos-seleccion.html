@@ -72,22 +72,8 @@
                 </div>
             </div>
 
-            <!-- Costo de servicio (solo superadmin): categorías de porcentaje que se asignan a cada evento -->
-            <section id="panelServicio" class="hidden mb-8 bg-white rounded-xl border border-gray-200 p-5" aria-labelledby="tituloServicio">
-                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
-                    <div>
-                        <h2 id="tituloServicio" class="text-lg font-bold text-gray-800">Costo de servicio</h2>
-                        <p class="text-sm text-gray-500">Lo paga quien compra y se muestra aparte del precio de la entrada. Creá categorías con su porcentaje y asignale una a cada evento. Un evento sin categoría no cobra costo de servicio (0%).</p>
-                    </div>
-                </div>
-                <div id="listaCategorias" class="space-y-2"></div>
-                <form id="formNuevaCategoria" class="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-gray-100" novalidate>
-                    <input id="nuevaCategoriaNombre" type="text" maxlength="40" aria-label="Nombre de la categoría nueva" placeholder="Nombre de la categoría (ej: Estándar)" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
-                    <input id="nuevaCategoriaPorcentaje" type="text" inputmode="decimal" maxlength="6" aria-label="Porcentaje de la categoría nueva" placeholder="Porcentaje (ej: 8)" class="sm:w-40 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
-                    <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Agregar categoría</button>
-                </form>
-                <p id="mensajeServicio" role="status" class="hidden mt-3 text-sm"></p>
-            </section>
+            <!-- Aviso cuando se mira como organización y todavía no se eligió cuál -->
+            <p id="avisoElegirOrganizacion" role="status" class="hidden mb-6 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">Elegí una organización en la barra violeta de arriba para ver sus eventos.</p>
 
             <!-- Contenedor dinámico -->
             <div id="contenidoContainer">
@@ -100,11 +86,12 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { onSnapshot, collection, doc, getDoc, setDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onSnapshot, collection, doc, getDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
         import { ultimoComentario } from "../shared/solicitudes-evento.js";
-        import { validarCategoria, categoriasOrdenadas, nuevoIdDeCategoria, textoDePorcentaje } from "../shared/categorias-comision.js";
+        import { categoriasOrdenadas, textoDePorcentaje } from "../shared/categorias-comision.js";
+        import { eventosParaVer, organizacionDeEvento, organizacionesOrdenadas } from "../shared/organizaciones.js";
         import { mostrarToast } from "../shared/ui-utils.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
@@ -118,16 +105,18 @@
 
         // Estado
         let miUsuario = null;
-        let soySuperAdmin = false;
+        let soySuperAdmin = false;       // el rol REAL: protege lo que se puede escribir
+        let rolVisto = '';               // el rol con el que se está mirando (cambia en "Ver como organización")
         let organizaciones = [];
         let eventos = [];
         let solicitudes = []; // Nuevo array para peticiones en limbo
-        let categorias = []; // Categorías de costo de servicio (solo las lee el superadmin)
-        const panelServicio = document.getElementById('panelServicio');
-        const listaCategorias = document.getElementById('listaCategorias');
-        const formNuevaCategoria = document.getElementById('formNuevaCategoria');
-        const mensajeServicio = document.getElementById('mensajeServicio');
+        let categorias = []; // Categorías de costo de servicio (solo las lee el superadmin real, fuera de la vista de organización)
+        const avisoElegirOrganizacion = document.getElementById('avisoElegirOrganizacion');
         const DOC_COMISIONES = () => doc(db, 'configuracion', 'comisiones');
+
+        // Qué se muestra depende del rol con el que se mira; lo que se puede escribir depende del rol real
+        const miraComoSuperadmin = () => rolVisto === 'superadmin';
+        const miraComoOrganizacionDeSuperadmin = () => soySuperAdmin && rolVisto === 'organizacion';
 
         // ✅ Restaurar filtro de estado guardado
         (function restaurarFiltroEstado() {
@@ -147,17 +136,23 @@
             if (userDoc.exists()) {
                 miUsuario = userDoc.data();
                 soySuperAdmin = miUsuario.rol === 'superadmin';
+                rolVisto = window.rolEfectivo ? window.rolEfectivo(miUsuario.rol) : miUsuario.rol;
             }
 
-            if (soySuperAdmin) {
+            if (miraComoSuperadmin()) {
                 // El superadmin ve los eventos de todas las organizaciones directamente
                 tituloPagina.textContent = 'Eventos';
                 subtituloPagina.textContent = 'Todos los eventos de todas las organizaciones';
                 filtrosContainer.classList.remove('hidden');
                 organizacionFilter.classList.remove('hidden');
-                panelServicio.classList.remove('hidden');
                 cargarCategorias();
                 cargarOrganizaciones();
+            } else if (miraComoOrganizacionDeSuperadmin()) {
+                // "Ver como organización": se ve lo mismo que vería esa organización (sin categorías ni filtro de organizaciones)
+                tituloPagina.textContent = 'Eventos';
+                subtituloPagina.textContent = 'Todos los eventos de la organización';
+                filtrosContainer.classList.remove('hidden');
+                cargarEventosDeLaVista();
             } else {
                 tituloPagina.textContent = 'Eventos';
                 subtituloPagina.textContent = 'Todos tus eventos';
@@ -168,97 +163,19 @@
         });
 
         // =====================================================
-        // SUPERADMIN: CATEGORÍAS DE COSTO DE SERVICIO
-        // Se guardan en configuracion/comisiones. Se crean y se editan, no se borran.
+        // SUPERADMIN: CATEGORÍA DE COSTO DE SERVICIO DE CADA EVENTO
+        // Las categorías se crean y se editan en "Crear evento" (configuracion/comisiones); acá solo se elige cuál tiene cada evento.
         // =====================================================
-        function avisoServicio(texto, esError) {
-            mensajeServicio.textContent = texto; // textContent: nunca se interpreta como HTML
-            mensajeServicio.className = `mt-3 text-sm ${esError ? 'text-red-600' : 'text-green-700'}`;
-        }
-
         function cargarCategorias() {
             onSnapshot(DOC_COMISIONES(), (snap) => {
                 categorias = categoriasOrdenadas(snap.exists() ? snap.data() : null);
-                dibujarCategorias();
                 renderizarVista(); // los selectores de cada evento usan estas categorías
             }, (error) => {
                 console.error('No se pudieron leer las categorías:', error);
-                avisoServicio('No se pudieron leer las categorías de costo de servicio.', true);
             });
         }
 
-        function crearCampoCategoria(valor, etiqueta, clases, extra = {}) {
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = valor;
-            input.setAttribute('aria-label', etiqueta);
-            input.className = `border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none ${clases}`;
-            Object.entries(extra).forEach(([k, v]) => input.setAttribute(k, v));
-            return input;
-        }
-
-        // Una fila por categoría, armada con textContent/value (el nombre lo escribe una persona)
-        function dibujarCategorias() {
-            listaCategorias.replaceChildren();
-            if (categorias.length === 0) {
-                const vacio = document.createElement('p');
-                vacio.className = 'text-sm text-gray-400';
-                vacio.textContent = 'Todavía no hay categorías: todos los eventos cobran 0%.';
-                listaCategorias.appendChild(vacio);
-                return;
-            }
-            categorias.forEach((cat) => {
-                const fila = document.createElement('div');
-                fila.className = 'flex flex-col sm:flex-row gap-2';
-                const nombre = crearCampoCategoria(cat.nombre, `Nombre de la categoría ${cat.nombre}`, 'flex-1', { maxlength: '40' });
-                const porcentaje = crearCampoCategoria(textoDePorcentaje(cat.porcentaje).replace('%', ''), `Porcentaje de ${cat.nombre}`, 'sm:w-40', { inputmode: 'decimal', maxlength: '6' });
-                const guardar = document.createElement('button');
-                guardar.type = 'button';
-                guardar.textContent = 'Guardar';
-                guardar.className = 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition';
-                guardar.addEventListener('click', () => guardarCategoria(cat.id, nombre.value, porcentaje.value, guardar));
-                fila.append(nombre, porcentaje, guardar);
-                listaCategorias.appendChild(fila);
-            });
-        }
-
-        async function escribirCategorias(lista) {
-            await setDoc(DOC_COMISIONES(), { categorias: lista.map(({ id, nombre, porcentaje }) => ({ id, nombre, porcentaje })) });
-        }
-
-        async function guardarCategoria(id, nombre, porcentaje, boton) {
-            const r = validarCategoria({ nombre, porcentaje });
-            if (!r.ok) { avisoServicio(r.mensaje, true); return; }
-            boton.disabled = true;
-            try {
-                await escribirCategorias(categorias.map((c) => (c.id === id ? { id, ...r.datos } : c)));
-                avisoServicio(`Guardado: ${r.datos.nombre} (${textoDePorcentaje(r.datos.porcentaje)}). Vale para las compras nuevas.`, false);
-            } catch (error) {
-                console.error('No se pudo guardar la categoría:', error);
-                avisoServicio('No se pudo guardar. Probá de nuevo.', true);
-            } finally {
-                boton.disabled = false;
-            }
-        }
-
-        formNuevaCategoria.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const campoNombre = document.getElementById('nuevaCategoriaNombre');
-            const campoPorcentaje = document.getElementById('nuevaCategoriaPorcentaje');
-            const r = validarCategoria({ nombre: campoNombre.value, porcentaje: campoPorcentaje.value });
-            if (!r.ok) { avisoServicio(r.mensaje, true); return; }
-            try {
-                await escribirCategorias([...categorias, { id: nuevoIdDeCategoria(categorias), ...r.datos }]);
-                campoNombre.value = '';
-                campoPorcentaje.value = '';
-                avisoServicio(`Categoría agregada: ${r.datos.nombre} (${textoDePorcentaje(r.datos.porcentaje)}).`, false);
-            } catch (error) {
-                console.error('No se pudo agregar la categoría:', error);
-                avisoServicio('No se pudo agregar. Probá de nuevo.', true);
-            }
-        });
-
-        // Selector "Costo de servicio" de cada evento publicado (solo superadmin)
+        // Selector "Costo de servicio" de cada evento publicado (solo superadmin real, fuera de la vista de organización)
         function htmlSelectorServicio(evento) {
             const actual = typeof evento.comisionCategoriaId === 'string' ? evento.comisionCategoriaId : '';
             const opciones = categorias.map((c) =>
@@ -273,7 +190,7 @@
 
         contenidoContainer.addEventListener('change', async (e) => {
             const selector = e.target.closest ? e.target.closest('[data-servicio-evento]') : null;
-            if (!selector || !soySuperAdmin) return;
+            if (!selector || !soySuperAdmin || !miraComoSuperadmin()) return;
             const eventoId = selector.getAttribute('data-servicio-evento');
             const elegida = selector.value; // '' = ninguna
             // Solo se acepta una categoría que existe
@@ -294,23 +211,30 @@
         // SUPERADMIN: EVENTOS DE TODAS LAS ORGANIZACIONES
         // =====================================================
         function cargarOrganizaciones() {
-            onSnapshot(collection(db, "usuarios"), (snapshot) => {
-                organizaciones = [];
-                snapshot.forEach(d => {
-                    const u = d.data();
-                    if (u.rol === 'organizacion') {
-                        organizaciones.push({ id: d.id, ...u });
-                    }
-                });
-                organizaciones.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            // Las organizaciones son una colección propia (se crean en "Organizaciones"); el evento lleva su organizacionId
+            onSnapshot(collection(db, "organizaciones"), (snapshot) => {
+                const lista = [];
+                snapshot.forEach(d => lista.push({ id: d.id, ...d.data() }));
+                organizaciones = organizacionesOrdenadas(lista);
                 rellenarSelectorDeOrganizaciones();
                 renderizarVista();
+            }, (error) => {
+                console.error('No se pudieron leer las organizaciones:', error);
             });
+            escucharEventos();
+        }
+
+        function escucharEventos() {
             onSnapshot(collection(db, "eventos"), (snapEv) => {
                 eventos = [];
                 snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
                 renderizarVista();
             });
+        }
+
+        // "Ver como organización": el superadmin solo lee los eventos; la lista se arma con la organización que eligió
+        function cargarEventosDeLaVista() {
+            escucharEventos();
         }
 
         // =====================================================
@@ -347,51 +271,49 @@
         // RENDERIZAR
         // =====================================================
         function renderizarVista() {
-            if (soySuperAdmin) {
+            if (miraComoSuperadmin()) {
                 renderizarEventosDelSuperadmin();
+            } else if (miraComoOrganizacionDeSuperadmin()) {
+                renderizarEventosDeLaVista();
             } else {
                 renderizarEventosCliente();
             }
-        }
-
-        // La organización a la que pertenece un evento, o undefined si no se puede saber
-        function organizacionDeEvento(ev) {
-            return organizaciones.find(org =>
-                (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
-                (ev.creadoPor && ev.creadoPor === org.id) ||
-                (ev.correo && ev.correo === org.email)
-            );
         }
 
         // Selector "Todas las organizaciones": una opción por organización, sin perder lo elegido
         function rellenarSelectorDeOrganizaciones() {
             const elegida = organizacionFilter.value;
             organizacionFilter.replaceChildren(new Option('Todas las organizaciones', 'todas'));
-            organizaciones.forEach(org => organizacionFilter.add(new Option(org.nombre || org.email || 'Sin nombre', org.id)));
+            organizaciones.forEach(org => organizacionFilter.add(new Option(org.nombre || 'Sin nombre', org.id)));
             organizacionFilter.value = organizaciones.some(org => org.id === elegida) ? elegida : 'todas';
         }
 
         // ✅ Vista del superadmin: todos los eventos, con la organización de cada uno
         function renderizarEventosDelSuperadmin() {
-            let lista = eventos;
+            let lista = eventosParaVer({ eventos, rolEfectivo: 'superadmin' });
             if (organizacionFilter.value !== 'todas') {
-                lista = lista.filter(ev => organizacionDeEvento(ev)?.id === organizacionFilter.value);
+                lista = lista.filter(ev => ev.organizacionId === organizacionFilter.value);
             }
             lista = aplicarFiltrosBusqueda(lista);
             subtituloPagina.textContent = `${lista.length} ${lista.length === 1 ? 'evento' : 'eventos'}`;
             renderizarListaEventos(lista, 'No hay eventos para mostrar.');
         }
 
+        // ✅ "Ver como organización": los eventos de la organización elegida, como los vería su admin (sin categorías ni filtro)
+        function renderizarEventosDeLaVista() {
+            const elegida = window.vistaOrganizacion ? window.vistaOrganizacion() : '';
+            avisoElegirOrganizacion.classList.toggle('hidden', !!elegida);
+            const lista = aplicarFiltrosBusqueda(eventosParaVer({ eventos, rolEfectivo: 'organizacion', vistaDeSuperadmin: true, organizacionElegida: elegida }));
+            subtituloPagina.textContent = elegida ? `${lista.length} ${lista.length === 1 ? 'evento' : 'eventos'}` : 'Elegí una organización';
+            renderizarListaEventos(lista, elegida ? 'Esta organización todavía no tiene eventos.' : 'Elegí una organización para ver sus eventos.');
+        }
+
         // ✅ Vista: Eventos y Solicitudes combinados del cliente
         function renderizarEventosCliente() {
             tituloPagina.textContent = 'Eventos';
-            
-            // 1. Tomamos sus eventos publicados
-            let misEventos = eventos.filter(ev => 
-                (ev.organizacionId && ev.organizacionId === miUsuario.organizacionId) ||
-                (ev.creadoPor && ev.creadoPor === auth.currentUser?.uid) ||
-                (ev.correo && ev.correo === miUsuario.email)
-            );
+
+            // 1. Sus eventos publicados: los de su organización (la única regla de pertenencia es el organizacionId)
+            let misEventos = eventosParaVer({ eventos, rolEfectivo: 'organizacion', organizacionId: miUsuario?.organizacionId });
 
             // 2. Juntamos con sus solicitudes en espera o rechazadas (filtrando rechazadas de > 30 días)
             const ahora = new Date();
@@ -489,9 +411,9 @@
                         }
 
                         // El superadmin ve de qué organización es cada evento
-                        const organizacionHTML = soySuperAdmin
+                        const organizacionHTML = miraComoSuperadmin()
                             ? `<p class="text-sm text-violet-600 font-medium flex items-center gap-2 mb-2 truncate">
-                                    <span class="material-symbols-outlined text-[16px]">corporate_fare</span> ${escaparHtml(organizacionDeEvento(evento)?.nombre || 'Organización no identificada')}
+                                    <span class="material-symbols-outlined text-[16px]">corporate_fare</span> ${escaparHtml(organizacionDeEvento(evento, organizaciones)?.nombre || 'Sin organización')}
                                 </p>`
                             : '';
 
@@ -523,7 +445,7 @@
                                     </p>
                                     
                                     ${organizacionHTML}
-                                    ${soySuperAdmin && estado === 'publicado' ? htmlSelectorServicio(evento) : ''}
+                                    ${soySuperAdmin && miraComoSuperadmin() && estado === 'publicado' ? htmlSelectorServicio(evento) : ''}
                                     ${motivoHTML}
                                     ${comentarioHTML}
 
