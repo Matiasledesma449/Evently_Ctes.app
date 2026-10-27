@@ -25,7 +25,8 @@ selectOrganizacion.required = true;
 // ---------- Organización del evento ----------
 // Cada nombre va con new Option (textContent): nunca se interpreta como HTML
 onSnapshot(collection(db, 'organizaciones'), (snap) => {
-    organizaciones = snap.docs.map((d) => ({ id: d.id, nombre: (d.data() || {}).nombre || 'Sin nombre' }))
+    // Solo las organizaciones activas (las eliminadas no se ofrecen para eventos nuevos)
+    organizaciones = snap.docs.filter((d) => (d.data() || {}).eliminada !== true).map((d) => ({ id: d.id, nombre: (d.data() || {}).nombre || 'Sin nombre' }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
     const elegida = selectOrganizacion.value;
     selectOrganizacion.replaceChildren(new Option(organizaciones.length ? 'Elegí la organización' : 'No hay organizaciones: creá una en "Organizaciones"', ''));

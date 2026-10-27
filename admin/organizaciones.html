@@ -49,6 +49,13 @@
                     <p class="text-gray-400">Cargando...</p>
                 </div>
             </section>
+
+            <!-- Eliminadas: no se borran de verdad, se pueden recuperar con sus eventos y sus admins -->
+            <section id="seccionEliminadas" class="hidden mt-10" aria-labelledby="tituloEliminadas">
+                <h2 id="tituloEliminadas" class="text-lg font-bold text-gray-800">Organizaciones eliminadas</h2>
+                <p class="text-sm text-gray-500 mb-3">No aparecen en ninguna lista. Si eliminaste una sin querer, recuperala: vuelve con sus eventos y sus admins.</p>
+                <ul id="listaEliminadas" class="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100"></ul>
+            </section>
         </main>
     </div>
 
@@ -57,7 +64,7 @@
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { validarOrganizacion } from "../shared/organizaciones.js";
-        import { generarClave, decidirAlta, normalizarCorreo, correoValido, crearUsuarioDeAuth } from "../shared/cuentas-admin.js";
+        import { generarClave, validarClave, decidirAlta, motivoDeErrorDeAlta, normalizarCorreo, correoValido, crearUsuarioDeAuth } from "../shared/cuentas-admin.js";
 
         const lista = document.getElementById('listaOrganizaciones');
         const formNueva = document.getElementById('formNueva');
@@ -123,7 +130,52 @@
                 lista.appendChild(elemento('p', 'text-gray-400 text-sm', 'Todavía no hay organizaciones. Creá la primera arriba.'));
                 return;
             }
-            organizaciones.forEach((org) => lista.appendChild(tarjeta(org)));
+            const activas = organizaciones.filter((o) => o.eliminada !== true);
+            const eliminadas = organizaciones.filter((o) => o.eliminada === true);
+            if (activas.length === 0) lista.appendChild(elemento('p', 'text-gray-400 text-sm', 'No hay organizaciones activas. Creá una arriba o recuperá una eliminada.'));
+            activas.forEach((org) => lista.appendChild(tarjeta(org)));
+
+            const seccion = document.getElementById('seccionEliminadas');
+            const listaEliminadas = document.getElementById('listaEliminadas');
+            listaEliminadas.replaceChildren();
+            seccion.classList.toggle('hidden', eliminadas.length === 0);
+            eliminadas.forEach((org) => {
+                const fila = elemento('li', 'flex items-center justify-between gap-3 px-4 py-3');
+                const recuperar = boton('Recuperar', 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-1.5 rounded-lg text-sm font-medium');
+                recuperar.setAttribute('aria-label', `Recuperar ${org.nombre || 'la organización'}`);
+                recuperar.addEventListener('click', async () => {
+                    recuperar.disabled = true;
+                    try { await updateDoc(doc(db, 'organizaciones', org.id), { eliminada: false }); }
+                    catch (error) { console.error('No se pudo recuperar:', error); recuperar.disabled = false; recuperar.textContent = 'No se pudo: probá de nuevo'; }
+                });
+                fila.append(elemento('span', 'text-sm text-gray-700', org.nombre || 'Sin nombre'), recuperar);
+                listaEliminadas.appendChild(fila);
+            });
+        }
+
+        // Cuadro de confirmación para eliminar (un paso: "Sí, eliminar" o "Cancelar")
+        function confirmarEliminar(org, alConfirmar) {
+            const fondo = elemento('div', 'fixed inset-0 z-[80] bg-black/40 flex items-center justify-center p-4');
+            fondo.setAttribute('role', 'alertdialog');
+            fondo.setAttribute('aria-modal', 'true');
+            const caja = elemento('div', 'bg-white rounded-2xl w-full max-w-md p-6');
+            const titulo = elemento('h2', 'text-lg font-bold text-gray-800', `¿Eliminar ${org.nombre || 'la organización'}?`);
+            titulo.id = 'tituloConfirmarEliminar';
+            fondo.setAttribute('aria-labelledby', titulo.id);
+            const texto = elemento('p', 'text-sm text-gray-600 mt-2', 'Deja de aparecer en las listas. Sus eventos y sus admins no se borran, y la podés recuperar desde "Organizaciones eliminadas".');
+            const botones = elemento('div', 'mt-6 flex justify-end gap-3');
+            const cancelar = boton('Cancelar', 'px-5 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50');
+            const si = boton('Sí, eliminar', 'px-5 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold');
+            botones.append(cancelar, si);
+            caja.append(titulo, texto, botones);
+            fondo.appendChild(caja);
+            document.body.appendChild(fondo);
+            const cerrar = () => fondo.remove();
+            cancelar.addEventListener('click', cerrar);
+            fondo.addEventListener('click', (e) => { if (e.target === fondo) cerrar(); });
+            fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+            si.addEventListener('click', async () => { si.disabled = true; await alConfirmar(); cerrar(); });
+            cancelar.focus();
         }
 
         function tarjeta(org) {
@@ -131,7 +183,7 @@
             caja.dataset.organizacion = org.id;
             const mensaje = elemento('p', 'hidden');
             mensaje.setAttribute('role', 'status');
-            const zonaExtra = elemento('div'); // clave nueva o confirmación de mover
+            const zonaExtra = elemento('div'); // lugar para avisos extra de la tarjeta
 
             // Nombre editable
             const filaNombre = elemento('div', 'flex flex-col sm:flex-row gap-2');
@@ -141,7 +193,13 @@
             nombre.value = org.nombre || '';
             nombre.setAttribute('aria-label', 'Nombre de la organización');
             const guardar = boton('Guardar nombre', 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition');
-            filaNombre.append(nombre, guardar);
+            const eliminar = boton('Eliminar', 'text-red-600 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium');
+            eliminar.setAttribute('aria-label', `Eliminar ${org.nombre || 'la organización'}`);
+            eliminar.addEventListener('click', () => confirmarEliminar(org, async () => {
+                try { await updateDoc(doc(db, 'organizaciones', org.id), { eliminada: true, eliminadaEn: serverTimestamp() }); }
+                catch (error) { console.error('No se pudo eliminar:', error); avisar(mensaje, 'No se pudo eliminar. Probá de nuevo.', 'error'); }
+            }));
+            filaNombre.append(nombre, guardar, eliminar);
             guardar.addEventListener('click', async () => {
                 const problema = validarOrganizacion({ nombre: nombre.value }, organizaciones.filter((o) => o.id !== org.id));
                 if (problema) { avisar(mensaje, problema, 'error'); return; }
@@ -182,15 +240,26 @@
             });
 
             // Agregar admin por correo: vincula una cuenta que ya existe o crea una nueva con clave
-            const formAgregar = elemento('form', 'flex flex-col sm:flex-row gap-2 mt-3');
+            const formAgregar = elemento('form', 'mt-4 grid grid-cols-1 gap-2');
             formAgregar.noValidate = true;
-            const correo = elemento('input', 'flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none');
+            const correo = elemento('input', 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none');
             correo.type = 'email';
-            correo.placeholder = 'Correo del admin (ej: admin@productora.com)';
+            correo.placeholder = 'Correo del admin (ej: dueño@productora.com)';
             correo.setAttribute('aria-label', `Correo del admin para ${org.nombre || 'la organización'}`);
+            // La clave la elige el superadmin (si la deja vacía, se genera una). Se muestra una sola vez al crear la cuenta.
+            const filaClave = elemento('div', 'flex gap-2');
+            const clave = elemento('input', 'flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none font-mono');
+            clave.type = 'text';
+            clave.autocomplete = 'new-password';
+            clave.placeholder = 'Clave (vacía = se genera)';
+            clave.setAttribute('aria-label', 'Clave que va a usar el admin para entrar');
+            const generar = boton('Generar', 'border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm');
+            generar.addEventListener('click', () => { clave.value = generarClave(); });
+            filaClave.append(clave, generar);
             const agregar = elemento('button', 'bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition', 'Agregar admin');
             agregar.type = 'submit';
-            formAgregar.append(correo, agregar);
+            const ayuda = elemento('p', 'text-xs text-gray-500', 'Si el correo no tiene cuenta, se crea con esa clave (mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo). Si ya tiene cuenta de organización, solo se agrega.');
+            formAgregar.append(correo, filaClave, agregar, ayuda);
 
             async function vincular(cuenta) {
                 await updateDoc(doc(db, 'usuarios', cuenta.id), { organizacionId: org.id });
@@ -215,41 +284,41 @@
                         dibujar();
                         return;
                     }
-                    if (decision.accion === 'mover') {
-                        // Una cuenta es de una sola organización: antes de moverla se pide confirmar
-                        avisar(mensaje, `Esa cuenta es admin de ${nombreDe(cuenta.organizacionId)}. Si la movés, deja de ver los eventos de esa organización.`, 'pregunta');
-                        const mover = boton(`Mover a ${org.nombre || 'esta organización'}`, 'mt-2 border border-amber-600 text-amber-700 hover:bg-amber-50 px-4 py-2 rounded-lg text-sm font-medium');
-                        mover.addEventListener('click', async () => {
-                            mover.disabled = true;
-                            try { await vincular(cuenta); correo.value = ''; dibujar(); }
-                            catch (error) { console.error('No se pudo mover la cuenta:', error); avisar(mensaje, 'No se pudo mover. Probá de nuevo.', 'error'); mover.disabled = false; }
-                        });
-                        zonaExtra.appendChild(mover);
+                    if (decision.accion === 'en-otra') {
+                        // Un correo es admin de una sola organización: no se mueve solo
+                        avisar(mensaje, `Ese correo ya es admin de ${nombreDe(cuenta.organizacionId)}. Si querés que sea de esta, primero quitalo de ${nombreDe(cuenta.organizacionId)}.`, 'error');
                         return;
                     }
-                    // crear: cuenta nueva con clave generada (no cambia la sesión del superadmin)
-                    const clave = generarClave();
-                    const uid = await crearUsuarioDeAuth({ initializeApp, getApps, getAuth, createUserWithEmailAndPassword, signOut }, db.app.options, buscado, clave);
+                    // crear: cuenta nueva con la clave escrita o una generada (no cambia la sesión del superadmin)
+                    const claveElegida = clave.value.trim() ? clave.value : generarClave();
+                    const problemaClave = validarClave(claveElegida);
+                    if (problemaClave) { avisar(mensaje, problemaClave, 'error'); return; }
+                    let uid;
+                    try {
+                        uid = await crearUsuarioDeAuth({ initializeApp, getApps, getAuth, createUserWithEmailAndPassword, signOut }, db.app.options, buscado, claveElegida);
+                    } catch (errorAlta) {
+                        console.error('Firebase no creó la cuenta:', errorAlta);
+                        avisar(mensaje, motivoDeErrorDeAlta(errorAlta), 'error');
+                        return;
+                    }
                     const nueva = { email: buscado, rol: 'organizacion', organizacionId: org.id, nombre: org.nombre || '', creadoEn: serverTimestamp() };
                     try {
                         await setDoc(doc(db, 'usuarios', uid), nueva);
                     } catch (errorGuardado) {
                         // El acceso ya se creó: se muestra igual la clave para no perderla, con el aviso de qué falta
                         console.error('Se creó el acceso pero no se guardó la cuenta:', errorGuardado);
-                        mostrarClaveNueva(org.id, buscado, clave);
+                        mostrarClaveNueva(org.id, buscado, claveElegida);
                         avisar(mensaje, 'Se creó el acceso pero no se pudo guardar como admin. Anotá la clave y volvé a agregar el mismo correo más tarde.', 'error');
                         return;
                     }
                     cuentas.push({ id: uid, ...nueva });
                     correo.value = '';
+                    clave.value = '';
                     dibujar();
-                    mostrarClaveNueva(org.id, buscado, clave);
+                    mostrarClaveNueva(org.id, buscado, claveElegida);
                 } catch (error) {
                     console.error('No se pudo agregar el admin:', error);
-                    const codigo = error && error.code;
-                    avisar(mensaje, codigo === 'auth/email-already-in-use'
-                        ? 'Ese correo ya tiene acceso a Evently pero no figura como cuenta. Avisale a quien administra Firebase para cargarla en "usuarios".'
-                        : codigo === 'auth/invalid-email' ? 'Ese correo no es válido.' : 'No se pudo agregar el admin. Probá de nuevo.', 'error');
+                    avisar(mensaje, `No se pudo agregar el admin.${error && error.code ? ` (código: ${error.code})` : ''}`, 'error');
                 } finally { agregar.disabled = false; }
             });
 

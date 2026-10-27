@@ -188,7 +188,7 @@
         window.getDocs(window.collection(window.db, 'organizaciones')).then((snap) => {
             const elegida = window.vistaOrganizacion();
             const lista = [];
-            snap.forEach((d) => lista.push({ id: d.id, nombre: (d.data() || {}).nombre || 'Sin nombre' }));
+            snap.forEach((d) => { if ((d.data() || {}).eliminada !== true) lista.push({ id: d.id, nombre: (d.data() || {}).nombre || 'Sin nombre' }); });
             lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
             if (lista.length === 0) selector.options[0].textContent = 'No hay organizaciones';
             lista.forEach((o) => selector.add(new Option(o.nombre, o.id, false, o.id === elegida)));

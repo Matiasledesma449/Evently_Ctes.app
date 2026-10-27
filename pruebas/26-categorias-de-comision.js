@@ -81,14 +81,12 @@ verificar('porcentaje en texto: 8 -> "8%" y 7,5 -> "7,5%"', textoDePorcentaje(8)
 {
   const html = fs.readFileSync(path.join(REPO, 'admin', 'eventos-seleccion.html'), 'utf8');
   const modulos = [...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const js = modulos.find((m) => m.includes('cargarCategorias')) || '';
+  const js = modulos.find((m) => m.includes('renderizarListaEventos')) || '';
   let compila = true;
   try { new vm.Script(js.replace(/^\s*import .*$/gm, '')); } catch (e) { compila = false; console.log('     ' + e.message); }
   verificar('el JavaScript de la pantalla de eventos no tiene errores de sintaxis', js !== '' && compila);
-  verificar('los nombres de categoría se escapan al armar el selector de cada evento', /<option value="\$\{escaparHtml\(c\.id\)\}"[^`]*escaparHtml\(c\.nombre\)/.test(js));
   verificar('el panel de categorías ya no está en Eventos (pasó a Crear evento)', !/panelServicio|formNuevaCategoria|setDoc/.test(html));
-  verificar('el selector de costo de servicio solo se dibuja para el superadmin real, sin la vista de organización, y en eventos publicados', /soySuperAdmin && superadminReal && estado === 'publicado' \? htmlSelectorServicio\(evento\)/.test(js));
-  verificar('el cambio de categoría solo se acepta si la persona es superadmin real y la categoría existe', /!soySuperAdmin \|\| !superadminReal\) return/.test(js) && /categorias\.some\(\(c\) => c\.id === elegida\)/.test(js));
+  verificar('las tarjetas de Eventos ya no tienen el costo de servicio ni "Editar lotes" (se eligen al crear el evento)', !/htmlSelectorServicio|data-servicio-evento|data-editar-lotes|Editar lotes/.test(html));
   verificar('la pantalla no borra categorías ni eventos', !/deleteDoc|deleteField/.test(js));
 }
 

@@ -83,7 +83,9 @@
             const organizacionesSnapLista = await getDocs(collection(db, 'organizaciones'));
             organizacionesSnapLista.forEach(d => nombresDeOrganizacion.set(d.id, (d.data() || {}).nombre || 'Sin nombre'));
             const selector = document.getElementById('filtroOrganizacionSolicitud');
+            const eliminadas = new Set(organizacionesSnapLista.docs.filter(d => (d.data() || {}).eliminada === true).map(d => d.id));
             [...nombresDeOrganizacion.entries()]
+                .filter(([id]) => !eliminadas.has(id))
                 .sort((a, b) => a[1].localeCompare(b[1], 'es'))
                 .forEach(([id, nombre]) => selector.add(new Option(nombre, id)));
         } catch (error) {

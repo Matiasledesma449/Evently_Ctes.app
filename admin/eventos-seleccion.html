@@ -89,11 +89,10 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { onSnapshot, collection, doc, getDoc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
         import { ultimoComentario } from "../shared/solicitudes-evento.js";
-        import { categoriasOrdenadas, textoDePorcentaje } from "../shared/categorias-comision.js";
         import { eventosParaVer, organizacionDeEvento as organizacionDelEvento } from "../shared/organizaciones.js";
         import { mostrarToast } from "../shared/ui-utils.js";
 
@@ -109,15 +108,13 @@
         // Estado
         let miUsuario = null;
         // soySuperAdmin: qué se MUESTRA (rol con el que se mira; en "Ver como organización" es false).
-        // superadminReal: el rol de verdad, para lo que escribe datos (el selector de costo de servicio de cada evento).
+        // superadminReal: el rol de verdad (por ejemplo, para saber si está en "Ver como organización").
         let soySuperAdmin = false;
         let superadminReal = false;
         let organizacionQueSeMira = ''; // la propia (organización) o la elegida en la vista
         let organizaciones = [];
         let eventos = [];
         let solicitudes = []; // Nuevo array para peticiones en limbo
-        let categorias = []; // Categorías de costo de servicio (solo las lee el superadmin; se editan en Crear evento)
-        const DOC_COMISIONES = () => doc(db, 'configuracion', 'comisiones');
 
         // ✅ Restaurar filtro de estado guardado
         (function restaurarFiltroEstado() {
@@ -148,7 +145,6 @@
                 filtrosContainer.classList.remove('hidden');
                 organizacionFilter.classList.remove('hidden');
                 document.getElementById('pestanasEventos').classList.remove('hidden');
-                cargarCategorias();
                 cargarOrganizaciones();
             } else if (superadminReal) {
                 // "Ver como organización": los eventos de la organización elegida en la barra violeta, sin categorías ni filtro
@@ -168,52 +164,6 @@
                 filtrosContainer.classList.remove('hidden');
                 btnSolicitarEventoCliente.classList.remove('hidden'); // Mostrar botón al cliente
                 cargarEventos();
-            }
-        });
-
-        // =====================================================
-        // SUPERADMIN: CATEGORÍA DE COSTO DE SERVICIO DE CADA EVENTO
-        // Las categorías (configuracion/comisiones) se crean y se editan en "Crear evento"; acá solo se elige una por evento.
-        // =====================================================
-        function cargarCategorias() {
-            onSnapshot(DOC_COMISIONES(), (snap) => {
-                categorias = categoriasOrdenadas(snap.exists() ? snap.data() : null);
-                renderizarVista(); // los selectores de cada evento usan estas categorías
-            }, (error) => {
-                console.error('No se pudieron leer las categorías:', error);
-                mostrarToast('No se pudieron leer las categorías de costo de servicio.', 'error');
-            });
-        }
-
-        // Selector "Costo de servicio" de cada evento publicado (solo superadmin)
-        function htmlSelectorServicio(evento) {
-            const actual = typeof evento.comisionCategoriaId === 'string' ? evento.comisionCategoriaId : '';
-            const opciones = categorias.map((c) =>
-                `<option value="${escaparHtml(c.id)}" ${c.id === actual ? 'selected' : ''}>${escaparHtml(c.nombre)} (${escaparHtml(textoDePorcentaje(c.porcentaje))})</option>`).join('');
-            return `
-                <label class="block text-xs font-medium text-gray-500 mt-3" for="servicio-${escaparHtml(evento.id)}">Costo de servicio</label>
-                <select id="servicio-${escaparHtml(evento.id)}" data-servicio-evento="${escaparHtml(evento.id)}" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-violet-500 outline-none">
-                    <option value="">Ninguno (0%)</option>
-                    ${opciones}
-                </select>`;
-        }
-
-        contenidoContainer.addEventListener('change', async (e) => {
-            const selector = e.target.closest ? e.target.closest('[data-servicio-evento]') : null;
-            if (!selector || !soySuperAdmin || !superadminReal) return;
-            const eventoId = selector.getAttribute('data-servicio-evento');
-            const elegida = selector.value; // '' = ninguna
-            // Solo se acepta una categoría que existe
-            if (elegida !== '' && !categorias.some((c) => c.id === elegida)) return;
-            selector.disabled = true;
-            try {
-                await updateDoc(doc(db, 'eventos', eventoId), { comisionCategoriaId: elegida });
-                mostrarToast(elegida === '' ? 'Costo de servicio: ninguno (0%).' : 'Costo de servicio guardado.', 'exito');
-            } catch (error) {
-                console.error('No se pudo guardar el costo de servicio del evento:', error);
-                mostrarToast('No se pudo guardar el costo de servicio. Probá de nuevo.', 'error');
-            } finally {
-                selector.disabled = false;
             }
         });
 
@@ -291,8 +241,9 @@
         function rellenarSelectorDeOrganizaciones() {
             const elegida = organizacionFilter.value;
             organizacionFilter.replaceChildren(new Option('Todas las organizaciones', 'todas'));
-            organizaciones.forEach(org => organizacionFilter.add(new Option(org.nombre || 'Sin nombre', org.id)));
-            organizacionFilter.value = organizaciones.some(org => org.id === elegida) ? elegida : 'todas';
+            // Las organizaciones eliminadas no se ofrecen (sus eventos siguen apareciendo en "Todas")
+            organizaciones.filter(org => org.eliminada !== true).forEach(org => organizacionFilter.add(new Option(org.nombre || 'Sin nombre', org.id)));
+            organizacionFilter.value = organizaciones.some(org => org.id === elegida && org.eliminada !== true) ? elegida : 'todas';
         }
 
         // ✅ Vista del superadmin: todos los eventos, con la organización de cada uno
@@ -447,10 +398,6 @@
                                     </p>
                                     
                                     ${organizacionHTML}
-                                    ${soySuperAdmin && superadminReal && estado === 'publicado' ? htmlSelectorServicio(evento) : ''}
-                                    ${soySuperAdmin && superadminReal && estado === 'publicado' && Array.isArray(evento.lotes) && evento.lotes.length > 0
-                                        ? `<button type="button" data-editar-lotes="${escaparHtml(evento.id)}" class="mt-3 w-full border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-full text-sm font-medium transition">Editar lotes</button>`
-                                        : ''}
                                     ${motivoHTML}
                                     ${comentarioHTML}
 
@@ -464,16 +411,6 @@
                 </div>
             `;
         }
-
-        // "Editar lotes" (solo superadmin real): tipo, fechas y "Habilitar ahora" de cada lote
-        contenidoContainer.addEventListener('click', async (e) => {
-            const boton = e.target.closest ? e.target.closest('[data-editar-lotes]') : null;
-            if (!boton || !soySuperAdmin || !superadminReal) return;
-            const evento = eventos.find((ev) => ev.id === boton.getAttribute('data-editar-lotes'));
-            if (!evento) return;
-            const { abrirEditorDeLotes } = await import('./editar-lotes.js');
-            abrirEditorDeLotes(evento, (texto) => mostrarToast(texto, 'exito'));
-        });
 
         searchInput.addEventListener('input', renderizarVista);
         organizacionFilter.addEventListener('change', renderizarVista);
