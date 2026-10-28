@@ -170,3 +170,27 @@ body.vista-organizacion > .flex.min-h-screen {
 body.vista-organizacion > .flex.min-h-screen > aside {
     height: 100% !important;
 }
+
+/* Franja rosa "Estás viendo" del superadmin: 76 px en celular (dos renglones) y 40 px desde 640 px.
+   Finanzas usa .flex.h-screen en vez de .flex.min-h-screen */
+body.franja-organizacion > .flex.min-h-screen,
+body.franja-organizacion > .flex.h-screen {
+    margin-top: 76px;
+    height: calc(100dvh - 76px) !important;
+}
+body.franja-organizacion > .flex.min-h-screen > aside,
+body.franja-organizacion > .flex.h-screen > aside {
+    height: 100% !important;
+}
+@media (min-width: 640px) {
+    body.franja-organizacion > .flex.min-h-screen,
+    body.franja-organizacion > .flex.h-screen {
+        margin-top: 40px;
+        height: calc(100dvh - 40px) !important;
+    }
+}
+/* El selector de evento se muda a la franja (shared/selector-evento.js): mientras tanto no ocupa lugar en la página */
+body.franja-organizacion main #selectorEvento > label,
+body.franja-organizacion main #selectorEvento > select {
+    display: none;
+}

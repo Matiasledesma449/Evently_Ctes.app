@@ -18,7 +18,7 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 
 - [x] 10. **Crear evento desde Eventos**: en la lista de Eventos del superadmin, cuando el filtro tiene una organización elegida,
   un botón "Crear evento" que lleva a Crear evento con esa organización ya elegida.
-- [ ] 11. **Organización elegida en TODO el panel (franja rosa)**: al elegir una organización, en todas las páginas (Resumen,
+- [x] 11. **Organización elegida en TODO el panel (franja rosa)**: al elegir una organización, en todas las páginas (Resumen,
   Reportes, Ventas, Escáner, Finanzas, Eventos) se ve una franja de color rosa: "Estás viendo: <organización>", con un
   desplegable para cambiar de organización y, al lado, el selector de eventos SOLO de esa organización. Cambiar de
   organización cambia los eventos en todas las páginas. Bug a corregir: en Reportes, con "Zavod" (sin eventos) elegida,

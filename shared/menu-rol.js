@@ -68,7 +68,7 @@ function initRoles() {
 
     window.onAuthStateChanged(auth, async (user) => {
         if (!user) {
-            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); localStorage.removeItem('organizacionElegida'); localStorage.removeItem('organizacionElegidaNombre');
             aplicarRolVisual(null);
             mostrarNavegacion();
             return;
@@ -76,7 +76,7 @@ function initRoles() {
         try {
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (!userDoc.exists()) {
-                localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
+                localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); localStorage.removeItem('organizacionElegida'); localStorage.removeItem('organizacionElegidaNombre');
                 aplicarRolVisual(null);
                 mostrarNavegacion();
                 return;
@@ -86,9 +86,11 @@ function initRoles() {
             localStorage.setItem('eventlyRol', rol);
             // La vista "Ver como organización" solo vale para un superadmin real
             if (rol !== 'superadmin' && localStorage.getItem('vistaComo')) {
-                localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
+                localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); localStorage.removeItem('organizacionElegida'); localStorage.removeItem('organizacionElegidaNombre');
                 if (document.getElementById('avisoVistaOrganizacion')) { location.reload(); return; }
             }
+            // La franja rosa también es solo del superadmin (se dibujó con un rol recordado que ya no vale)
+            if (rol !== 'superadmin' && document.getElementById('franjaOrganizacion')) { location.reload(); return; }
             const esAdmin = (window.rolEfectivo ? window.rolEfectivo(rol) : rol) === 'superadmin';
             aplicarRolVisual(rol);
             actualizarBadgeConsultasPublicas(esAdmin);
@@ -98,7 +100,7 @@ function initRoles() {
             mostrarNavegacion();
         } catch (e) {
             console.error('Error al verificar rol:', e);
-            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); localStorage.removeItem('organizacionElegida'); localStorage.removeItem('organizacionElegidaNombre');
             aplicarRolVisual(null);
             mostrarNavegacion();
         }
@@ -293,7 +295,7 @@ document.addEventListener('click', async (e) => {
         e.preventDefault();
         try {
             await window.signOut(auth);
-            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId');
+            localStorage.removeItem('eventlyRol'); localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); localStorage.removeItem('organizacionElegida'); localStorage.removeItem('organizacionElegidaNombre');
             // ✅ replace: elimina la página actual del historial
             window.location.replace('login.html');
         } catch (err) {

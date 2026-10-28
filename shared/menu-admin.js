@@ -45,6 +45,19 @@
         try { return (localStorage.getItem('vistaOrganizacionId') || '').trim(); } catch (e) { return ''; }
     };
 
+    // Franja rosa "Estás viendo": el superadmin real elige una organización y todo el panel la usa
+    // (lista de Eventos, selector de evento, Reportes y Finanzas). '' = todas las organizaciones.
+    const PAGINAS_CON_FRANJA = ['eventos-seleccion', 'dashboard', 'ventas', 'reportes', 'escaner', 'finanzas'];
+    const franjaActiva = rol === 'superadmin' && !vistaActiva && PAGINAS_CON_FRANJA.includes(pagina);
+    window.organizacionElegida = function () {
+        if (rol !== 'superadmin' || vistaActiva) return '';
+        try { return (localStorage.getItem('organizacionElegida') || '').trim(); } catch (e) { return ''; }
+    };
+    // La organización con la que se filtra la pantalla: la de la vista violeta o la de la franja rosa
+    window.organizacionQueSeMira = function () {
+        return vistaActiva ? window.vistaOrganizacion() : window.organizacionElegida();
+    };
+
     // Una página solo de superadmin abierta en la vista de organización lleva a la lista de Eventos
     if (vistaActiva && SOLO_SUPERADMIN.includes(pagina)) {
         location.replace('eventos-seleccion.html');
@@ -210,6 +223,84 @@
     if (vistaActiva) {
         if (window.db && window.getDocs) llenarSelectorVista();
         else window.addEventListener('firebase-ready', llenarSelectorVista, { once: true });
+    }
+
+    // ---- Franja rosa "Estás viendo: <organización>" (superadmin real) ----
+    // Todo el HTML es texto fijo; los nombres de organizaciones van con new Option (textContent).
+    // El selector de evento de la página (shared/selector-evento.js) se muda a #franjaOrganizacionEvento.
+    if (franjaActiva) {
+        document.body.classList.add('franja-organizacion');
+        document.body.insertAdjacentHTML('afterbegin', `
+    <div id="franjaOrganizacion" role="region" aria-label="Organización que se mira" class="fixed top-0 inset-x-0 z-[70] h-[76px] sm:h-10 bg-pink-100 border-b border-pink-300 text-pink-900 text-sm flex flex-wrap sm:flex-nowrap content-center items-center justify-center gap-x-4 gap-y-1 px-3">
+        <label for="selectorOrganizacionElegida" class="flex items-center gap-2 min-w-0">
+            <span class="font-semibold flex-shrink-0">Estás viendo:</span>
+            <select id="selectorOrganizacionElegida" class="min-w-0 max-w-[60vw] sm:max-w-[16rem] bg-white border border-pink-300 text-pink-900 rounded-full px-2 py-0.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-pink-400">
+                <option value="">Todas las organizaciones</option>
+            </select>
+        </label>
+        <div id="franjaOrganizacionEvento" class="flex items-center gap-2 min-w-0"></div>
+    </div>`);
+        // Lo elegido se ve desde el primer dibujo (con el nombre recordado), antes de que responda Firebase
+        const selector = document.getElementById('selectorOrganizacionElegida');
+        const elegida = window.organizacionElegida();
+        if (elegida) {
+            let nombre = '';
+            try { nombre = localStorage.getItem('organizacionElegidaNombre') || ''; } catch (e) { /* sin almacenamiento */ }
+            selector.add(new Option(nombre || 'Cargando…', elegida, true, true));
+        }
+        if (window.db && window.getDocs) llenarFranjaOrganizacion();
+        else window.addEventListener('firebase-ready', llenarFranjaOrganizacion, { once: true });
+    }
+
+    function llenarFranjaOrganizacion() {
+        const selector = document.getElementById('selectorOrganizacionElegida');
+        if (!selector || !window.db || !window.getDocs || !window.collection) return;
+        let eventos = [];
+        selector.disabled = true; // hasta que lleguen los eventos (para elegir el evento de la organización nueva)
+        Promise.all([window.getDocs(window.collection(window.db, 'organizaciones')), window.getDocs(window.collection(window.db, 'eventos'))]).then(([snapOrgs, snapEventos]) => {
+            const elegida = window.organizacionElegida();
+            const lista = [];
+            snapOrgs.forEach((d) => { if ((d.data() || {}).eliminada !== true) lista.push({ id: d.id, nombre: (d.data() || {}).nombre || 'Sin nombre' }); });
+            lista.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+            snapEventos.forEach((d) => eventos.push({ id: d.id, nombre: (d.data() || {}).nombre || '', organizacionId: (d.data() || {}).organizacionId }));
+            selector.replaceChildren(new Option('Todas las organizaciones', ''));
+            lista.forEach((o) => selector.add(new Option(o.nombre, o.id, false, o.id === elegida)));
+            selector.disabled = false;
+            const sigue = lista.find((o) => o.id === elegida);
+            if (sigue) {
+                try { localStorage.setItem('organizacionElegidaNombre', sigue.nombre); } catch (x) { /* sin almacenamiento */ }
+            } else if (elegida) {
+                // La organización recordada ya no existe o fue eliminada: se vuelve a "Todas"
+                cambiarOrganizacion('', eventos);
+            }
+        }).catch((error) => {
+            console.error('No se pudieron leer las organizaciones:', error);
+            selector.options[0].textContent = 'No se pudieron leer las organizaciones';
+        });
+        selector.addEventListener('change', () => cambiarOrganizacion(selector.value, eventos));
+    }
+
+    // Recuerda la organización y vuelve a cargar la página. Si el evento activo no es de esa organización,
+    // pasa al primero de ella (o a ninguno). "Todos los eventos" de Reportes se mantiene.
+    function cambiarOrganizacion(id, eventos) {
+        const selector = document.getElementById('selectorOrganizacionElegida');
+        const nombre = selector && selector.selectedOptions[0] ? selector.selectedOptions[0].textContent : '';
+        let actual = '';
+        try {
+            if (id) { localStorage.setItem('organizacionElegida', id); localStorage.setItem('organizacionElegidaNombre', nombre); }
+            else { localStorage.removeItem('organizacionElegida'); localStorage.removeItem('organizacionElegidaNombre'); }
+            actual = new URLSearchParams(location.search).get('id') || localStorage.getItem('eventoId') || '';
+        } catch (x) { /* sin almacenamiento */ }
+        if (id && actual !== 'todos') {
+            const deLaOrganizacion = eventos.filter((ev) => typeof ev.organizacionId === 'string' && ev.organizacionId.trim() === id)
+                .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'));
+            if (!deLaOrganizacion.some((ev) => ev.id === actual)) {
+                actual = deLaOrganizacion.length ? deLaOrganizacion[0].id : '';
+                try { if (actual) localStorage.setItem('eventoId', actual); else localStorage.removeItem('eventoId'); } catch (x) { /* sin almacenamiento */ }
+            }
+        }
+        const conEvento = ['dashboard', 'ventas', 'reportes'].includes(pagina);
+        location.href = location.pathname + (conEvento && actual ? `?id=${encodeURIComponent(actual)}` : '');
     }
 
     // ---- Pestañas de la sección Mensajes del superadmin: Organizaciones y Consultas públicas ----

@@ -148,7 +148,7 @@
                 tituloPagina.textContent = 'Eventos';
                 subtituloPagina.textContent = 'Todos los eventos de todas las organizaciones';
                 filtrosContainer.classList.remove('hidden');
-                organizacionFilter.classList.remove('hidden');
+                // La organización se elige en la franja rosa de arriba (shared/menu-admin.js); el filtro queda oculto
                 document.getElementById('pestanasEventos').classList.remove('hidden');
                 cargarOrganizaciones();
             } else if (superadminReal) {
@@ -242,9 +242,9 @@
             return organizacionDelEvento(ev, organizaciones);
         }
 
-        // Selector "Todas las organizaciones": una opción por organización, sin perder lo elegido
+        // Filtro oculto de organización: toma la elegida en la franja rosa ("todas" si no hay)
         function rellenarSelectorDeOrganizaciones() {
-            const elegida = organizacionFilter.value;
+            const elegida = (window.organizacionElegida && window.organizacionElegida()) || 'todas';
             organizacionFilter.replaceChildren(new Option('Todas las organizaciones', 'todas'));
             // Las organizaciones eliminadas no se ofrecen (sus eventos siguen apareciendo en "Todas")
             organizaciones.filter(org => org.eliminada !== true).forEach(org => organizacionFilter.add(new Option(org.nombre || 'Sin nombre', org.id)));

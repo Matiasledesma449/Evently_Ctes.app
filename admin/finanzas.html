@@ -44,7 +44,8 @@
                     <label class="text-xs text-gray-500">Período
                         <select id="filtroPeriodo" class="campo block mt-1"></select>
                     </label>
-                    <label class="text-xs text-gray-500">Organización
+                    <!-- Oculto: la organización se elige en la franja rosa de arriba (shared/menu-admin.js) -->
+                    <label class="hidden text-xs text-gray-500">Organización
                         <select id="filtroOrganizacion" class="campo block mt-1"><option value="todas">Todas</option></select>
                     </label>
                     <label class="text-xs text-gray-500">Evento
@@ -154,6 +155,8 @@
             filtroPeriodo.value = 'mes';
             organizaciones.filter((o) => o.eliminada !== true).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'))
                 .forEach((o) => filtroOrganizacion.add(new Option(o.nombre || 'Sin nombre', o.id)));
+            const elegida = window.organizacionElegida ? window.organizacionElegida() : '';
+            if (elegida && [...filtroOrganizacion.options].some((o) => o.value === elegida)) filtroOrganizacion.value = elegida;
             llenarEventos();
             [filtroPeriodo, filtroOrganizacion, filtroEvento].forEach((s) => s.addEventListener('change', () => { if (s === filtroOrganizacion) llenarEventos(); dibujarBalance(); }));
         }
@@ -256,7 +259,10 @@
         }
         function liquidacionActual() {
             const r = rangoElegido();
-            return { r, liq: liquidaciones(ventasEntre(ventas, r.desde, r.hasta), eventos, organizaciones) };
+            // Con una organización elegida en la franja rosa, solo la suya
+            const elegida = window.organizacionElegida ? window.organizacionElegida() : '';
+            const liq = liquidaciones(ventasEntre(ventas, r.desde, r.hasta), eventos, organizaciones);
+            return { r, liq: elegida ? liq.filter((o) => o.id === elegida) : liq };
         }
 
         function dibujarLiquidaciones() {

@@ -18,6 +18,16 @@ const desplegable = document.getElementById('selectorEventoSelect');
 const aviso = document.getElementById('selectorEventoAviso');
 const conTodos = !!contenedor && contenedor.dataset.conTodos === '1';
 
+// Con la franja rosa del superadmin (shared/menu-admin.js), el selector se muda al lado de la organización.
+// El aviso "Elegí un evento" se queda en la página.
+const lugarEnFranja = document.getElementById('franjaOrganizacionEvento');
+if (contenedor && desplegable && lugarEnFranja) {
+    const etiqueta = contenedor.querySelector('label[for="selectorEventoSelect"]');
+    if (etiqueta) { etiqueta.className = 'font-semibold flex-shrink-0'; lugarEnFranja.append(etiqueta); }
+    desplegable.className = 'min-w-0 max-w-[60vw] sm:max-w-[16rem] bg-white border border-pink-300 text-pink-900 rounded-full px-2 py-0.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-pink-400';
+    lugarEnFranja.append(desplegable);
+}
+
 // El evento de la dirección o, si no hay, el último que se recordó. "todos" nunca se recuerda.
 function leerEventoActivo() {
     let deLaDireccion = null;
@@ -49,7 +59,7 @@ function armar(eventos, usuario, uid) {
     const rolReal = usuario ? usuario.rol : '';
     const propios = eventosParaVer({
         eventos, rolReal, rolEfectivo: window.rolEfectivo ? window.rolEfectivo(rolReal) : rolReal,
-        organizacionId: usuario ? usuario.organizacionId : '', organizacionElegida: window.vistaOrganizacion ? window.vistaOrganizacion() : ''
+        organizacionId: usuario ? usuario.organizacionId : '', organizacionElegida: window.organizacionQueSeMira ? window.organizacionQueSeMira() : ''
     })
         .slice()
         .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));

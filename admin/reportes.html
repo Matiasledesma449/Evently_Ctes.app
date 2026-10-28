@@ -229,7 +229,7 @@
                 const rolReal = usuarioActual ? usuarioActual.rol : '';
                 eventos = eventosParaVer({
                     eventos: eventosDeBase, rolReal, rolEfectivo: window.rolEfectivo ? window.rolEfectivo(rolReal) : rolReal,
-                    organizacionId: usuarioActual ? usuarioActual.organizacionId : '', organizacionElegida: window.vistaOrganizacion ? window.vistaOrganizacion() : ''
+                    organizacionId: usuarioActual ? usuarioActual.organizacionId : '', organizacionElegida: window.organizacionQueSeMira ? window.organizacionQueSeMira() : ''
                 });
                 ventas = ventasDeEventos(ventasDeBase, eventos.map((ev) => ev.id));
             } else {

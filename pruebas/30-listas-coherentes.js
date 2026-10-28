@@ -29,8 +29,11 @@ const cuentas = {
   'admin de Valigroup': { rolReal: 'organizacion', rolEfectivo: 'organizacion', organizacionId: 'vali', organizacionElegida: '' },
   'superadmin': { rolReal: 'superadmin', rolEfectivo: 'superadmin', organizacionId: '', organizacionElegida: '' },
   'superadmin viendo Norte': { rolReal: 'superadmin', rolEfectivo: 'organizacion', organizacionId: '', organizacionElegida: 'norte' },
+  'superadmin con Valigroup en la franja': { rolReal: 'superadmin', rolEfectivo: 'superadmin', organizacionId: '', organizacionElegida: 'vali' },
+  'superadmin con una organización sin eventos': { rolReal: 'superadmin', rolEfectivo: 'superadmin', organizacionId: '', organizacionElegida: 'zavod' },
 };
-const esperado = { 'admin de Valigroup': 'V1,V2', 'superadmin': 'N1,V1,V2,X', 'superadmin viendo Norte': 'N1' };
+const esperado = { 'admin de Valigroup': 'V1,V2', 'superadmin': 'N1,V1,V2,X', 'superadmin viendo Norte': 'N1',
+  'superadmin con Valigroup en la franja': 'V1,V2', 'superadmin con una organización sin eventos': '' };
 for (const [nombre, c] of Object.entries(cuentas)) {
   const lista = ids(O.eventosParaVer({ eventos, ...c }));
   verificar(`L1 ${nombre}: ve ${esperado[nombre]}`, lista === esperado[nombre], lista);
