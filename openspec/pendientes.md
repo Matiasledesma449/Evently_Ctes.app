@@ -29,7 +29,7 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 - [x] 13. **Suspender, reactivar y eliminar eventos** (superadmin): "Suspender" (deja de verse y de venderse, se puede
   editar), "Volver a activar", y "Eliminar" con un paso de confirmación (y, como en organizaciones, que se pueda recuperar).
   El servidor ya rechaza eventos con `activo === false` (server/compra.js).
-- [ ] 14. **Una sola sección para "ver" (nombre creativo, por ejemplo "Ojo de halcón" o "Vista")**: juntar en una sección
+- [x] 14. **Una sola sección para "ver" (nombre creativo, por ejemplo "Ojo de halcón" o "Vista")**: juntar en una sección
   del menú "Ver sitio" y "Ver como organización": un filtro "¿Qué organización?" y otro para ir a la página de Evently
   (inicio) o a la página de un evento en especial.
 

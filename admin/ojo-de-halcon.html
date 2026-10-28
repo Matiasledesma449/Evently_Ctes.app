@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Ojo de halcón</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; overflow: hidden; height: 100vh; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .campo { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; background: white; width: 100%; }
+        .campo:focus { outline: none; box-shadow: 0 0 0 2px #8b5cf6; }
+    </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+</head>
+<body>
+    <script type="module" src="../shared/firebase-init.js"></script>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="ojo-de-halcon"></script>
+
+        <!-- Ojo de halcón (pedido 14): todo lo que es "mirar" en un solo lugar. Solo superadmin. -->
+        <main class="flex-1 min-w-0 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Ojo de halcón</h1>
+                <p class="text-sm text-gray-500">Mirá Evently como lo ve un comprador o el panel como lo ve una organización. Solo se mira: no cambia nada.</p>
+            </div>
+
+            <section class="bg-white rounded-xl border border-gray-200 p-5 mb-5" aria-labelledby="tituloOrganizacion">
+                <h2 id="tituloOrganizacion" class="text-lg font-bold text-gray-800">¿Qué organización?</h2>
+                <p class="text-sm text-gray-500 mt-1">Elegila para ver solo sus eventos y para entrar al panel como ella.</p>
+                <select id="ojoOrganizacion" class="campo mt-3 max-w-md" aria-label="¿Qué organización?">
+                    <option value="">Todas las organizaciones</option>
+                </select>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <section class="bg-white rounded-xl border border-gray-200 p-5 flex flex-col" aria-labelledby="tituloSitio">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-violet-600">storefront</span>
+                        <h2 id="tituloSitio" class="text-lg font-bold text-gray-800">Ver el sitio</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">Abre en otra pestaña la página que ve un comprador.</p>
+                    <label class="text-xs font-medium text-gray-500 mt-4">¿Qué página?
+                        <select id="ojoPagina" class="campo mt-1">
+                            <option value="">Inicio de Evently</option>
+                        </select>
+                    </label>
+                    <p id="ojoAvisoPagina" class="hidden text-xs text-amber-700 mt-2"></p>
+                    <a id="ojoAbrirSitio" href="../public/index.html" target="_blank" rel="noopener" class="mt-4 self-start inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <span class="material-symbols-outlined text-base">open_in_new</span> Abrir
+                    </a>
+                </section>
+
+                <section class="bg-white rounded-xl border border-gray-200 p-5 flex flex-col" aria-labelledby="tituloComoOrg">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-violet-600">visibility</span>
+                        <h2 id="tituloComoOrg" class="text-lg font-bold text-gray-800">Ver el panel como organización</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">Ves el panel igual que la organización elegida, con una barra violeta arriba para volver. Solo cambia lo que se ve: tus permisos siguen siendo los de superadmin.</p>
+                    <p id="ojoAvisoOrganizacion" class="text-xs text-amber-700 mt-4">Elegí una organización arriba.</p>
+                    <button id="ojoEntrarComo" type="button" disabled class="mt-4 self-start inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <span class="material-symbols-outlined text-base">login</span> Entrar como esta organización
+                    </button>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { eventosParaVer } from "../shared/organizaciones.js";
+        import { seVendeEnElSitio, situacionDelEvento } from "../shared/estado-evento.js";
+
+        const selectOrganizacion = document.getElementById('ojoOrganizacion');
+        const selectPagina = document.getElementById('ojoPagina');
+        const abrirSitio = document.getElementById('ojoAbrirSitio');
+        const avisoPagina = document.getElementById('ojoAvisoPagina');
+        const entrarComo = document.getElementById('ojoEntrarComo');
+        const avisoOrganizacion = document.getElementById('ojoAvisoOrganizacion');
+
+        let eventos = [];
+
+        // Arranca con la organización de la franja rosa (si hay una elegida)
+        function organizacionInicial() {
+            try { return (localStorage.getItem('organizacionElegida') || '').trim(); } catch (e) { return ''; }
+        }
+
+        // Las páginas que se pueden abrir: el inicio y cada evento (de la organización elegida). Los nombres van con new Option.
+        function llenarPaginas() {
+            const elegida = selectPagina.value;
+            const lista = eventosParaVer({ eventos, rolEfectivo: 'superadmin', rolReal: 'superadmin', organizacionElegida: selectOrganizacion.value })
+                .slice().sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+            selectPagina.replaceChildren(new Option('Inicio de Evently', ''));
+            lista.forEach((ev) => selectPagina.add(new Option(`Evento: ${ev.nombre || 'Sin nombre'}${situacionDelEvento(ev) === 'suspendido' ? ' (suspendido)' : (seVendeEnElSitio(ev) ? '' : ' (no publicado)')}`, ev.id)));
+            selectPagina.value = lista.some((ev) => ev.id === elegida) ? elegida : '';
+            actualizarSitio();
+        }
+
+        function actualizarSitio() {
+            const id = selectPagina.value;
+            abrirSitio.href = id ? `../public/evento.html?id=${encodeURIComponent(id)}` : '../public/index.html';
+            const ev = eventos.find((e) => e.id === id);
+            const oculto = ev && !seVendeEnElSitio(ev);
+            avisoPagina.textContent = oculto ? 'Este evento no está a la venta: el comprador ve "no está disponible".' : '';
+            avisoPagina.classList.toggle('hidden', !oculto);
+        }
+
+        function actualizarComoOrganizacion() {
+            const hay = !!selectOrganizacion.value;
+            entrarComo.disabled = !hay;
+            avisoOrganizacion.classList.toggle('hidden', hay);
+        }
+
+        selectOrganizacion.addEventListener('change', () => { llenarPaginas(); actualizarComoOrganizacion(); });
+        selectPagina.addEventListener('change', actualizarSitio);
+
+        // Entrar como la organización elegida: lo mismo que hacía "Ver como organización", ya con la organización elegida
+        entrarComo.addEventListener('click', () => {
+            if (!selectOrganizacion.value) return;
+            try {
+                localStorage.setItem('vistaComo', 'organizacion');
+                localStorage.setItem('vistaOrganizacionId', selectOrganizacion.value);
+            } catch (e) { /* sin almacenamiento */ }
+            window.location.href = 'eventos-seleccion.html';
+        });
+
+        // Solo el superadmin real (en "Ver como organización" el menú ya lleva esta página a Eventos)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.replace('login.html'); return; }
+            try {
+                const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!perfil.exists() || perfil.data().rol !== 'superadmin') { window.location.replace('eventos-seleccion.html'); return; }
+                const [snapOrgs, snapEventos] = await Promise.all([getDocs(collection(db, 'organizaciones')), getDocs(collection(db, 'eventos'))]);
+                eventos = snapEventos.docs.map((d) => ({ id: d.id, ...d.data() }));
+                const organizaciones = snapOrgs.docs.map((d) => ({ id: d.id, ...d.data() }))
+                    .filter((o) => o.eliminada !== true)
+                    .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+                organizaciones.forEach((o) => selectOrganizacion.add(new Option(o.nombre || 'Sin nombre', o.id)));
+                const inicial = organizacionInicial();
+                if (organizaciones.some((o) => o.id === inicial)) selectOrganizacion.value = inicial;
+                llenarPaginas();
+                actualizarComoOrganizacion();
+            } catch (error) {
+                console.error('No se pudieron leer las organizaciones y los eventos:', error);
+                avisoOrganizacion.textContent = 'No se pudieron leer las organizaciones. Probá recargar la página.';
+            }
+        });
+    </script>
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>

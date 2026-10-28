@@ -28,7 +28,7 @@
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
     // 'eventos' también: el superadmin real siempre ve ahí su Crear evento y las solicitudes (superadmin.html redirige ahí)
-    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones', 'sitio', 'finanzas'];
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones', 'sitio', 'finanzas', 'ojo-de-halcon'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
@@ -90,8 +90,9 @@
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
         { clave: 'sitio', rol: 'superadmin', href: 'sitio.html', icono: 'web', texto: 'Sitio', corto: 'Sitio' },
-        { clave: 'ver-sitio', href: '../public/index.html', externo: true, icono: 'storefront', texto: 'Ver sitio', corto: 'Ver sitio' },
-        { clave: 'ver-como-organizacion', rol: 'superadmin', id: 'btnVerComoOrganizacion', idMovil: 'btnVerComoOrganizacionMobile', href: '#', icono: 'visibility', texto: 'Ver como organización', corto: 'Ver como' }
+        { clave: 'ver-sitio', rol: 'organizacion', href: '../public/index.html', externo: true, icono: 'storefront', texto: 'Ver sitio', corto: 'Ver sitio' },
+        // Superadmin: "Ver sitio" y "Ver como organización" juntos en una sola sección (pedido 14)
+        { clave: 'ojo-de-halcon', rol: 'superadmin', href: 'ojo-de-halcon.html', icono: 'visibility', texto: 'Ojo de halcón', corto: 'Ojo de halcón', anchoMovil: 82 }
     ];
 
     // La página actual: "soporte", "mensajes" y "consultas-publicas" son la misma sección del menú
@@ -330,12 +331,7 @@
     }
 
     document.addEventListener('click', (e) => {
-        if (e.target.closest('#btnVerComoOrganizacion, #btnVerComoOrganizacionMobile')) {
-            e.preventDefault();
-            try { localStorage.setItem('vistaComo', 'organizacion'); } catch (x) { /* sin almacenamiento */ }
-            if (SOLO_SUPERADMIN.includes(pagina)) location.href = 'eventos-seleccion.html'; else location.reload();
-            return;
-        }
+        // Para entrar a "Ver como organización" se usa Ojo de halcón (admin/ojo-de-halcon.html)
         if (e.target.closest('#btnVolverSuperadmin')) {
             try { localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); } catch (x) { /* sin almacenamiento */ }
             location.reload();
