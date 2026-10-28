@@ -42,7 +42,7 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 - [x] 19. "Olvidé mi contraseña" del login: el mensaje no llega (revisar).
 - [x] 20. Pie del sitio: enlaces legales centrados y fijos (no desaparecen al entrar a uno), logo de Evently a la izquierda, © 2026.
 - [ ] 21. Banners de las secciones del sitio con lugar para imagen (la persona pasa las imágenes después).
-- [ ] 22. Términos y condiciones y política de privacidad adecuados a Evently (datos personales, consumidor, pagos).
+- [x] 22. Términos y condiciones y política de privacidad adecuados a Evently (datos personales, consumidor, pagos).
 - [ ] 23. Comprador registrado y correos: registro antes de comprar, entrada en PDF por correo, aviso de otros eventos, recordatorio a una semana y el día del evento. Necesita un servicio de correo nuevo (decidir con la persona).
 
 ## Pasos de la persona para el miércoles
