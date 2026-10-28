@@ -128,6 +128,8 @@
         import { buscarPreguntas, TEMAS_DE_AYUDA } from "../shared/preguntas-frecuentes.js";
         import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
+        import { aplicarBanner } from "../shared/banners.js";
+        aplicarBanner(document.querySelector('section.franja'), 'soporte'); // imagen del banner, si tiene (pedido 21)
         import { armarSolicitud } from "../shared/solicitud-de-ayuda.js";
 
         // Todo lo que se dibuja con texto de los temas o de la persona va con textContent (nunca como HTML)

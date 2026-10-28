@@ -114,6 +114,8 @@
     <script type="module">
         import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
+        import { aplicarBanner } from "../shared/banners.js";
+        aplicarBanner(document.querySelector('section.franja'), 'privacidad'); // imagen del banner, si tiene (pedido 21)
         cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'privacidad'));
         dibujarCabecera(document.getElementById('cabecera'), 'privacidad');
     </script>
