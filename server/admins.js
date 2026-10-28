@@ -6,6 +6,8 @@
 // IMPORTANTE: la clave nunca se guarda ni se escribe en los registros.
 
 const { ConfigError } = require('./config');
+// Arriba (y no dentro de una función) para que Vercel incluya firebase-admin/auth en la función
+const adminAuth = require('firebase-admin/auth');
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ID_VALIDO = /^[A-Za-z0-9_-]{1,128}$/;
@@ -32,7 +34,7 @@ function tokenDe(headers) {
 function dependenciasReales() {
   const { obtenerDb } = require('./firestore');
   const db = obtenerDb(); // también inicia la app de firebase-admin
-  const { getAuth } = require('firebase-admin/auth');
+  const { getAuth } = adminAuth;
   const { FieldValue } = require('firebase-admin/firestore');
   return { db, auth: getAuth(), ahora: () => FieldValue.serverTimestamp() };
 }
@@ -51,7 +53,8 @@ async function crearAdminSinAtrapar({ headers, cuerpo }, deps) {
   try {
     d = deps || dependenciasReales();
   } catch (e) {
-    console.error(e instanceof ConfigError ? e.message : 'No se pudo iniciar Firebase en crear-admin');
+    // Se registra el tipo de error (nunca valores de las variables) para poder diagnosticarlo
+      console.error(e instanceof ConfigError ? e.message : 'No se pudo iniciar Firebase en crear-admin', { codigo: e && (e.code || e.name), mensaje: e && String(e.message || '').slice(0, 160) });
     return error(500, 'CONFIGURACION', 'El servidor no está configurado para crear cuentas.');
   }
 
