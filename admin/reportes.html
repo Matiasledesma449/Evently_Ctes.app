@@ -735,7 +735,7 @@
             // Con "Todos los eventos", dos eventos pueden tener un lote "General": se muestran como "Evento · Lote"
             if (EN_TODOS) {
                 const nombreDeEvento = new Map(eventos.map((ev) => [ev.id, ev.nombre || 'Sin nombre']));
-                delPanel = delPanel.map((v) => ({ ...v, loteNombre: `${nombreDeEvento.get(v.eventoId) || 'Evento'} · ${v.loteNombre || 'Sin lote'}` }));
+                delPanel = delPanel.map((v) => ({ ...v, loteNombre: [nombreDeEvento.get(v.eventoId) || 'Evento', v.loteNombre || 'Sin lote'].join(' · ') })); // el panel lo dibuja con textContent
             }
             const eventosElegidos = eventos.map((ev) => ({ ...ev, lotes: (Array.isArray(ev.lotes) ? ev.lotes : []).filter((l) => lote === 'todos' || l.nombre === lote) }));
             dibujarPanelPorcentajes(document.getElementById('panelPorcentajes'),

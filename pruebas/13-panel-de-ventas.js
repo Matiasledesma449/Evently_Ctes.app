@@ -263,7 +263,7 @@ const $ = (n) => '$' + n.toLocaleString();
     const evento = { id: 'E', lotes: [{ nombre: 'General', disponibles: 100 }, { nombre: 'VIP', disponibles: 50 }] };
     const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi,
       // el panel de porcentajes (pedido 17) tiene su propia prueba (40): acá no se dibuja
-      dibujarPanelPorcentajes: () => {}, porcentajesDelEvento: () => null, pesos: String, document: { getElementById: () => null }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar, claveDeFormaDePago })') };
+      dibujarPanelPorcentajes: () => {}, porcentajesDelEvento: () => null, pesos: String, EN_TODOS: false, document: { getElementById: () => null }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar, claveDeFormaDePago })') };
     vm.createContext(ctx2);
     vm.runInContext(['cifrasActuales', 'dibujarTarjetas', 'renderResumen'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.renderResumen = renderResumen;', ctx2);
     ctx2.renderResumen(U.soloConfirmadas(VENTAS));
