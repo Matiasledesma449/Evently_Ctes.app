@@ -415,7 +415,7 @@
             filasServicio.classList.toggle('hidden', costoServicio <= 0);
             avisoServicio.classList.toggle('hidden', !servicioSinConfirmar);
             resumenEntradas.textContent = `$${subtotal.toLocaleString()}`;
-            etiquetaServicio.textContent = `Costo de servicio (${porcentaje.toLocaleString()}%)`;
+            etiquetaServicio.textContent = 'Costo de servicio'; // sin el porcentaje (pedido de la persona): solo el monto
             resumenServicio.textContent = `$${costoServicio.toLocaleString()}`;
             resumenEvento.textContent = eventoActual.nombre || '-';
             resumenLote.textContent = lote.nombre || '-';

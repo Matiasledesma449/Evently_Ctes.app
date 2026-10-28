@@ -197,6 +197,12 @@
                 snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
                 renderizarVista();
             });
+            // Las solicitudes sin revisar también se ven en la lista (con "Revisar solicitud")
+            onSnapshot(query(collection(db, "solicitudes_eventos"), where("estado", "==", "pendiente")), (snapSol) => {
+                solicitudes = [];
+                snapSol.forEach(d => solicitudes.push({ id: d.id, ...d.data(), estado: 'pendiente', esSolicitud: true }));
+                renderizarVista();
+            }, (error) => console.error('No se pudieron leer las solicitudes:', error));
         }
 
         // =====================================================
@@ -258,7 +264,7 @@
 
         // ✅ Vista del superadmin: todos los eventos, con la organización de cada uno
         function renderizarEventosDelSuperadmin() {
-            let lista = eventos;
+            let lista = [...solicitudes, ...eventos]; // primero las solicitudes que esperan revisión
             // "Crear evento" lleva a Crear evento con la organización del filtro ya elegida
             const btnCrear = document.getElementById('btnCrearEventoOrganizacion');
             btnCrear.classList.toggle('hidden', !superadminReal || organizacionFilter.value === 'todas');
@@ -353,6 +359,15 @@
                             botonHTML = `
                                 <a href="dashboard.html?id=${evento.id}" onclick="localStorage.setItem('eventoId', '${evento.id}')" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
                                     <span>Ver resumen</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                </a>
+                            `;
+                        } else if (estado === 'pendiente' && evento.esSolicitud && soySuperAdmin && superadminReal) {
+                            // Solicitud de una organización: el superadmin la revisa en Crear evento → Solicitudes
+                            badgeClass = 'bg-yellow-100 text-yellow-800';
+                            estadoTexto = 'Solicitud pendiente';
+                            botonHTML = `
+                                <a href="eventos.html?modo=directo#solicitudes" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
+                                    <span class="material-symbols-outlined text-sm">fact_check</span> Revisar solicitud
                                 </a>
                             `;
                         } else if (estado === 'pendiente') {

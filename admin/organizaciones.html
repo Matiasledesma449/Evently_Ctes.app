@@ -61,7 +61,7 @@
 
     <script type="module">
         import { onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, onSnapshot, serverTimestamp, deleteDoc, deleteField, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { validarOrganizacion } from "../shared/organizaciones.js";
         import { generarClave, validarClave, decidirAlta, normalizarCorreo, correoValido } from "../shared/cuentas-admin.js";
 
@@ -147,7 +147,12 @@
                     try { await updateDoc(doc(db, 'organizaciones', org.id), { eliminada: false }); }
                     catch (error) { console.error('No se pudo recuperar:', error); recuperar.disabled = false; recuperar.textContent = 'No se pudo: probá de nuevo'; }
                 });
-                fila.append(elemento('span', 'text-sm text-gray-700', org.nombre || 'Sin nombre'), recuperar);
+                const borrar = boton('Eliminar para siempre', 'border border-red-500 text-red-600 hover:bg-red-50 px-4 py-1.5 rounded-lg text-sm font-medium');
+                borrar.setAttribute('aria-label', `Eliminar para siempre ${org.nombre || 'la organización'}`);
+                borrar.addEventListener('click', () => confirmarBorrarParaSiempre(org));
+                const acciones = elemento('div', 'flex flex-wrap gap-2 justify-end');
+                acciones.append(recuperar, borrar);
+                fila.append(elemento('span', 'text-sm text-gray-700', org.nombre || 'Sin nombre'), acciones);
                 listaEliminadas.appendChild(fila);
             });
         }
@@ -175,6 +180,71 @@
             fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
             si.addEventListener('click', async () => { si.disabled = true; await alConfirmar(); cerrar(); });
             cancelar.focus();
+        }
+
+        // Eliminar para siempre (solo desde "Organizaciones eliminadas"). No se puede deshacer: se pide escribir el nombre.
+        // Se borra el documento de la organización y se desvinculan sus admins. Sus eventos y ventas NO se borran:
+        // quedan como "Sin organización" (el superadmin los sigue viendo y les puede asignar otra).
+        async function confirmarBorrarParaSiempre(org) {
+            const nombre = org.nombre || 'Sin nombre';
+            let eventos = 0;
+            let admins = [];
+            try {
+                eventos = (await getDocs(query(collection(db, 'eventos'), where('organizacionId', '==', org.id)))).size;
+                admins = (await getDocs(query(collection(db, 'usuarios'), where('organizacionId', '==', org.id)))).docs;
+            } catch (error) {
+                // Sin saber qué admins tiene no se borra: quedarían apuntando a una organización que ya no existe
+                console.error('No se pudo revisar la organización:', error);
+                alert('No se pudo revisar la organización. Probá de nuevo en un momento.');
+                return;
+            }
+            const fondo = elemento('div', 'fixed inset-0 z-[80] bg-black/40 flex items-center justify-center p-4');
+            fondo.setAttribute('role', 'alertdialog');
+            fondo.setAttribute('aria-modal', 'true');
+            const caja = elemento('div', 'bg-white rounded-2xl w-full max-w-md p-6');
+            const titulo = elemento('h2', 'text-lg font-bold text-red-700', `Eliminar "${nombre}" para siempre`);
+            titulo.id = 'tituloBorrarParaSiempre';
+            fondo.setAttribute('aria-labelledby', titulo.id);
+            const lista = elemento('ul', 'text-sm text-gray-700 mt-3 space-y-1 list-disc pl-5');
+            lista.append(
+                elemento('li', '', 'La organización se borra y no se puede recuperar.'),
+                elemento('li', '', admins.length ? `Sus ${admins.length} ${admins.length === 1 ? 'admin queda' : 'admins quedan'} sin organización (no van a ver ningún evento).` : 'No tiene admins vinculados.'),
+                elemento('li', '', eventos ? `Sus ${eventos} ${eventos === 1 ? 'evento queda' : 'eventos quedan'} "Sin organización", con sus ventas (no se borran).` : 'No tiene eventos.')
+            );
+            const pedido = elemento('p', 'text-sm text-gray-600 mt-4', 'Para confirmar, escribí el nombre exacto de la organización:');
+            const campo = elemento('input', 'w-full mt-2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none');
+            campo.type = 'text';
+            campo.setAttribute('aria-label', 'Nombre de la organización');
+            const error = elemento('p', 'text-sm text-red-600 mt-2 min-h-[1.25rem]');
+            const botones = elemento('div', 'mt-4 flex justify-end gap-3');
+            const cancelar = boton('Cancelar', 'px-5 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50');
+            const si = boton('Eliminar para siempre', 'px-5 py-2 rounded-full bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-semibold');
+            si.disabled = true;
+            campo.addEventListener('input', () => { si.disabled = campo.value.trim() !== nombre; });
+            botones.append(cancelar, si);
+            caja.append(titulo, lista, pedido, campo, error, botones);
+            fondo.appendChild(caja);
+            document.body.appendChild(fondo);
+            const cerrar = () => fondo.remove();
+            cancelar.addEventListener('click', cerrar);
+            fondo.addEventListener('click', (e) => { if (e.target === fondo) cerrar(); });
+            fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+            si.addEventListener('click', async () => {
+                if (campo.value.trim() !== nombre) return;
+                si.disabled = true;
+                try {
+                    const lote = writeBatch(db);
+                    admins.forEach((a) => lote.update(a.ref, { organizacionId: deleteField() }));
+                    lote.delete(doc(db, 'organizaciones', org.id));
+                    await lote.commit();
+                    cerrar();
+                } catch (e) {
+                    console.error('No se pudo eliminar para siempre:', e);
+                    error.textContent = 'No se pudo eliminar. Probá de nuevo.';
+                    si.disabled = false;
+                }
+            });
+            campo.focus();
         }
 
         function tarjeta(org) {

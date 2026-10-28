@@ -77,7 +77,7 @@
             icono: 'dashboard', texto: 'Resumen', corto: 'Resumen'
         },
         { clave: 'eventos', rol: 'organizacion', soloOrg: true, href: 'eventos.html', icono: 'add_circle', texto: 'Solicitar evento', corto: 'Solicitar', anchoMovil: 82 },
-        { clave: 'eventos', rol: 'superadmin', href: 'eventos.html?modo=directo', icono: 'add_circle', texto: 'Crear evento', corto: 'Crear evento', anchoMovil: 82 },
+        { clave: 'eventos', rol: 'superadmin', href: 'eventos.html?modo=directo', icono: 'add_circle', texto: 'Crear evento', corto: 'Crear evento', anchoMovil: 82, badge: 'badge-solicitudes-eventos' },
         { clave: 'reportes', href: 'reportes.html', icono: 'bar_chart', texto: 'Reportes', corto: 'Reportes' },
         { clave: 'ventas', href: 'ventas.html', icono: 'payments', texto: 'Ventas', corto: 'Ventas' },
         { clave: 'finanzas', rol: 'superadmin', href: 'finanzas.html', icono: 'account_balance', texto: 'Finanzas', corto: 'Finanzas' },

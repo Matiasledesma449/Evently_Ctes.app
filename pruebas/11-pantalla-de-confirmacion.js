@@ -16,7 +16,7 @@ const sinComentarios = html.replace(/<!--[\s\S]*?-->/g, '');
 const prohibidos = ['CBU', 'pagos@evently.com', 'getDoc', 'Descargar PDF', 'btnDescargarPDF', 'alert(', 'firebase', 'Firebase', 'Transferencia', 'Efectivo', 'Banco Naci'];
 const hallados = prohibidos.filter((p) => sinComentarios.includes(p));
 verificar('7.3a no aparecen CBU, pagos@evently.com, getDoc, "Descargar PDF", Firebase ni alert()', hallados.length === 0, hallados.join(','));
-verificar('7.3b la pantalla confirmada indica que se guarde el enlace', /Guardá el enlace de tu compra/.test(html) && /No te enviamos las entradas por correo/.test(html));
+verificar('7.3b la pantalla confirmada indica que se guarde el enlace', /Guardá el enlace de tu compra/.test(html) && /te mandamos tus entradas al correo/.test(html));
 verificar('7.3c no carga nada de Firebase y avisa a los navegadores que no envien la direccion a otros sitios',
   !/firebase-init|gstatic\.com\/firebasejs/.test(html) && /<meta name="referrer" content="no-referrer"/.test(html));
 

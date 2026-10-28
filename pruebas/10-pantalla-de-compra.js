@@ -240,8 +240,8 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     const conCategoria = { ...EVENTO, comisionCategoriaId: 'cat-1' };
     const p = crearPagina({ evento: conCategoria, config: CONFIG, fetchFn: respuesta(200, {}) });
     await irAlPaso2(p, { cantidad: 2 });
-    verificar('S1 con 8%: 2 entradas de 5000 muestran entradas $10.000, costo de servicio $800 y total $10.800',
-      !p.els.filasServicio.oculto && p.els.resumenEntradas.textContent === '$' + (10000).toLocaleString() && p.els.resumenServicio.textContent === '$800' && p.els.totalMostrado.textContent === '$' + (10800).toLocaleString() && p.els.etiquetaServicio.textContent.includes('8%'),
+    verificar('S1 con 8%: 2 entradas de 5000 muestran entradas $10.000, costo de servicio $800 (sin el porcentaje) y total $10.800',
+      !p.els.filasServicio.oculto && p.els.resumenEntradas.textContent === '$' + (10000).toLocaleString() && p.els.resumenServicio.textContent === '$800' && p.els.totalMostrado.textContent === '$' + (10800).toLocaleString() && p.els.etiquetaServicio.textContent === 'Costo de servicio' /* sin porcentaje: pedido de la persona */,
       [p.els.resumenEntradas.textContent, p.els.resumenServicio.textContent, p.els.totalMostrado.textContent, p.els.etiquetaServicio.textContent].join(' | '));
     verificar('S2 con la lectura bien no se muestra el aviso de "se suma al pagar"', p.els.avisoServicio.oculto);
 

@@ -148,6 +148,11 @@
                             </div>
 
                             <div class="space-y-2">
+                                <!-- Pedido de la persona: mandar el enlace de Google directo, sin escribirle a cada admin -->
+                                <button id="btnEnviarEnlaceClave" type="button" class="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white py-3 rounded-full font-medium transition flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">forward_to_inbox</span> Mandarle el enlace para cambiar la contraseña
+                                </button>
+                                <p id="avisoEnlaceClave" class="text-sm text-center min-h-[1.25rem]" aria-live="polite"></p>
                                 <a id="btnWA" href="#" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-full font-medium transition flex items-center justify-center gap-2">
                                     <span class="material-symbols-outlined">chat</span> Contactar por WhatsApp
                                 </a>
@@ -209,7 +214,7 @@
             collection, query, where, onSnapshot, addDoc, doc, getDoc,
             getDocs, serverTimestamp, updateDoc, deleteDoc, writeBatch
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
             estadoDeConversacion, contarPorEstado, presentacionDeEstado,
             filtrarPorEstado, organizacionesParaChat, textoVacio
@@ -602,6 +607,31 @@
             } else {
                 btnWA.classList.add('hidden');
             }
+
+            // Botón: mandar el enlace de Firebase (Google) al correo del pedido y dejarlo atendido
+            const btnEnlace = document.getElementById('btnEnviarEnlaceClave');
+            const avisoEnlace = document.getElementById('avisoEnlaceClave');
+            avisoEnlace.textContent = '';
+            btnEnlace.disabled = !s.email;
+            btnEnlace.onclick = async () => {
+                btnEnlace.disabled = true;
+                avisoEnlace.className = 'text-sm text-center min-h-[1.25rem] text-gray-500';
+                avisoEnlace.textContent = 'Mandando…';
+                try {
+                    auth.languageCode = 'es';
+                    await sendPasswordResetEmail(auth, s.email);
+                    await updateDoc(doc(db, "solicitudes_password", s.id), { estado: 'atendida', enlaceEnviado: true, fechaAtendida: serverTimestamp() });
+                    avisoEnlace.className = 'text-sm text-center min-h-[1.25rem] text-green-700';
+                    avisoEnlace.textContent = `Listo: si ${s.email} tiene cuenta, en unos minutos le llega el enlace para crear una contraseña nueva. El pedido quedó atendido.`;
+                } catch (error) {
+                    console.error('No se pudo mandar el enlace:', error);
+                    avisoEnlace.className = 'text-sm text-center min-h-[1.25rem] text-red-600';
+                    avisoEnlace.textContent = error && error.code === 'auth/too-many-requests'
+                        ? 'Se mandaron muchos enlaces seguidos. Esperá unos minutos y probá de nuevo.'
+                        : 'No se pudo mandar el enlace. Revisá que el correo sea el de la cuenta y probá de nuevo.';
+                    btnEnlace.disabled = false;
+                }
+            };
 
             // Botón atender
             btnAtender.onclick = () => marcarAtendida(s.id);

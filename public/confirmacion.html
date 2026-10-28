@@ -10,35 +10,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        body { font-family: 'Inter', sans-serif; background: #f7f5fb; }
+        .franja { background: linear-gradient(120deg, #5b21b6 0%, #7c3aed 60%, #8b5cf6 100%); }
         .qr-container { display: flex; justify-content: center; align-items: center; }
         .qr-container > div { padding: 12px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; }
         @media print {
-            header, footer, .no-imprimir { display: none !important; }
+            header, footer, .franja, .no-imprimir { display: none !important; }
+            main { margin-top: 0 !important; }
             body { background: white; }
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-            </div>
-            <a href="index.html" class="text-sm text-violet-600 hover:underline">Volver al inicio</a>
+    <!-- Cabecera y pie comunes del sitio (shared/cabecera-publica.js y shared/pie-publico.js, sin base de datos) -->
+    <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
+
+    <section class="franja text-white">
+        <div class="max-w-4xl mx-auto px-4 pt-10 pb-20">
+            <h1 class="text-2xl font-semibold">Tu compra</h1>
+            <p class="text-violet-100 text-sm mt-1">Acá ves el estado de tu pago y, cuando se confirma, tus entradas.</p>
         </div>
-    </header>
+    </section>
 
-    <main class="max-w-4xl mx-auto px-4 py-8">
-        <div id="confirmacionContainer" class="bg-white rounded-xl border border-gray-200 p-6 text-center" aria-live="polite">
+    <main class="max-w-4xl mx-auto px-4 -mt-12 mb-16 w-full flex-1">
+        <div id="confirmacionContainer" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-10 text-center" aria-live="polite">
             <p class="text-gray-400">Cargando datos de tu compra...</p>
         </div>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
-        © 2026 Evently by Bali Group
-    </footer>
+    <footer id="pie"></footer>
 
     <!-- Solo se usa para dibujar los codigos QR. Esta pagina no se conecta a la base de datos:
          todo lo que muestra lo pide al servidor (/api/venta) con el id y el token de la compra. -->
@@ -67,8 +68,8 @@
         }
 
         function icono(nombre, fondo, color) {
-            const caja = crear('div', `w-20 h-20 rounded-full ${fondo} flex items-center justify-center mb-4 mx-auto`);
-            caja.appendChild(crear('span', `material-symbols-outlined text-4xl ${color}`, nombre));
+            const caja = crear('div', `w-20 h-20 rounded-full ${fondo} flex items-center justify-center mb-4 mx-auto ring-8 ring-white shadow-sm`);
+            caja.appendChild(crear('span', `material-symbols-outlined text-5xl ${color}`, nombre));
             return caja;
         }
 
@@ -76,6 +77,24 @@
             const caja = crear('div', 'w-20 h-20 flex items-center justify-center mb-4 mx-auto');
             caja.appendChild(crear('div', 'animate-spin rounded-full h-12 w-12 border-4 border-violet-600 border-t-transparent'));
             return caja;
+        }
+
+        // Los tres pasos de la compra; `actual` es el que está en marcha (los anteriores quedan hechos)
+        function pasos(actual) {
+            const lista = crear('ol', 'flex items-start justify-center gap-2 sm:gap-4 mt-6 mb-2 text-xs sm:text-sm');
+            ['Pago enviado', 'Confirmando con Mercado Pago', 'Entradas listas'].forEach((texto, i) => {
+                const hecho = i < actual;
+                const enCurso = i === actual;
+                const paso = crear('li', 'flex flex-col items-center w-24 sm:w-36 text-center');
+                const punto = crear('span', 'w-9 h-9 rounded-full flex items-center justify-center font-bold '
+                    + (hecho ? 'bg-violet-600 text-white' : enCurso ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-500 animate-pulse' : 'bg-gray-100 text-gray-400'));
+                if (hecho) punto.appendChild(crear('span', 'material-symbols-outlined text-lg', 'check'));
+                else punto.textContent = String(i + 1);
+                paso.appendChild(punto);
+                paso.appendChild(crear('span', 'mt-2 ' + (hecho || enCurso ? 'text-gray-800 font-medium' : 'text-gray-400'), texto));
+                lista.appendChild(paso);
+            });
+            return lista;
         }
 
         function boton(texto, clases, alHacerClic) {
@@ -105,7 +124,7 @@
 
         // Resumen de la compra (solo con los datos que devuelve el servidor)
         function resumen(v) {
-            const caja = crear('div', 'w-full max-w-sm mx-auto bg-gray-50 rounded-xl p-4 mt-4 text-left border border-gray-200');
+            const caja = crear('div', 'w-full max-w-md mx-auto bg-gray-50 rounded-xl p-5 mt-6 text-left border border-gray-100');
             caja.appendChild(crear('h4', 'font-semibold text-gray-800', 'Resumen'));
             const lista = crear('div', 'mt-2 space-y-1 text-sm');
             const fila = (etiqueta, valor) => {
@@ -143,10 +162,10 @@
         // Como el sistema no envia correos, se le pide al comprador que guarde este enlace
         function bloqueGuardarEnlace() {
             const url = enlaceDeLaCompra();
-            const caja = crear('div', 'w-full max-w-sm mx-auto bg-violet-50 border border-violet-200 rounded-xl p-4 mt-4 text-left no-imprimir');
+            const caja = crear('div', 'w-full max-w-md mx-auto bg-violet-50 border border-violet-100 rounded-xl p-5 mt-6 text-left no-imprimir');
             caja.appendChild(crear('h4', 'font-semibold text-violet-900', 'Guardá el enlace de tu compra'));
             caja.appendChild(crear('p', 'text-sm text-gray-700 mt-1',
-                'No te enviamos las entradas por correo. Para volver a verlas, guardá o copiá este enlace. Cualquiera que lo tenga puede ver tus entradas: no lo compartas.'));
+                'Cuando se confirma el pago te mandamos tus entradas al correo que usaste (si no lo ves, revisá Spam). Por las dudas, guardá también este enlace: cualquiera que lo tenga puede ver tus entradas, no lo compartas.'));
             const campo = crear('input', 'w-full border border-gray-300 rounded-lg px-3 py-2 mt-2 text-xs text-gray-600 bg-white');
             campo.type = 'text';
             campo.readOnly = true;
@@ -182,6 +201,7 @@
                 girando(),
                 crear('h2', 'text-2xl font-bold text-gray-800', 'Estamos confirmando tu pago'),
                 crear('p', 'text-gray-500 mt-1', 'Puede tardar unos segundos. No cierres esta página: se actualiza sola.'),
+                pasos(1),
             ];
             if (huboError) nodos.push(crear('p', 'text-sm text-yellow-700 mt-2', 'Tuvimos un problema para actualizar. Seguimos intentando.'));
             if (v) nodos.push(resumen(v));
@@ -206,8 +226,9 @@
         function pantallaConfirmada(v) {
             const nodos = [
                 icono('check_circle', 'bg-green-100', 'text-green-600'),
-                crear('h2', 'text-2xl font-bold text-gray-800', '¡Compra exitosa!'),
-                crear('p', 'text-gray-500 mt-1', 'Tu pago fue confirmado. Estas son tus entradas.'),
+                crear('h2', 'text-3xl font-bold text-gray-900', '¡Compra exitosa!'),
+                crear('p', 'text-gray-500 mt-1', 'Tu pago fue confirmado. Estas son tus entradas: también te las mandamos por correo.'),
+                pasos(3),
             ];
 
             if (v.reembolsoPendiente) {
@@ -219,16 +240,19 @@
             const entradas = Array.isArray(v.entradas) ? v.entradas : [];
             const lista = crear('div', 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-left');
             entradas.forEach((entrada, i) => {
-                const tarjeta = crear('div', 'bg-gray-50 rounded-xl p-4 border border-gray-200 text-center');
-                tarjeta.appendChild(crear('p', 'text-sm font-semibold text-gray-700', `Entrada ${i + 1} de ${entradas.length}`));
-                const caja = crear('div', 'qr-container mt-2');
+                const tarjeta = crear('div', 'bg-white rounded-2xl border border-violet-100 shadow-sm overflow-hidden text-center');
+                const cabeza = crear('div', 'bg-violet-600 text-white px-4 py-3 text-left');
+                cabeza.appendChild(crear('p', 'text-xs uppercase tracking-wide text-violet-100', `Entrada ${i + 1} de ${entradas.length}`));
+                cabeza.appendChild(crear('p', 'font-semibold truncate', (v.evento && v.evento.nombre) || 'Tu evento'));
+                tarjeta.appendChild(cabeza);
+                const caja = crear('div', 'qr-container mt-4');
                 tarjeta.appendChild(caja);
                 if (typeof QRCode !== 'undefined') {
                     new QRCode(caja, { text: String(entrada.codigo), width: 160, height: 160, colorDark: '#1a1c1c', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
                 } else {
                     caja.appendChild(crear('p', 'text-xs text-gray-500', 'No pudimos dibujar el QR. Presentá este código:'));
                 }
-                tarjeta.appendChild(crear('p', 'text-xs text-gray-400 mt-2 break-all', String(entrada.codigo)));
+                tarjeta.appendChild(crear('p', 'text-xs text-gray-500 mt-2 mb-4 px-4 break-all font-mono', String(entrada.codigo)));
                 if (entrada.usado) tarjeta.appendChild(crear('p', 'text-xs font-semibold text-red-600 mt-1', 'Esta entrada ya fue utilizada'));
                 lista.appendChild(tarjeta);
             });
@@ -343,6 +367,12 @@
             try { window.history.replaceState(null, '', `?id=${encodeURIComponent(ventaId)}&t=${encodeURIComponent(token)}`); } catch (e) { /* no es grave */ }
             consultar();
         }
+    </script>
+    <script type="module">
+        import { dibujarPie } from "../shared/pie-publico.js";
+        import { dibujarCabecera } from "../shared/cabecera-publica.js";
+        dibujarCabecera(document.getElementById('cabecera'), 'confirmacion');
+        dibujarPie(document.getElementById('pie'), 'confirmacion');
     </script>
 </body>
 </html>
