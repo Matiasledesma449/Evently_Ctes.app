@@ -38,90 +38,94 @@
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
             <h1 class="text-2xl font-bold text-gray-800 mb-2">Escáner</h1>
-            <p class="text-gray-500 mb-6">Genera un enlace para que los validadores (N1) puedan escanear entradas desde sus dispositivos.</p>
+            <p class="text-gray-500 mb-6">Generá el enlace del validador y compartilo con el personal de la puerta: escanean las entradas con la cámara del celular, sin cuenta.</p>
 
             <div class="bg-white rounded-xl border border-gray-200 p-6 max-w-2xl">
                 <div class="flex flex-col items-center text-center">
                     <span class="material-symbols-outlined text-6xl text-violet-600 mb-4">qr_code_scanner</span>
                     <h2 class="text-xl font-semibold text-gray-800">Validador de entradas</h2>
-                    <p class="text-gray-500 text-sm mt-2">
-                        Comparte este enlace con el personal de validación. Solo necesitarán un dispositivo con cámara.
-                    </p>
+                    <p id="alcanceValidador" class="text-gray-500 text-sm mt-2">Preparando el enlace…</p>
                     <div class="mt-6 w-full bg-gray-100 rounded-xl p-4 flex flex-col sm:flex-row items-center gap-3">
-                        <span id="linkValidador" class="text-sm text-gray-600 font-mono break-all flex-1">
-                            <!-- Se llenará con JavaScript -->
-                        </span>
-                        <button onclick="copiarLink()" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                        <span id="linkValidador" class="text-sm text-gray-600 font-mono break-all flex-1 text-left"></span>
+                        <button id="btnCopiarValidador" type="button" disabled class="bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
                             <span class="material-symbols-outlined text-sm">content_copy</span> Copiar
                         </button>
                     </div>
-                    <button onclick="abrirValidador()" class="mt-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 px-6 rounded-full transition flex items-center gap-2">
-                        <span class="material-symbols-outlined">open_in_new</span> Abrir validador
-                    </button>
-                    <p id="mensajeAyuda" class="text-xs text-gray-400 mt-4">
-                        * Asegúrate de que el archivo <span class="font-mono">validador.html</span> esté en la raíz del proyecto.
-                    </p>
+                    <div class="mt-4 flex flex-wrap justify-center gap-3">
+                        <button id="btnAbrirValidador" type="button" disabled class="bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white font-semibold py-3 px-6 rounded-full transition flex items-center gap-2">
+                            <span class="material-symbols-outlined">open_in_new</span> Abrir validador
+                        </button>
+                        <button id="btnNuevoValidador" type="button" class="border border-violet-600 text-violet-700 hover:bg-violet-50 font-semibold py-3 px-6 rounded-full transition flex items-center gap-2">
+                            <span class="material-symbols-outlined">refresh</span> Generar enlace nuevo
+                        </button>
+                    </div>
+                    <p id="avisoValidador" role="status" class="text-sm mt-4 min-h-[1.25rem]"></p>
+                    <p class="text-xs text-gray-400 mt-2">El enlace vale 7 días. Cada entrada se puede usar una sola vez: si alguien muestra la misma entrada otra vez, el validador avisa que ya se usó. No lo publiques: cualquiera que lo tenga puede validar entradas de tu organización.</p>
                 </div>
             </div>
         </main>
     </div>
 
 
-    <script>
-        // Función para construir la URL completa
-        function getValidadorUrl() {
-            const base = window.location.origin;
-            let url = `${base}/validador.html`;
-            return url;
+    <script type="module">
+        // El enlace del validador lo arma el servidor (/api/validador) con una clave firmada que dice de qué organización
+        // es y hasta cuándo vale. Todo el texto se pone con textContent.
+        const link = document.getElementById('linkValidador');
+        const alcance = document.getElementById('alcanceValidador');
+        const aviso = document.getElementById('avisoValidador');
+        const btnCopiar = document.getElementById('btnCopiarValidador');
+        const btnAbrir = document.getElementById('btnAbrirValidador');
+        const btnNuevo = document.getElementById('btnNuevoValidador');
+        let enlace = '';
+
+        function avisar(texto, esError) {
+            aviso.textContent = texto;
+            aviso.className = `text-sm mt-4 min-h-[1.25rem] ${esError ? 'text-red-600' : 'text-green-700'}`;
         }
 
-        // Actualizar el enlace al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            const linkSpan = document.getElementById('linkValidador');
-            if (linkSpan) {
-                linkSpan.textContent = getValidadorUrl();
-            } else {
-                console.warn('Elemento #linkValidador no encontrado');
+        async function generarEnlace() {
+            btnNuevo.disabled = true;
+            avisar('', false);
+            try {
+                const usuario = window.auth && window.auth.currentUser;
+                if (!usuario) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
+                const token = await usuario.getIdToken();
+                const respuesta = await fetch('/api/validador', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ accion: 'enlace' }),
+                });
+                const datos = await respuesta.json().catch(() => null);
+                if (!respuesta.ok || !datos || !datos.ok) throw new Error((datos && datos.error && datos.error.mensaje) || 'No se pudo generar el enlace. Probá de nuevo.');
+                enlace = `${location.origin}/validador.html#clave=${encodeURIComponent(datos.clave)}`;
+                link.textContent = enlace;
+                const vence = new Date(datos.vence).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                alcance.textContent = `${datos.todas ? 'Sirve para las entradas de todos los eventos' : 'Sirve para las entradas de los eventos de tu organización'}. Vale hasta el ${vence}.`;
+                btnCopiar.disabled = false;
+                btnAbrir.disabled = false;
+            } catch (error) {
+                console.error('No se pudo generar el enlace del validador:', error);
+                alcance.textContent = 'No se pudo preparar el enlace.';
+                avisar(error.message, true);
+            } finally {
+                btnNuevo.disabled = false;
+            }
+        }
+
+        btnCopiar.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(enlace);
+                avisar('Enlace copiado. Mandáselo al personal de la puerta.', false);
+            } catch (e) {
+                avisar('No se pudo copiar: seleccioná el enlace y copialo a mano.', true);
             }
         });
+        btnAbrir.addEventListener('click', () => { if (enlace) window.open(enlace, '_blank', 'noopener'); });
+        btnNuevo.addEventListener('click', generarEnlace);
 
-        function copiarLink() {
-            const linkSpan = document.getElementById('linkValidador');
-            if (!linkSpan) {
-                alert('No se pudo obtener el enlace.');
-                return;
-            }
-            const link = linkSpan.textContent;
-            if (!link || link.trim() === '') {
-                alert('El enlace aún no está disponible.');
-                return;
-            }
-            navigator.clipboard.writeText(link).then(() => {
-                alert('Enlace copiado al portapapeles');
-            }).catch(() => {
-                const input = document.createElement('input');
-                input.value = link;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
-                alert('Enlace copiado al portapapeles');
-            });
-        }
-
-        function abrirValidador() {
-            const linkSpan = document.getElementById('linkValidador');
-            if (!linkSpan) {
-                alert('No se pudo obtener el enlace.');
-                return;
-            }
-            const url = linkSpan.textContent;
-            if (!url || url.trim() === '') {
-                alert('El enlace aún no está disponible.');
-                return;
-            }
-            window.open(url, '_blank');
-        }
+        // Cuando Firebase sabe quién es, se arma el primer enlace
+        const empezar = () => window.auth.onAuthStateChanged((u) => { if (u) generarEnlace(); });
+        if (window.auth) empezar(); else window.addEventListener('firebase-ready', empezar, { once: true });
     </script>
 
     <!-- Script para actualizar el enlace "Resumen" con el ID guardado -->
