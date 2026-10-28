@@ -38,9 +38,9 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 - [x] 15. Evento suspendido: el comprador ve un mensaje amable de "en mantenimiento, en un rato se puede seguir comprando".
 - [x] 16. Editar evento: pasar de varios lotes a entrada única si los lotes que se quitan no tienen ventas (ni pendientes); confirmación al cambiar de forma de venta (en los dos sentidos); al guardar, pedir la contraseña del login.
 - [ ] 17. Porcentajes y gráficos claros en Resumen (admin y superadmin); Reportes con porcentajes y descarga CSV y PDF; Finanzas (balance y liquidaciones) y Ventas con descarga CSV y PDF, salida profesional y ordenada.
-- [ ] 18. Eliminar la sección "Sitio" del panel.
+- [x] 18. Eliminar la sección "Sitio" del panel.
 - [ ] 19. "Olvidé mi contraseña" del login: el mensaje no llega (revisar).
-- [ ] 20. Pie del sitio: enlaces legales centrados y fijos (no desaparecen al entrar a uno), logo de Evently a la izquierda, © 2026.
+- [x] 20. Pie del sitio: enlaces legales centrados y fijos (no desaparecen al entrar a uno), logo de Evently a la izquierda, © 2026.
 - [ ] 21. Banners de las secciones del sitio con lugar para imagen (la persona pasa las imágenes después).
 - [ ] 22. Términos y condiciones y política de privacidad adecuados a Evently (datos personales, consumidor, pagos).
 - [ ] 23. Comprador registrado y correos: registro antes de comprar, entrada en PDF por correo, aviso de otros eventos, recordatorio a una semana y el día del evento. Necesita un servicio de correo nuevo (decidir con la persona).

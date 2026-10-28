@@ -1,40 +1,36 @@
 // Pie de página común del sitio del comprador (inicio, evento, soporte y las páginas legales).
 // Los links son relativos a la carpeta public/, donde están todas esas páginas.
-// Los links legales (términos, privacidad y arrepentimiento) van en un segundo renglón.
 
-// Texto de derechos que ya tenía cada página
-export const TEXTO_DE_DERECHOS = '© 2024 Evently by Bali Group';
+// Texto de derechos
+export const TEXTO_DE_DERECHOS = '© 2026 Evently by Bali Group';
 
 // Páginas que muestran el pie (el nombre que cada una le pasa a dibujarPie)
 export const PAGINAS_CON_PIE = ['inicio', 'evento', 'soporte', 'terminos', 'privacidad', 'arrepentimiento'];
 
-// Links legales: nunca se ofrece ir a la página en la que se está
+// Links legales, siempre los mismos y en el mismo orden (pedido 20: no desaparecen al entrar a uno).
+// El de la página en la que se está va marcado con `actual: true`.
 export function enlacesLegales(paginaActual) {
     return [
         { id: 'terminos', texto: 'Términos y condiciones', href: 'terminos.html' },
         { id: 'privacidad', texto: 'Política de privacidad', href: 'privacidad.html' },
         { id: 'arrepentimiento', texto: 'Botón de arrepentimiento', href: 'arrepentimiento.html' }
-    ].filter((e) => e.id !== paginaActual);
+    ].map((e) => ({ ...e, actual: e.id === paginaActual }));
 }
 
-// Links del pie para la página actual: nunca se ofrece ir a donde ya se está.
-// "Enviar una consulta" lleva al formulario al final del Centro de ayuda, que existe también estando en esa página.
+// Links de ayuda, siempre los mismos y en el mismo orden. "Enviar una consulta" lleva al formulario del Centro de ayuda.
 export function enlacesDelPie(paginaActual) {
-    const enlaces = [
+    const actual = { inicio: 'inicio', soporte: 'ayuda' }[paginaActual] || '';
+    return [
         { id: 'inicio', texto: 'Inicio', href: 'index.html' },
         { id: 'ayuda', texto: 'Centro de ayuda', href: 'soporte.html' },
         { id: 'consulta', texto: 'Enviar una consulta', href: 'soporte.html#contacto' }
-    ];
-    return enlaces.filter((e) => {
-        if (paginaActual === 'inicio') return e.id !== 'inicio';
-        if (paginaActual === 'soporte') return e.id !== 'ayuda';
-        return true;
-    });
+    ].map((e) => ({ ...e, actual: e.id === actual }));
 }
 
-// Pie oscuro estilo All Access, con el violeta de Evently: logo y logos de marcas arriba, una línea, los links y los derechos.
-// Todo se arma con createElement y textContent (nunca HTML). Los logos los carga el superadmin en "Sitio" (configuracion/sitio).
+// Pie oscuro con el violeta de Evently: en una fila, el logo a la izquierda, los links centrados y los logos de marcas
+// a la derecha; abajo una línea y los derechos, centrados. Todo con createElement y textContent (nunca HTML).
 const CLASE_ENLACE = 'text-white/85 hover:text-white hover:underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-300 rounded';
+const CLASE_ACTUAL = 'text-white font-semibold underline underline-offset-4 decoration-violet-400 rounded';
 
 // Llena un <footer> vacío. Devuelve el contenedor de logos (para cargarLogosDelPie).
 export function dibujarPie(elemento, paginaActual) {
@@ -44,39 +40,40 @@ export function dibujarPie(elemento, paginaActual) {
     const contenedor = document.createElement('div');
     contenedor.className = 'max-w-6xl mx-auto px-4 pt-10 pb-6';
 
-    // Fila de arriba: logo de Evently y logos de marcas
-    const arriba = document.createElement('div');
-    arriba.className = 'flex flex-wrap items-center justify-between gap-6';
+    // Fila: logo (izquierda), links (centro) y logos de marcas (derecha)
+    const fila = document.createElement('div');
+    fila.className = 'grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-center gap-6';
     const logo = document.createElement('a');
     logo.href = 'index.html';
-    logo.className = 'text-2xl font-extrabold tracking-tight text-violet-300 hover:text-violet-200';
+    logo.className = 'justify-self-start text-2xl font-extrabold tracking-tight text-violet-300 hover:text-violet-200';
     logo.textContent = 'Evently';
     logo.setAttribute('aria-label', 'Evently, ir al inicio');
-    const logos = document.createElement('div');
-    logos.className = 'flex flex-wrap items-center gap-6';
-    logos.setAttribute('aria-label', 'Marcas que acompañan');
-    arriba.append(logo, logos);
 
-    const linea = document.createElement('hr');
-    linea.className = 'my-6 border-white/20';
-
-    // Links: ayuda y legales en una fila
     const nav = document.createElement('nav');
-    nav.className = 'flex flex-wrap gap-x-6 gap-y-2 text-sm';
+    nav.className = 'flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-center';
     nav.setAttribute('aria-label', 'Ayuda y legales');
     [...enlacesDelPie(paginaActual), ...enlacesLegales(paginaActual)].forEach((e) => {
         const a = document.createElement('a');
         a.href = e.href;
         a.textContent = e.texto;
-        a.className = CLASE_ENLACE;
+        a.className = e.actual ? CLASE_ACTUAL : CLASE_ENLACE;
+        if (e.actual) a.setAttribute('aria-current', 'page');
         nav.appendChild(a);
     });
 
+    const logos = document.createElement('div');
+    logos.className = 'flex flex-wrap items-center justify-center md:justify-end gap-6';
+    logos.setAttribute('aria-label', 'Marcas que acompañan');
+    fila.append(logo, nav, logos);
+
+    const linea = document.createElement('hr');
+    linea.className = 'my-6 border-white/20';
+
     const derechos = document.createElement('p');
-    derechos.className = 'mt-8 text-xs text-white/60';
+    derechos.className = 'text-center text-xs text-white/60';
     derechos.textContent = TEXTO_DE_DERECHOS;
 
-    contenedor.append(arriba, linea, nav, derechos);
+    contenedor.append(fila, linea, derechos);
     elemento.appendChild(contenedor);
     return logos;
 }

@@ -28,7 +28,7 @@
     const rolMenu = vistaActiva ? 'organizacion' : rol;
     const esAdmin = rolMenu === 'superadmin';
     // 'eventos' también: el superadmin real siempre ve ahí su Crear evento y las solicitudes (superadmin.html redirige ahí)
-    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones', 'sitio', 'finanzas', 'ojo-de-halcon'];
+    const SOLO_SUPERADMIN = ['consultas-publicas', 'mensajes', 'eventos', 'organizaciones', 'finanzas', 'ojo-de-halcon'];
     const TEXTO_VISTA = 'Estás viendo el panel como organización';
 
     // El mismo cálculo lo usa menu-rol.js, para que el menú y los roles coincidan
@@ -89,7 +89,6 @@
             icono: esAdmin ? 'chat' : 'support_agent',
             texto: esAdmin ? 'Mensajes' : 'Soporte', corto: esAdmin ? 'Mensajes' : 'Soporte'
         },
-        { clave: 'sitio', rol: 'superadmin', href: 'sitio.html', icono: 'web', texto: 'Sitio', corto: 'Sitio' },
         { clave: 'ver-sitio', rol: 'organizacion', href: '../public/index.html', externo: true, icono: 'storefront', texto: 'Ver sitio', corto: 'Ver sitio' },
         // Superadmin: "Ver sitio" y "Ver como organización" juntos en una sola sección (pedido 14)
         { clave: 'ojo-de-halcon', rol: 'superadmin', href: 'ojo-de-halcon.html', icono: 'visibility', texto: 'Ojo de halcón', corto: 'Ojo de halcón', anchoMovil: 82 }

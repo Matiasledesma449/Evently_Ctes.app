@@ -36,7 +36,7 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - Backend: Firebase (Auth, Firestore, Storage), inicializado en `shared/firebase-init.js`.
 - Colecciones que se usan en el código: `usuarios`, `eventos`, `ventas`, `mensajes`, `conversaciones`, `consultas_publicas`, `solicitudes_eventos`, `solicitudes_password`, `organizaciones`, `configuracion` (categorías del costo de servicio).
 - El rol se lee del campo `rol` en `usuarios`. Valores vistos: `superadmin`, `cliente`, `usuario`, `organizacion` (organizador de eventos; aparece en el menú del panel).
-- Panel del superadmin: **Finanzas** (`admin/finanzas.html`: balance por período con gráficos SVG propios en `shared/grafico-barras.js` y liquidaciones por organización con `shared/finanzas.js`) y **Sitio** (`admin/sitio.html`: logos del pie, guardados en `configuracion/sitio`). Sin librerías de gráficos.
+- Panel del superadmin: **Finanzas** (`admin/finanzas.html`: balance por período con gráficos SVG propios en `shared/grafico-barras.js` y liquidaciones por organización con `shared/finanzas.js`). Sin librerías de gráficos. (La sección Sitio se sacó el 28/10; el pie todavía lee logos de `configuracion/sitio` si existen.)
 - Organizaciones: cada productora es un documento de `organizaciones` (lo crea el superadmin en el panel). Un evento es de una organización **solo** por su campo `organizacionId` (ya no por `creadoPor` ni por correo); una cuenta `organizacion` ve los eventos del `organizacionId` de su documento en `usuarios`. La regla está en `shared/organizaciones.js` (`eventosParaVer`): todas las listas del panel la usan.
 
 ## Convenciones que se ven en el código

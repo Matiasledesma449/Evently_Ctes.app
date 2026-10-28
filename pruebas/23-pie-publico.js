@@ -32,32 +32,37 @@ const P = vm.runInNewContext(codigo + '\n;({ enlacesDelPie, enlacesLegales, dibu
 const textos = (pagina) => Array.from(P.enlacesDelPie(pagina)).map((e) => e.texto).join('|');
 const hrefs = (pagina) => Array.from(P.enlacesDelPie(pagina)).map((e) => e.href).join('|');
 
-// ---------- Links por página ----------
-verificar('L1 en el evento: Inicio, Centro de ayuda y Enviar una consulta', textos('evento') === 'Inicio|Centro de ayuda|Enviar una consulta', textos('evento'));
-verificar('L2 en el inicio no aparece Inicio', textos('inicio') === 'Centro de ayuda|Enviar una consulta', textos('inicio'));
-verificar('L3 en soporte no aparece Centro de ayuda', textos('soporte') === 'Inicio|Enviar una consulta', textos('soporte'));
+// ---------- Links por página (pedido 20: siempre los mismos, en el mismo orden) ----------
+const actuales = (lista) => Array.from(lista).filter((e) => e.actual).map((e) => e.id).join(',');
+verificar('L1 los links de ayuda: Inicio, Centro de ayuda y Enviar una consulta', textos('evento') === 'Inicio|Centro de ayuda|Enviar una consulta', textos('evento'));
+verificar('L2 en el inicio están los mismos tres, con Inicio marcado', textos('inicio') === textos('evento') && actuales(P.enlacesDelPie('inicio')) === 'inicio');
+verificar('L3 en soporte están los mismos tres, con Centro de ayuda marcado', textos('soporte') === textos('evento') && actuales(P.enlacesDelPie('soporte')) === 'ayuda');
 verificar('L4 "Enviar una consulta" lleva al formulario (#contacto)', hrefs('evento') === 'index.html|soporte.html|soporte.html#contacto', hrefs('evento'));
-verificar('L5 una página desconocida o vacía recibe los tres links', textos('xyz') === textos('evento') && textos(undefined) === textos('evento'));
+verificar('L5 una página desconocida o vacía recibe los tres links sin marcar', textos('xyz') === textos('evento') && actuales(P.enlacesDelPie(undefined)) === '');
 verificar('L6 los links de ayuda no mezclan los legales', !/arrepentimiento|t[eé]rminos|privacidad/i.test(JSON.stringify(P.enlacesDelPie('evento'))));
 verificar('L7 las páginas del comprador tienen pie, también las legales', Array.from(P.PAGINAS_CON_PIE).join(',') === 'inicio,evento,soporte,terminos,privacidad,arrepentimiento');
 const legales = (p) => Array.from(P.enlacesLegales(p)).map((e) => e.href).join('|');
 verificar('L8 los legales: términos, privacidad y arrepentimiento', legales('evento') === 'terminos.html|privacidad.html|arrepentimiento.html', legales('evento'));
-verificar('L9 en una página legal no se ofrece ir a ella misma', legales('terminos') === 'privacidad.html|arrepentimiento.html' && legales('arrepentimiento') === 'terminos.html|privacidad.html');
+verificar('L9 en una página legal siguen los tres, en el mismo orden, con la actual marcada',
+  legales('terminos') === legales('evento') && legales('arrepentimiento') === legales('evento') && actuales(P.enlacesLegales('privacidad')) === 'privacidad');
 
-// ---------- Dibujo del pie (oscuro, estilo All Access) ----------
-// Estructura: footer > contenedor > [arriba (logo + logos), línea, nav de links, derechos]
+// ---------- Dibujo del pie ----------
+// Estructura: footer > contenedor > [fila (logo, links, logos de marcas), línea, derechos]
 const pie = elementoFalso('footer');
 pie.hijos.push(elementoFalso('span')); // contenido viejo que debe desaparecer
 const zonaLogos = P.dibujarPie(pie, 'evento');
 const cont = pie.hijos[0];
-const [arriba, linea, nav, derechos] = cont.hijos;
-verificar('D1 el pie tiene arriba (logo y logos), una línea, los links y los derechos', pie.hijos.length === 1 && cont.hijos.length === 4 && linea.tag === 'hr' && nav.tag === 'nav' && derechos._texto === '© 2024 Evently by Bali Group');
-verificar('D2 se conserva el texto de derechos de siempre', P.TEXTO_DE_DERECHOS === '© 2024 Evently by Bali Group');
-verificar('D3 el logo de Evently lleva al inicio', arriba.hijos[0].tag === 'a' && arriba.hijos[0].href === 'index.html' && arriba.hijos[0]._texto === 'Evently');
-verificar('D4 los links juntan ayuda y legales (6 desde el evento), cada uno con texto y destino', nav.hijos.length === 6 && nav.hijos.every((a) => a.tag === 'a' && a.href && a._texto));
-verificar('D5 dibujarPie devuelve el lugar de los logos', zonaLogos === arriba.hijos[1]);
-P.dibujarPie(pie, 'soporte');
-verificar('D6 volver a dibujar reemplaza el pie y no lo duplica', pie.hijos.length === 1 && pie.hijos[0].hijos[2].hijos.length === 5);
+const [fila, linea, derechos] = cont.hijos;
+const [logo, nav, logosMarcas] = fila.hijos;
+verificar('D1 el pie tiene la fila (logo, links, logos), una línea y los derechos', pie.hijos.length === 1 && cont.hijos.length === 3 && linea.tag === 'hr' && nav.tag === 'nav' && derechos._texto === '© 2026 Evently by Bali Group');
+verificar('D2 los derechos dicen 2026', P.TEXTO_DE_DERECHOS === '© 2026 Evently by Bali Group');
+verificar('D3 el logo de Evently va a la izquierda y lleva al inicio', logo.tag === 'a' && logo.href === 'index.html' && logo._texto === 'Evently' && /(^| )justify-self-start/.test(logo.className));
+verificar('D4 los seis links, centrados, cada uno con texto y destino', nav.hijos.length === 6 && /justify-center/.test(nav.className) && nav.hijos.every((a) => a.tag === 'a' && a.href && a._texto));
+verificar('D5 dibujarPie devuelve el lugar de los logos', zonaLogos === logosMarcas);
+P.dibujarPie(pie, 'terminos');
+const navTerminos = pie.hijos[0].hijos[0].hijos[1];
+verificar('D6 volver a dibujar reemplaza el pie; en Términos siguen los 6 links y el actual va marcado',
+  pie.hijos.length === 1 && navTerminos.hijos.length === 6 && navTerminos.hijos[3].atributos['aria-current'] === 'page' && navTerminos.hijos[3]._texto === 'Términos y condiciones');
 let fallo = false;
 try { P.dibujarPie(null, 'evento'); P.dibujarPie(undefined, 'inicio'); } catch (e) { fallo = true; }
 verificar('D7 sin elemento no falla', !fallo);
