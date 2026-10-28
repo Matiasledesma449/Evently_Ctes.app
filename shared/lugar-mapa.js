@@ -1,7 +1,7 @@
 // Campo de lugar con sugerencias (Nominatim, OpenStreetMap) y mapa (Leaflet). Se usa en admin/eventos.html y en public/evento.html.
 // Leaflet se carga por CDN antes que este archivo (queda en window.L). Sin red o sin Leaflet, el campo sigue siendo texto.
 // Los textos que vienen del servicio se muestran con textContent, nunca como HTML.
-import { armarUbicacion } from './evento-datos.js';
+import { armarUbicacion, direccionCorta } from './evento-datos.js';
 
 const URL_BUSQUEDA = 'https://nominatim.openstreetmap.org/search';
 const URL_DIRECCION = 'https://nominatim.openstreetmap.org/reverse';
@@ -34,7 +34,11 @@ export function dibujarMapa(contenedor, ubicacion, estado = {}) {
     if (!contenedor || !u || !window.L) return false;
     contenedor.classList.remove('hidden');
     if (!estado.mapa) {
-        estado.mapa = window.L.map(contenedor, { scrollWheelZoom: false }).setView([u.lat, u.lng], 16);
+        // Acercar y alejar con la rueda del mouse o con dos dedos en el touchpad o el celular (sin tocar los botones + y −).
+        // El mapa toma ese gesto para él: así no se agranda toda la página.
+        estado.mapa = window.L.map(contenedor, { scrollWheelZoom: true, touchZoom: true, zoomSnap: 0.5, wheelPxPerZoomLevel: 80 }).setView([u.lat, u.lng], 16);
+        // Gesto de pellizcar en el touchpad (el navegador lo manda como rueda con Ctrl): nunca agranda la página sobre el mapa
+        contenedor.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
         window.L.tileLayer(TILES, { maxZoom: 19, attribution: ATRIBUCION }).addTo(estado.mapa);
         estado.marcador = window.L.marker([u.lat, u.lng]).addTo(estado.mapa);
     } else {
@@ -75,12 +79,13 @@ export function activarLugarConMapa({ input, lista, mapa, aviso }) {
     async function pedirDireccion(u, miVersion) {
         if (miVersion !== versionDireccion) return;
         try {
-            const parametros = new URLSearchParams({ lat: String(u.lat), lon: String(u.lng), format: 'json', zoom: '18', 'accept-language': 'es' });
+            const parametros = new URLSearchParams({ lat: String(u.lat), lon: String(u.lng), format: 'json', zoom: '18', addressdetails: '1', 'accept-language': 'es' });
             const respuesta = await fetch(`${URL_DIRECCION}?${parametros}`);
             if (!respuesta.ok) throw new Error('servicio');
             const datos = await respuesta.json();
             if (miVersion !== versionDireccion) return; // movió el marcador otra vez mientras tanto
-            if (datos && typeof datos.display_name === 'string') input.value = datos.display_name;
+            // Solo calle, número y provincia (pedido de la persona: la dirección completa era larguísima)
+            if (datos && typeof datos.display_name === 'string') input.value = direccionCorta(datos.address, datos.display_name);
             decir('Punto marcado. Si corregís el texto del lugar, el punto del mapa se mantiene.');
         } catch (error) {
             if (miVersion !== versionDireccion) return;
@@ -115,7 +120,7 @@ export function activarLugarConMapa({ input, lista, mapa, aviso }) {
     function elegir(sugerencia) {
         const u = armarUbicacion(sugerencia.lat, sugerencia.lon);
         if (!u) return;
-        input.value = sugerencia.display_name;
+        input.value = direccionCorta(sugerencia.address, sugerencia.display_name);
         ubicacion = u;
         cerrarLista();
         decir('');
@@ -131,7 +136,15 @@ export function activarLugarConMapa({ input, lista, mapa, aviso }) {
             const boton = document.createElement('button');
             boton.type = 'button';
             boton.className = 'block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-violet-50';
-            boton.textContent = r.display_name;
+            // En la lista: la dirección corta y, abajo y más chico, el resto (para distinguir lugares parecidos)
+            const corta = direccionCorta(r.address, r.display_name);
+            const principal = document.createElement('span');
+            principal.className = 'block font-medium text-gray-800';
+            principal.textContent = corta;
+            const resto = document.createElement('span');
+            resto.className = 'block text-xs text-gray-400 truncate';
+            resto.textContent = r.display_name;
+            boton.append(principal, resto);
             boton.addEventListener('click', () => elegir(r));
             lista.appendChild(boton);
         }
@@ -142,7 +155,7 @@ export function activarLugarConMapa({ input, lista, mapa, aviso }) {
     async function buscar(texto) {
         const miVersion = ++version;
         try {
-            const parametros = new URLSearchParams({ q: texto, format: 'json', limit: '5', countrycodes: 'ar', 'accept-language': 'es' });
+            const parametros = new URLSearchParams({ q: texto, format: 'json', limit: '5', countrycodes: 'ar', addressdetails: '1', 'accept-language': 'es' });
             const respuesta = await fetch(`${URL_BUSQUEDA}?${parametros}`);
             if (!respuesta.ok) throw new Error('servicio');
             const resultados = await respuesta.json();

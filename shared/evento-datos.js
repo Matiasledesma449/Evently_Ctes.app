@@ -158,3 +158,15 @@ export function lugarCorto(lugar) {
     if (ciudad) resultado.push(ciudad);
     return resultado.join(', ');
 }
+
+// La dirección como la quiere ver la persona: calle (o avenida), número y provincia ("Mendoza 1017, Corrientes").
+// `direccion` es el objeto `address` que devuelve Nominatim con addressdetails=1. Si no trae calle, queda el lugar en corto.
+export function direccionCorta(direccion, textoCompleto = '') {
+    const d = direccion && typeof direccion === 'object' ? direccion : {};
+    const texto = (v) => (typeof v === 'string' ? v.trim() : '');
+    const calle = texto(d.road) || texto(d.pedestrian) || texto(d.footway) || texto(d.path) || texto(d.square);
+    const numero = texto(d.house_number);
+    const provincia = texto(d.state) || texto(d.province) || texto(d.city) || texto(d.town) || texto(d.village);
+    if (!calle) return lugarCorto(textoCompleto);
+    return [numero ? `${calle} ${numero}` : calle, provincia].filter(Boolean).join(', ');
+}

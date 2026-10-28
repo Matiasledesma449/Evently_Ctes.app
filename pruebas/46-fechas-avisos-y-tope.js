@@ -17,7 +17,7 @@ const verificar = (nombre, condicion, detalle = '') => {
 
 const sinExport = (archivo) => fs.readFileSync(path.join(RAIZ, 'shared', archivo), 'utf8').replace(/^export /gm, '');
 const L = vm.runInNewContext(sinExport('lotes.js') + '\n;({ estadoDeVentaDelEvento, validarFechasDeLote, lugaresQueQuedan })', { Intl });
-const D = vm.runInNewContext(sinExport('evento-datos.js') + '\n;({ validarDias, lugarCorto })', {});
+const D = vm.runInNewContext(sinExport('evento-datos.js') + '\n;({ validarDias, lugarCorto, direccionCorta })', {});
 const { entradasDeLaPersona, mensajeDeTope } = require(path.join(RAIZ, 'server', 'compra.js'));
 const { crearPago } = require(path.join(RAIZ, 'server', 'crear-pago.js'));
 
@@ -55,6 +55,8 @@ verificar('U1 dirección larga del mapa: nombre, calle con número y ciudad',
   D.lugarCorto('Zavod, 10, Lamadrid, Barrio Arazaty, Seccional 2°, Corrientes, Departamento Capital, Corrientes, 3400, Argentina') === 'Zavod, Lamadrid 10, Corrientes');
 verificar('U2 un lugar escrito a mano queda igual', D.lugarCorto('Complejo Municipalidad de Saladas') === 'Complejo Municipalidad de Saladas' && D.lugarCorto('Club Social, San Martín 500, Saladas') === 'Club Social, San Martín 500, Saladas');
 verificar('U3 empieza con el número de la calle', D.lugarCorto('10, Lamadrid, Barrio Norte, Corrientes, W3400, Argentina') === 'Lamadrid 10, Corrientes');
+verificar('U5 dirección del mapa: solo calle, número y provincia', D.direccionCorta({ amenity: 'Policonsultorio Dr. Viscaino', house_number: '1017', road: 'Mendoza', suburb: 'Barrio Centro', city: 'Corrientes', state: 'Corrientes', postcode: '3400', country: 'Argentina' }, 'x') === 'Mendoza 1017, Corrientes');
+verificar('U6 sin número queda calle y provincia; sin calle, el lugar en corto', D.direccionCorta({ road: 'Avenida 3 de Abril', state: 'Corrientes' }) === 'Avenida 3 de Abril, Corrientes' && D.direccionCorta({ state: 'Corrientes' }, 'Complejo Municipal, Saladas') === 'Complejo Municipal, Saladas' && D.direccionCorta(null, '') === '');
 verificar('U4 vacío o raro no rompe', D.lugarCorto('') === '' && D.lugarCorto(null) === '' && D.lugarCorto(5) === '');
 
 // ---------- Tope por persona ----------
