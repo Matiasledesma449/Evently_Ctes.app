@@ -81,7 +81,6 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
     window: ventana, URLSearchParams, URL, console: { error() {}, log() {}, warn() {} }, setTimeout, Promise,
     alert: (m) => alertas.push(m),
     dibujarPie: () => {}, // el pie comun se prueba aparte (23-pie-publico.js)
-    cargarLogosDelPie: () => {},
     dibujarCabecera: () => {}, // la cabecera comun se prueba aparte (33-cabecera-publica.js)
     db: {}, doc: (db, col, id) => ({ col, id }),
     getDoc: async (ref) => {
@@ -135,8 +134,9 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
   }
   {
     const p = crearPagina({ evento: EVENTO, fetchFn: respuesta(200, {}) });
-    await irAlPaso2(p, { lote: 1 }); // lote agotado
-    verificar('P4 lote agotado: se avisa en pantalla (sin alert) y no avanza', !p.els.errorPaso1.oculto && /agotado/i.test(p.els.errorPaso1.textContent) && !p.els.step2._clases.has('active') && p.alertas.length === 0, p.els.errorPaso1.textContent);
+    await irAlPaso2(p, { lote: 1 }); // lote agotado: no se puede elegir, se sigue con el primero
+    const htmlLotes = p.els.lotesContainer.innerHTML;
+    verificar('P4 lote agotado: dice "Agotado", no se puede elegir y se sigue con "General" (sin alert)', /data-index="1" data-elegible="0"/.test(htmlLotes) && />Agotado</.test(htmlLotes) && p.els.resumenLote.textContent === 'General' && p.alertas.length === 0, p.els.resumenLote.textContent);
     const q = crearPagina({ evento: EVENTO, fetchFn: respuesta(200, {}) });
     await irAlPaso2(q, { lote: 2, cantidad: 5 }); // quedan 2
     verificar('P5 mas entradas que las que quedan: aviso en pantalla con cuantas quedan', !q.els.errorPaso1.oculto && /solo 2/.test(q.els.errorPaso1.textContent) && !q.els.step2._clases.has('active'), q.els.errorPaso1.textContent);
@@ -286,6 +286,22 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     await pg.els.lotesContainer.querySelectorAll('.lote-card')[0].click();
     await pg.els.btnContinuarPaso1.disparar('click');
     verificar('L4 tocar el lote que no empezó no lo elige: se sigue con "Campo"', /Campo/.test(pg.els.resumenLote.textContent), pg.els.resumenLote.textContent);
+  }
+
+  {
+    // Avisos grandes cuando no se puede comprar (pedido de la persona)
+    const agotado = crearPagina({ evento: { ...EVENTO, lotes: [{ nombre: 'General', precio: 5000, disponibles: 5, vendidas: 5 }] }, fetchFn: respuesta(200, {}) });
+    await tick(); await tick();
+    verificar('A1 todo agotado: aviso "¡Entradas agotadas!" y se esconden la cantidad y el botón', !agotado.els.avisoVenta.oculto && /Entradas agotadas/.test(agotado.els.avisoVenta.innerHTML) && agotado.els.zonaCompra.oculto);
+    const terminada = crearPagina({ evento: { ...EVENTO, lotes: [{ nombre: 'Preventa', tipo: 'fechas', desde: '2020-01-01', hasta: '2020-02-01', precio: 5000, disponibles: 10 }] }, fetchFn: respuesta(200, {}) });
+    await tick(); await tick();
+    verificar('A2 pasó la fecha de venta: aviso "La venta online terminó"', !terminada.els.avisoVenta.oculto && /La venta online terminó/.test(terminada.els.avisoVenta.innerHTML) && terminada.els.zonaCompra.oculto && /Venta finalizada/.test(terminada.els.lotesContainer.innerHTML));
+    const proxima = crearPagina({ evento: { ...EVENTO, lotes: [{ nombre: 'Preventa', tipo: 'fechas', desde: '2099-03-05', hasta: '2099-04-01', precio: 5000, disponibles: 10 }] }, fetchFn: respuesta(200, {}) });
+    await tick(); await tick();
+    verificar('A3 todavía no empezó: dice cuándo salen a la venta', /Salen a la venta el 05\/03/.test(proxima.els.avisoVenta.innerHTML) && proxima.els.zonaCompra.oculto);
+    const normal = crearPagina({ evento: EVENTO, fetchFn: respuesta(200, {}) });
+    await tick(); await tick();
+    verificar('A4 con entradas a la venta no hay aviso', normal.els.avisoVenta.oculto && !normal.els.zonaCompra.oculto);
   }
 
   verificar('Z durante toda la prueba el JavaScript solo uso ids que existen en el HTML', problemas.length === 0, problemas.join(' | '));

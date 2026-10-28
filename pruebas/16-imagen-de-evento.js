@@ -29,7 +29,7 @@ verificar('I4 con cualquier entrada rara no falla y siempre hay relleno', [undef
 {
   const foto = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
   verificar('I3b una foto incluida jpeg, png o webp en base64 es valida', ['jpeg', 'png', 'webp'].every((t) => I.imagenDelEvento(ev('a', 'F', `data:image/${t};base64,AAAA`)).src === `data:image/${t};base64,AAAA`) && I.imagenDelEvento(ev('a', 'F', foto)).src === foto);
-  verificar('I3c una foto incluida de mas de 400.000 caracteres se descarta', I.imagenDelEvento(ev('a', 'F', 'data:image/jpeg;base64,' + 'A'.repeat(400001))).src === '' && I.imagenDelEvento(ev('a', 'F', 'data:image/jpeg;base64,' + 'A'.repeat(399000))).src !== '');
+  verificar('I3c una foto incluida de mas de 700.000 caracteres se descarta (hasta ahí entra una foto nítida de 480 KB)', I.imagenDelEvento(ev('a', 'F', 'data:image/jpeg;base64,' + 'A'.repeat(700001))).src === '' && I.imagenDelEvento(ev('a', 'F', 'data:image/jpeg;base64,' + 'A'.repeat(660000))).src !== '');
   const html = I.htmlDeImagenEvento(ev('a', 'F', foto));
   verificar('I3d con foto incluida el HTML lleva la foto en <img> y se quita si no carga', /<img [^>]*src="data:image\/jpeg;base64,A+"/.test(html) && /onerror="this\.remove\(\)"/.test(html));
 }
@@ -87,7 +87,7 @@ verificar('I11 dos eventos sin foto con ids distintos se distinguen por letra o 
   verificar('I22 las cuatro paginas que muestran un evento importan shared/imagen-evento.js', sinUsar.length === 0, sinUsar.join(', '));
   const viejos = Object.keys(paginas).filter((n) => /Imagen de evento 1\.jpg|images\.unsplash\.com/.test(paginas[n]));
   verificar('I23 ninguna pagina conserva su propio relleno (la foto repetida ni Unsplash)', viejos.length === 0, viejos.join(', '));
-  verificar('I24 aprobar una solicitud sigue copiando su foto al evento', /dataEvento\.imagen\s*=\s*typeof solicitud\.imagen === 'string'/.test(paginas['admin/aprobaciones.js']));
+  verificar('I24 aprobar una solicitud sigue copiando su foto al evento', /dataEvento\.imagen\s*=\s*typeof dataEvento\.imagen === 'string'/.test(paginas['admin/aprobaciones.js']));
   verificar('I25 evento.html y la lista de Eventos escapan el nombre del evento', /escaparHtml\(evento\.nombre/.test(paginas['public/evento.html']) && /escaparHtml\(evento\.nombre/.test(paginas['admin/eventos-seleccion.html']));
 }
 

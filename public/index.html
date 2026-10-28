@@ -24,7 +24,9 @@
 
         .event-card {
             overflow: hidden;
-            border-radius: 12px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
             transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         }
         .event-card:hover {
@@ -33,7 +35,7 @@
             border-color: #c4b5fd;
         }
         .event-image {
-            aspect-ratio: 4 / 5; /* el afiche manda: proporción vertical de afiche */
+            aspect-ratio: 12 / 5; /* banner horizontal, como las carteleras grandes (ideal: 1600 x 670) */
             background: #f3f0ff;
             position: relative;
             overflow: hidden;
@@ -137,7 +139,7 @@
 </head>
 <body>
 
-    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo, Inicio y Eventos) -->
     <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
     <!-- Contenido principal -->
@@ -181,14 +183,14 @@
             </div>
         </section>
 
-        <section class="mt-5 sm:mt-8" aria-labelledby="tituloEventos">
+        <section id="eventos" class="mt-5 sm:mt-8 scroll-mt-20" aria-labelledby="tituloEventos">
             <div class="flex items-end justify-between gap-3 mb-4">
                 <div>
                     <h2 id="tituloEventos" class="text-xl font-bold text-gray-900">Todos los eventos</h2>
                     <p class="text-sm text-gray-500 mt-1">Elegí tu próxima salida.</p>
                 </div>
             </div>
-            <div id="eventosContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div id="eventosContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <p class="text-gray-400 py-10 text-center col-span-full">Cargando eventos...</p>
             </div>
         </section>
@@ -203,10 +205,12 @@
     <script type="module">
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { imagenDelEvento } from "../shared/imagen-evento.js";
-        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
+        import { lugarCorto } from "../shared/evento-datos.js";
+        import { estadoDeVentaDelEvento, hoyEnArgentina, diaMes } from "../shared/lotes.js";
+        import { dibujarPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
 
-        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'inicio'));
+        dibujarPie(document.getElementById('pie'), 'inicio');
         dibujarCabecera(document.getElementById('cabecera'), 'inicio');
 
         const db = window.db;
@@ -308,6 +312,22 @@
             return icono;
         }
 
+        // Cómo está la venta (pedido de la persona: que se vea si se agotó o si terminó la venta online)
+        const AVISO_DE_VENTA = {
+            agotado: { texto: 'Agotado', clase: 'bg-red-600 text-white' },
+            terminada: { texto: 'Venta finalizada', clase: 'bg-gray-900/85 text-white' },
+            proximamente: { texto: 'Próximamente', clase: 'bg-amber-400 text-amber-950' },
+        };
+
+        // El precio más bajo entre los lotes (con "Desde" si hay más de uno con precio)
+        function textoDePrecio(evento) {
+            const precios = (Array.isArray(evento.lotes) ? evento.lotes : []).map((l) => Number(l && l.precio)).filter((n) => Number.isFinite(n) && n > 0);
+            if (!precios.length) return '';
+            const pesos = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Math.min(...precios));
+            return precios.length > 1 ? `Desde ${pesos}` : pesos;
+        }
+
+        // Tarjeta ancha (banner arriba, datos abajo). El cuerpo crece para que el botón quede siempre a la misma altura.
         function crearCardEvento(evento, indice) {
             const card = document.createElement('article');
             card.className = 'event-card fade-in bg-white border border-gray-200';
@@ -318,6 +338,7 @@
             const img = document.createElement('img');
             img.className = 'w-full h-full object-cover';
             img.loading = 'lazy';
+            img.decoding = 'async';
             const placeholder = document.createElement('div');
             placeholder.className = 'event-placeholder';
             placeholder.hidden = true;
@@ -325,46 +346,52 @@
             configurarImagen(img, placeholder, evento, evento.nombre || 'Imagen del evento');
             frame.append(img, placeholder);
 
-            const badgeText = etiquetaProximidad(evento);
+            const venta = estadoDeVentaDelEvento(evento.lotes, hoyEnArgentina());
+            const aviso = AVISO_DE_VENTA[venta.estado];
+            const badgeText = aviso ? aviso.texto : etiquetaProximidad(evento);
             if (badgeText) {
                 const badge = document.createElement('span');
-                badge.className = 'absolute top-3 left-3 bg-white/95 text-violet-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm';
+                badge.className = 'absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full shadow-sm ' + (aviso ? aviso.clase : 'bg-white/95 text-violet-800');
                 badge.textContent = badgeText;
                 frame.appendChild(badge);
             }
 
             const body = document.createElement('div');
-            body.className = 'p-4 flex flex-col';
+            body.className = 'p-5 flex flex-col flex-1';
             const title = document.createElement('h3');
-            title.className = 'text-base font-bold leading-snug text-gray-900 line-clamp-2';
+            title.className = 'text-lg font-bold leading-snug text-gray-900 truncate';
             title.textContent = evento.nombre || 'Sin nombre';
+            title.title = evento.nombre || '';
 
             const details = document.createElement('div');
-            details.className = 'mt-2 space-y-1';
+            details.className = 'mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0';
             const dateRow = document.createElement('p');
-            dateRow.className = 'event-meta';
+            dateRow.className = 'event-meta whitespace-nowrap';
             dateRow.append(crearIcono('calendar_month'), document.createTextNode(fechaLegible(evento)));
             const placeRow = document.createElement('p');
-            placeRow.className = 'event-meta';
-            placeRow.append(crearIcono('location_on'), document.createTextNode(evento.lugar || 'Lugar no definido'));
+            placeRow.className = 'event-meta min-w-0 max-w-full';
+            const lugar = document.createElement('span');
+            lugar.className = 'truncate';
+            lugar.textContent = lugarCorto(evento.lugar) || 'Lugar a confirmar';
+            lugar.title = evento.lugar || '';
+            placeRow.append(crearIcono('location_on'), lugar);
             details.append(dateRow, placeRow);
 
             const actions = document.createElement('div');
-            actions.className = 'mt-auto pt-3 flex items-center justify-between gap-3';
-            const precio = Number(evento.lotes?.[0]?.precio);
-            if (Number.isFinite(precio) && precio > 0) {
-                const price = document.createElement('span');
-                price.className = 'text-sm font-semibold text-gray-800';
-                price.textContent = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(precio);
-                actions.appendChild(price);
-            } else {
-                actions.appendChild(document.createElement('span'));
-            }
+            actions.className = 'mt-auto pt-4 flex items-center justify-between gap-3';
+            const price = document.createElement('span');
+            price.className = 'text-base font-bold text-gray-900';
+            price.textContent = venta.estado === 'agotado' ? 'Entradas agotadas'
+                : venta.estado === 'terminada' ? 'Venta online cerrada'
+                : venta.estado === 'proximamente' && venta.desde ? `A la venta el ${diaMes(venta.desde)}`
+                : textoDePrecio(evento);
+            if (aviso) price.className = 'text-sm font-semibold text-gray-500';
+            actions.appendChild(price);
 
             const link = document.createElement('a');
             link.href = `evento.html?id=${encodeURIComponent(evento.id)}`;
-            link.className = 'btn-detail text-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md inline-flex items-center gap-2 font-semibold';
-            link.append('Ver entradas', crearIcono('arrow_forward', 'text-base'));
+            link.className = 'btn-detail shrink-0 text-white px-5 py-2.5 rounded-full shadow-sm hover:shadow-md inline-flex items-center gap-2 font-semibold';
+            link.append(aviso ? 'Ver evento' : 'Ver entradas', crearIcono('arrow_forward', 'text-base'));
             actions.appendChild(link);
 
             body.append(title, details, actions);
@@ -398,7 +425,7 @@
             configurarImagen(heroImage, heroPlaceholder, evento, evento.nombre || 'Evento destacado');
             document.getElementById('heroTitle').textContent = evento.nombre || 'Evento destacado';
             document.getElementById('heroDate').textContent = fechaLegible(evento);
-            document.getElementById('heroPlace').textContent = evento.lugar || 'Lugar no definido';
+            document.getElementById('heroPlace').textContent = lugarCorto(evento.lugar) || 'Lugar a confirmar';
             document.getElementById('heroLink').href = `evento.html?id=${encodeURIComponent(evento.id)}`;
             document.getElementById('heroBadge').textContent = etiquetaProximidad(evento) || 'Eventos destacados';
             heroAnterior.hidden = eventosDestacados.length < 2;

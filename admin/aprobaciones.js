@@ -1,6 +1,8 @@
     // ==========================================
     // admin/aprobaciones.js
-    // Lógica de las solicitudes de eventos: pestaña "Solicitudes" de "Crear evento" (eventos.html?modo=directo)
+    // Lógica de las solicitudes de eventos: pestaña "Solicitudes" de Eventos (eventos-seleccion.html#solicitudes).
+    // "Editar" abre la solicitud en el formulario completo de Crear evento (eventos.html?modo=directo&solicitud=<id>),
+    // donde el superadmin elige también la categoría de costo de servicio y la publica.
     // ==========================================
 
     const db = window.db;
@@ -10,9 +12,10 @@
     import { eventosDeOrganizacion } from "../shared/organizaciones.js";
     import { armarComentario, comentariosDeSolicitud, ultimoComentario, enlacesDeContacto } from "../shared/solicitudes-evento.js";
     import { resumenDeDias, detalleParaMostrar } from "../shared/evento-datos.js";
+    import { escaparHtml } from "../shared/ventas-utils.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
-        serverTimestamp, getDoc, getDocs, deleteField, arrayUnion
+        serverTimestamp, getDoc, getDocs, arrayUnion, runTransaction
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -21,11 +24,6 @@
     const gridSolicitudes = document.getElementById('grid-solicitudes');
     const contadorSolicitudes = document.getElementById('contador-solicitudes');
     const botonesEstadoSolicitud = document.querySelectorAll('[data-estado-solicitud]');
-    const modalEditarSolicitud = document.getElementById('modalEditarSolicitud');
-    const formEditarSolicitud = document.getElementById('formEditarSolicitud');
-    const lotesEdicionContainer = document.getElementById('lotesEdicionContainer');
-    const errorEditarSolicitud = document.getElementById('errorEditarSolicitud');
-    const btnGuardarEdicion = document.getElementById('btnGuardarEdicion');
 
     const modal = document.getElementById('modalConfirmacion');
     const modalTitulo = document.getElementById('modalConfirmacionTitulo');
@@ -44,7 +42,12 @@
     const organizacionPorSolicitud = new Map();
     let solicitudesCache = [];
     let estadoSolicitudesActual = 'pendiente';
-    let solicitudEditando = null;
+
+    // Abre la solicitud en el formulario completo de Crear evento (solo las pendientes)
+    function abrirEdicionCompleta(solicitud) {
+        if ((solicitud.estado || 'pendiente') !== 'pendiente') return;
+        window.location.href = `eventos.html?modo=directo&solicitud=${encodeURIComponent(solicitud.id)}`;
+    }
 
     // ==========================================
     // 1. VERIFICACIÓN DE SEGURIDAD (SUPERADMIN)
@@ -252,7 +255,7 @@
             editar.type = 'button';
             editar.className = 'px-3 py-1.5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-50 text-xs font-semibold';
             editar.textContent = 'Editar';
-            editar.addEventListener('click', () => abrirModalEdicion(solicitud));
+            editar.addEventListener('click', () => abrirEdicionCompleta(solicitud));
             contacto.appendChild(editar);
         }
 
@@ -416,7 +419,7 @@
         acciones.appendChild(boton('Comentar', 'border border-gray-300 text-gray-700 hover:bg-gray-50', () => abrirModalComentarios(solicitud.id)));
         if (pendiente) {
             acciones.append(
-                boton('Editar', 'border border-violet-600 text-violet-700 hover:bg-violet-50', () => abrirModalEdicion(solicitud)),
+                boton('Editar', 'border border-violet-600 text-violet-700 hover:bg-violet-50', () => abrirEdicionCompleta(solicitud)),
                 boton('Rechazar', 'bg-gray-100 hover:bg-gray-200 text-gray-700', () => abrirModal('rechazar', cardElement)),
                 boton('Publicar', 'bg-violet-600 hover:bg-violet-700 text-white', () => abrirModal('publicar', cardElement)));
         }
@@ -427,147 +430,6 @@
         document.body.appendChild(fondo);
         x.focus();
     }
-
-    function crearFilaLoteEdicion(lote = {}) {
-        const fila = document.createElement('div');
-        fila.dataset.loteEdicion = 'true';
-        fila.dataset.vendidas = String(Number(lote.vendidas) || 0);
-        if (lote.tipo === 'fechas' || lote.tipo === 'siempre') { fila.dataset.tipo = lote.tipo; fila.dataset.desde = lote.desde || ''; fila.dataset.hasta = lote.hasta || ''; }
-        fila.className = 'grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-lg border border-gray-200 p-3';
-
-        const nombre = document.createElement('input');
-        nombre.type = 'text';
-        nombre.maxLength = 100;
-        nombre.required = true;
-        nombre.placeholder = 'Nombre del lote';
-        nombre.value = lote.nombre || '';
-        nombre.dataset.campo = 'nombre';
-        nombre.className = 'border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500';
-
-        const precio = document.createElement('input');
-        precio.type = 'number';
-        precio.min = '0.01';
-        precio.step = '0.01';
-        precio.required = true;
-        precio.placeholder = 'Precio';
-        precio.value = lote.precio ?? '';
-        precio.dataset.campo = 'precio';
-        precio.className = 'border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500';
-
-        const disponibles = document.createElement('input');
-        disponibles.type = 'number';
-        disponibles.min = '1';
-        disponibles.step = '1';
-        disponibles.required = true;
-        disponibles.placeholder = 'Disponibles';
-        disponibles.value = lote.disponibles ?? '';
-        disponibles.dataset.campo = 'disponibles';
-        disponibles.className = 'border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500';
-
-        const vigencia = document.createElement('input');
-        vigencia.type = 'text';
-        vigencia.maxLength = 120;
-        vigencia.placeholder = 'Vigencia (opcional)';
-        vigencia.value = lote.vigencia || '';
-        vigencia.dataset.campo = 'vigencia';
-        vigencia.className = 'sm:col-span-2 border border-gray-300 rounded-lg px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500';
-
-        const eliminar = document.createElement('button');
-        eliminar.type = 'button';
-        eliminar.className = 'rounded-lg px-2 py-2 text-sm text-red-700 hover:bg-red-50';
-        eliminar.textContent = 'Quitar lote';
-        eliminar.addEventListener('click', () => fila.remove());
-
-        fila.append(nombre, precio, disponibles, vigencia, eliminar);
-        return fila;
-    }
-
-    function abrirModalEdicion(solicitud) {
-        if ((solicitud.estado || 'pendiente') !== 'pendiente') return;
-        solicitudEditando = solicitud;
-        document.getElementById('editarNombreSolicitud').value = solicitud.nombre || '';
-        const campoFecha = document.getElementById('editarFechaSolicitud');
-        campoFecha.value = solicitud.fecha || '';
-        // Con días y horarios cargados, la fecha es la del primer día: cambiarla a mano los dejaría contradictorios
-        const tieneDias = Array.isArray(solicitud.dias) && solicitud.dias.length > 0;
-        campoFecha.readOnly = tieneDias;
-        campoFecha.classList.toggle('bg-gray-100', tieneDias);
-        campoFecha.title = tieneDias ? 'La fecha sale de los días del evento. Para cambiarlos, pedí una solicitud nueva.' : '';
-        document.getElementById('editarLugarSolicitud').value = solicitud.lugar || '';
-        errorEditarSolicitud.classList.add('hidden');
-        lotesEdicionContainer.replaceChildren();
-        (solicitud.lotes || []).forEach(lote => lotesEdicionContainer.appendChild(crearFilaLoteEdicion(lote)));
-        if (!solicitud.lotes?.length) lotesEdicionContainer.appendChild(crearFilaLoteEdicion());
-        modalEditarSolicitud.classList.remove('hidden');
-        modalEditarSolicitud.classList.add('flex');
-        document.getElementById('editarNombreSolicitud').focus();
-    }
-
-    function cerrarModalEdicion() {
-        modalEditarSolicitud.classList.add('hidden');
-        modalEditarSolicitud.classList.remove('flex');
-        solicitudEditando = null;
-    }
-
-    document.getElementById('btnCerrarModalEditar').addEventListener('click', cerrarModalEdicion);
-    document.getElementById('btnCancelarEdicion').addEventListener('click', cerrarModalEdicion);
-    document.getElementById('btnAgregarLoteEdicion').addEventListener('click', () => {
-        lotesEdicionContainer.appendChild(crearFilaLoteEdicion());
-    });
-
-    formEditarSolicitud.addEventListener('submit', async event => {
-        event.preventDefault();
-        if (!solicitudEditando || (solicitudEditando.estado || 'pendiente') !== 'pendiente') return;
-
-        const solicitudActual = solicitudesCache.find(item => item.id === solicitudEditando.id);
-        if (!solicitudActual || (solicitudActual.estado || 'pendiente') !== 'pendiente') {
-            errorEditarSolicitud.textContent = 'La solicitud ya no está pendiente y no se puede editar.';
-            errorEditarSolicitud.classList.remove('hidden');
-            return;
-        }
-
-        const lotes = [...lotesEdicionContainer.querySelectorAll('[data-lote-edicion]')].map(fila => ({
-            nombre: fila.querySelector('[data-campo="nombre"]').value.trim(),
-            precio: Number(fila.querySelector('[data-campo="precio"]').value),
-            disponibles: Number.parseInt(fila.querySelector('[data-campo="disponibles"]').value, 10),
-            vendidas: Number(fila.dataset.vendidas) || 0,
-            vigencia: fila.querySelector('[data-campo="vigencia"]').value.trim(),
-            // El tipo y las fechas no se editan acá: se conservan los que traía el lote
-            ...(fila.dataset.tipo ? { tipo: fila.dataset.tipo, desde: fila.dataset.desde || '', hasta: fila.dataset.hasta || '' } : {})
-        }));
-
-        if (lotes.length === 0 || lotes.some(lote => !lote.nombre || !Number.isFinite(lote.precio) || lote.precio <= 0 || !Number.isInteger(lote.disponibles) || lote.disponibles < 1)) {
-            errorEditarSolicitud.textContent = 'Agregá al menos un lote e ingresá nombre, precio y cantidad válida en cada uno.';
-            errorEditarSolicitud.classList.remove('hidden');
-            return;
-        }
-
-        const cambios = {
-            nombre: document.getElementById('editarNombreSolicitud').value.trim(),
-            fecha: document.getElementById('editarFechaSolicitud').value.trim(),
-            lugar: document.getElementById('editarLugarSolicitud').value.trim(),
-            lotes
-        };
-        // Si cambia el texto del lugar, el punto del mapa elegido antes ya no corresponde: se saca para no mostrar un mapa equivocado
-        if (solicitudActual.ubicacion && cambios.lugar !== (solicitudActual.lugar || '')) cambios.ubicacion = deleteField();
-        if (!cambios.nombre || !cambios.fecha || !cambios.lugar) {
-            errorEditarSolicitud.textContent = 'Nombre, fecha y lugar son obligatorios.';
-            errorEditarSolicitud.classList.remove('hidden');
-            return;
-        }
-
-        btnGuardarEdicion.disabled = true;
-        try {
-            await updateDoc(doc(db, 'solicitudes_eventos', solicitudEditando.id), cambios);
-            cerrarModalEdicion();
-        } catch (error) {
-            console.error('No se pudo actualizar la solicitud:', error);
-            errorEditarSolicitud.textContent = 'No se pudo guardar. Verificá los permisos de Firestore e intentá otra vez.';
-            errorEditarSolicitud.classList.remove('hidden');
-        } finally {
-            btnGuardarEdicion.disabled = false;
-        }
-    });
 
     // ==========================================
     // 3b. COMENTARIOS DE UNA SOLICITUD
@@ -663,13 +525,13 @@
 
         if (accion === 'publicar') {
             modalTitulo.textContent = 'Publicar Evento';
-            modalMensaje.innerHTML = `¿Confirmas la publicación de <strong>${solicitudSeleccionada.nombre}</strong>? Pasará a la cartelera pública.`;
+            modalMensaje.innerHTML = `¿Confirmas la publicación de <strong>${escaparHtml(solicitudSeleccionada.nombre || '')}</strong>? Pasará a la cartelera pública.`;
             contenedorMotivo.classList.add('hidden');
             btnConfirmar.textContent = 'Sí, Publicar';
             btnConfirmar.className = 'px-5 py-2 text-white font-medium rounded-lg transition shadow-md min-w-[120px] bg-violet-600 hover:bg-violet-700';
         } else {
             modalTitulo.textContent = 'Rechazar Solicitud';
-            modalMensaje.innerHTML = `Vas a rechazar el evento <strong>${solicitudSeleccionada.nombre}</strong>.`;
+            modalMensaje.innerHTML = `Vas a rechazar el evento <strong>${escaparHtml(solicitudSeleccionada.nombre || '')}</strong>.`;
             contenedorMotivo.classList.remove('hidden');
             inputMotivo.value = '';
             btnConfirmar.textContent = 'Rechazar Evento';
@@ -727,16 +589,19 @@
             throw new Error('La solicitud no tiene una organización que exista. Vinculá la cuenta que la envió en "Organizaciones" y volvé a publicarla.');
         }
 
-        const dataEvento = { ...solicitud, organizacionId };
-        delete dataEvento.id;
-        delete dataEvento.nombreOrganizacion; // es solo para mostrar en esta pantalla
-        delete dataEvento.comentarios; // los comentarios son entre el superadmin y la organización: el evento es público
-        dataEvento.imagen = typeof solicitud.imagen === 'string' ? solicitud.imagen.trim() : '';
-        dataEvento.estado = 'publicado';
-        dataEvento.fechaPublicacion = serverTimestamp();
-
-        await setDoc(eventoRef, dataEvento);
-        await updateDoc(solicitudRef, { estado: 'aprobada' });
+        // En una transacción y con lo GUARDADO (no la copia de la tarjeta): si otra pestaña ya la publicó o la
+        // rechazó, o la cambió desde el formulario completo, no se pisa nada
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(solicitudRef);
+            if (!snap.exists() || (snap.data().estado || 'pendiente') !== 'pendiente') throw new Error('Esta solicitud ya fue revisada. Recargá la página.');
+            const dataEvento = { ...snap.data(), organizacionId: snap.data().organizacionId || organizacionId };
+            delete dataEvento.comentarios; // los comentarios son entre el superadmin y la organización: el evento es público
+            dataEvento.imagen = typeof dataEvento.imagen === 'string' ? dataEvento.imagen.trim() : '';
+            dataEvento.estado = 'publicado';
+            dataEvento.fechaPublicacion = serverTimestamp();
+            tx.set(eventoRef, dataEvento);
+            tx.update(solicitudRef, { estado: 'aprobada', fechaAprobacion: serverTimestamp() });
+        });
     }
 
     async function procesarRechazo(solicitudId, motivo) {

@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo, Inicio y Eventos) -->
     <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
     <section class="franja text-white">
@@ -112,11 +112,11 @@
     <footer id="pie" class="footer bg-white border-t border-gray-200 py-4 text-center"></footer>
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
+        import { dibujarPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { aplicarBanner } from "../shared/banners.js";
         aplicarBanner(document.querySelector('section.franja'), 'privacidad'); // imagen del banner, si tiene (pedido 21)
-        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'privacidad'));
+        dibujarPie(document.getElementById('pie'), 'privacidad');
         dibujarCabecera(document.getElementById('cabecera'), 'privacidad');
     </script>
 </body>

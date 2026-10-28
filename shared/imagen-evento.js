@@ -29,8 +29,9 @@ function hashDeTexto(texto) {
 }
 
 // Se acepta una dirección https (sin espacios ni caracteres de control) o una foto incluida en el propio evento
-// (data:image/jpeg, png o webp en base64, de hasta 400.000 caracteres). Nada de javascript:, http:, SVG ni otros data:.
-const LARGO_MAXIMO_FOTO_INCLUIDA = 400000;
+// (data:image/jpeg, png o webp en base64, de hasta 700.000 caracteres: unos 500 KB, para que se vea nítida).
+// Nada de javascript:, http:, SVG ni otros data:.
+const LARGO_MAXIMO_FOTO_INCLUIDA = 700000;
 export function direccionDeImagenValida(valor) {
     if (typeof valor !== 'string') return '';
     const url = valor.trim();

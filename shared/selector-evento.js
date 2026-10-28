@@ -23,8 +23,8 @@ const conTodos = !!contenedor && contenedor.dataset.conTodos === '1';
 const lugarEnFranja = document.getElementById('franjaOrganizacionEvento');
 if (contenedor && desplegable && lugarEnFranja) {
     const etiqueta = contenedor.querySelector('label[for="selectorEventoSelect"]');
-    if (etiqueta) { etiqueta.className = 'font-semibold flex-shrink-0'; lugarEnFranja.append(etiqueta); }
-    desplegable.className = 'min-w-0 max-w-[60vw] sm:max-w-[16rem] bg-white border border-pink-300 text-pink-900 rounded-full px-2 py-0.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-pink-400';
+    if (etiqueta) { etiqueta.className = 'font-medium flex-shrink-0'; lugarEnFranja.append(etiqueta); }
+    desplegable.className = 'min-w-0 max-w-[60vw] sm:max-w-[16rem] bg-white border border-gray-200 text-gray-800 rounded-lg px-2.5 py-1 text-xs font-semibold outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-300';
     lugarEnFranja.append(desplegable);
 }
 

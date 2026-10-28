@@ -18,7 +18,7 @@
 </head>
 <body>
 
-    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo, Inicio y Eventos) -->
     <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
     <main class="max-w-4xl mx-auto px-4 py-8">
@@ -33,8 +33,11 @@
                 <label id="etiquetaLotes" class="block text-sm font-medium text-gray-700 mb-2">Elige un lote</label>
                 <div id="lotesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
+            <!-- Aviso grande cuando no se puede comprar: entradas agotadas, venta terminada o todavía no empezó -->
+            <div id="avisoVenta" class="hidden rounded-2xl border p-6 text-center" role="status"></div>
+            <div id="zonaCompra">
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad <span class="font-normal text-gray-400">(hasta 10 por persona)</span></label>
                 <div class="flex items-center border border-gray-300 rounded-lg w-32">
                     <button type="button" id="btnMenos" class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg">-</button>
                     <input id="cantidadInput" type="number" value="1" min="1" max="10" class="w-full text-center border-none focus:ring-0 outline-none" />
@@ -45,6 +48,7 @@
             <button type="button" id="btnContinuarPaso1" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-full transition shadow-md">
                 Continuar con el pago
             </button>
+            </div>
         </div>
 
         <!-- PASO 2: Datos del comprador y pago con Mercado Pago.
@@ -131,16 +135,16 @@
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
-        import { estadoDeLote, hoyEnArgentina, textoDeVigencia, diaMes } from "../shared/lotes.js";
+        import { estadoDeLote, hoyEnArgentina, textoDeVigencia, diaMes, lugaresQueQuedan, estadoDeVentaDelEvento } from "../shared/lotes.js";
         import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
-        import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
+        import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento, lugarCorto } from "../shared/evento-datos.js";
         import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
-        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
+        import { dibujarPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { categoriaDeComision, desgloseDeCompra } from "../shared/comision.js";
         import { seVendeEnElSitio, situacionDelEvento } from "../shared/estado-evento.js";
 
-        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'evento'));
+        dibujarPie(document.getElementById('pie'), 'evento');
         dibujarCabecera(document.getElementById('cabecera'), 'evento');
 
         // El aviso del paso de pago nombra las formas de pago desde la lista compartida
@@ -299,12 +303,12 @@
             // 1. Afiche con nombre, días y lugar
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    ${htmlDeImagenEvento(evento, { clases: 'h-64' })}
+                    ${htmlDeImagenEvento(evento, { clases: 'h-56 sm:h-80' })}
                     <div class="p-6">
                         <h1 class="text-3xl font-bold text-gray-800">${escaparHtml(evento.nombre || 'Evento sin nombre')}</h1>
                         ${htmlDeDias}
                         <p class="text-gray-500 flex items-center gap-2">
-                            <span class="material-symbols-outlined">location_on</span> ${escaparHtml(lugar)}
+                            <span class="material-symbols-outlined">location_on</span> ${escaparHtml(lugarCorto(lugar) || lugar)}
                         </p>
                     </div>
                 </div>
@@ -341,32 +345,33 @@
         function renderLotes(lotes) {
             if (!lotes || lotes.length === 0) {
                 lotesContainer.innerHTML = `<p class="text-gray-500">No hay lotes disponibles para este evento.</p>`;
+                mostrarAvisoDeVenta({ estado: 'sin-lotes', desde: '' });
                 return;
             }
             const hoy = hoyEnArgentina();
             lotesContainer.innerHTML = lotes.map((lote, index) => {
-                const vendidas = Number(lote.vendidas) || 0;
-                const disponibles = Number(lote.disponibles) || 0;
-                const disponiblesRestantes = Math.max(0, disponibles - vendidas);
+                const disponiblesRestantes = lugaresQueQuedan(lote);
                 const estado = estadoDeLote(lote, hoy);
                 const precioNum = Number(lote.precio) || 0;
-                // Se puede tocar si está en fecha (si está agotado, al continuar se avisa, como siempre)
-                const elegible = estado === 'disponible';
-                const textoEstado = estado === 'proximo'
-                    ? `Disponible desde el ${diaMes(lote.desde)}`
-                    : estado === 'finalizado' ? 'Venta finalizada'
-                    : disponiblesRestantes > 0 ? `${disponiblesRestantes} disponibles` : 'Agotado';
-                const colorEstado = elegible && disponiblesRestantes > 0 ? 'text-green-600' : estado === 'proximo' ? 'text-amber-600' : 'text-red-500';
+                // Se puede elegir si está en fecha y le quedan lugares. Agotado o fuera de fecha: apagado con su insignia.
+                const agotado = estado === 'disponible' && disponiblesRestantes === 0;
+                const elegible = estado === 'disponible' && !agotado;
+                const insignia = agotado ? ['Agotado', 'bg-red-600 text-white']
+                    : estado === 'finalizado' ? ['Venta finalizada', 'bg-gray-800 text-white']
+                    : estado === 'proximo' ? [`Disponible desde el ${diaMes(lote.desde)}`, 'bg-amber-100 text-amber-800']
+                    : null;
+                const textoEstado = disponiblesRestantes <= 10 ? `¡Últimas ${disponiblesRestantes}!` : 'Disponible';
                 return `
-                    <div class="lote-card p-4 rounded-xl transition border border-gray-200 ${elegible ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed bg-gray-50'}" data-index="${index}" data-elegible="${elegible ? '1' : '0'}" ${elegible ? '' : 'aria-disabled="true"'}>
+                    <div class="lote-card p-4 rounded-xl transition border border-gray-200 ${elegible ? 'cursor-pointer' : 'opacity-70 cursor-not-allowed bg-gray-50'}" data-index="${index}" data-elegible="${elegible ? '1' : '0'}" ${elegible ? '' : 'aria-disabled="true"'}>
                         <div class="flex justify-between items-start gap-3">
                             <div>
-                                <h4 class="font-semibold text-gray-800">${escaparHtml(lote.nombre || 'Sin nombre')}</h4>
+                                <h4 class="font-semibold text-gray-800 ${agotado || estado === 'finalizado' ? 'line-through decoration-gray-400' : ''}">${escaparHtml(lote.nombre || 'Sin nombre')}</h4>
                                 <p class="text-sm text-gray-500">${escaparHtml(textoDeVigencia(lote))}</p>
                             </div>
-                            <span class="text-lg font-bold text-violet-600">$${precioNum.toLocaleString()}</span>
+                            <span class="text-lg font-bold ${elegible ? 'text-violet-600' : 'text-gray-400'}">$${precioNum.toLocaleString()}</span>
                         </div>
-                        <p class="text-sm ${colorEstado} mt-2">${escaparHtml(textoEstado)}</p>
+                        ${insignia ? `<span class="inline-block mt-2 text-xs font-bold px-2.5 py-1 rounded-full ${insignia[1]}">${escaparHtml(insignia[0])}</span>`
+                            : `<p class="text-sm text-green-600 mt-2">${escaparHtml(textoEstado)}</p>`}
                     </div>
                 `;
             }).join('');
@@ -389,10 +394,32 @@
             // Se elige el primer lote que está a la venta (si no hay ninguno, no queda ninguno elegido)
             const primero = cards.find((c) => c.dataset.elegible === '1');
             if (primero) marcar(primero);
-            else {
-                loteSeleccionado = null;
-                mostrarTexto(errorPaso1, 'Por ahora no hay entradas a la venta para este evento.');
-            }
+            else loteSeleccionado = null;
+            mostrarAvisoDeVenta(estadoDeVentaDelEvento(lotes, hoy));
+        }
+
+        // Cuando no se puede comprar nada, un aviso grande en lugar de la cantidad y el botón (pedido de la persona).
+        // Los textos son fijos; la fecha sale de diaMes (solo números).
+        const AVISOS_DE_VENTA = {
+            agotado: { icono: 'local_activity', titulo: '¡Entradas agotadas!', texto: 'Se vendieron todas las entradas de este evento. ¡Gracias por el interés!', clase: 'border-red-200 bg-red-50', color: 'text-red-600' },
+            terminada: { icono: 'event_busy', titulo: 'La venta online terminó', texto: 'Ya no se venden entradas por Evently para este evento. Si tenés alguna duda, escribinos desde el Centro de ayuda.', clase: 'border-gray-200 bg-gray-50', color: 'text-gray-500' },
+            proximamente: { icono: 'schedule', titulo: 'Las entradas todavía no están a la venta', texto: '', clase: 'border-amber-200 bg-amber-50', color: 'text-amber-600' },
+            'sin-lotes': { icono: 'confirmation_number', titulo: 'Todavía no hay entradas para este evento', texto: 'Volvé a entrar más adelante.', clase: 'border-gray-200 bg-gray-50', color: 'text-gray-500' },
+        };
+        function mostrarAvisoDeVenta(venta) {
+            const aviso = AVISOS_DE_VENTA[venta.estado];
+            const avisoVenta = document.getElementById('avisoVenta');
+            const zonaCompra = document.getElementById('zonaCompra');
+            avisoVenta.classList.toggle('hidden', !aviso);
+            zonaCompra.classList.toggle('hidden', Boolean(aviso));
+            if (!aviso) return;
+            const texto = venta.estado === 'proximamente' && venta.desde ? `Salen a la venta el ${diaMes(venta.desde)}. ¡Agendalo!` : aviso.texto;
+            avisoVenta.className = `rounded-2xl border p-6 text-center ${aviso.clase}`;
+            avisoVenta.innerHTML = `
+                <span class="material-symbols-outlined text-5xl ${aviso.color}" aria-hidden="true">${aviso.icono}</span>
+                <p class="text-xl font-bold text-gray-900 mt-2">${escaparHtml(aviso.titulo)}</p>
+                ${texto ? `<p class="text-gray-600 mt-1">${escaparHtml(texto)}</p>` : ''}
+                <a href="index.html" class="inline-block mt-4 text-sm font-semibold text-violet-700 hover:underline">Ver otros eventos</a>`;
         }
 
         // Cantidad elegida, siempre un entero entre 1 y el maximo
