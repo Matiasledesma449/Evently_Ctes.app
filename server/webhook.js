@@ -15,6 +15,7 @@ const { ventaIdDelPago, compararPagoConVenta } = require('./pagos');
 const { leerVenta, marcarRevision } = require('./ventas');
 const { aplicarPago } = require('./confirmacion');
 const { obtenerDb } = require('./firestore');
+const { enviarConfirmacion } = require('./correos');
 
 // Motivos de no coincidencia que dejan la venta marcada para revision (los que tienen que ver con el dinero)
 const MOTIVOS_DE_REVISION = ['monto_distinto', 'moneda_distinta', 'monto_invalido'];
@@ -36,6 +37,9 @@ function tipoDeAviso(query, body) {
 // peticion: { query, headers, body }. Los encabezados llegan en minusculas.
 async function procesarAviso(peticion, deps = {}) {
   const { db: dbInyectada, fetchFn = fetch, registrar = console.error } = deps;
+  // Correo de confirmación (pedido 23): solo si se configuró Gmail en Vercel, o si una prueba lo reemplaza
+  const mandarConfirmacion = deps.enviarConfirmacion
+    || (process.env.GMAIL_USUARIO && process.env.GMAIL_CLAVE_APLICACION ? (base, id) => enviarConfirmacion(base, id, { registrar }) : null);
   const { query = {}, headers = {}, body } = peticion || {};
 
   try {
@@ -107,6 +111,11 @@ async function procesarAviso(peticion, deps = {}) {
     if (aplicado.pagoDuplicado) {
       // La venta ya estaba confirmada con otro pago: el comprador pago dos veces y hay que devolverle uno
       registrar('[mp-webhook] Pago duplicado en una venta ya confirmada: revisar reembolso', { ventaId, pagoId: dataId.trim() });
+    }
+    // 7) Venta recién confirmada: se le manda el correo con sus entradas. Si falla, la venta queda confirmada igual
+    //    (enviarConfirmacion nunca lanza) y el comprador sigue teniendo la página de su compra.
+    if (aplicado.resultado === 'confirmada' && mandarConfirmacion) {
+      await mandarConfirmacion(db, ventaId);
     }
     return ok({ resultado: aplicado.resultado });
   } catch (e) {

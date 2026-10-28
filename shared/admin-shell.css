@@ -51,3 +51,146 @@ body:has(> .flex.min-h-screen) > .flex.min-h-screen > aside {
 body:has(> .flex.min-h-screen) > .flex.min-h-screen > aside > nav {
   overflow-y: auto;
 }
+
+/* ===== Menú lateral achicable (antes lo inyectaba menu-rol.js al final de la página) ===== */
+aside.sidebar-principal {
+    overflow: visible;
+    position: relative;
+}
+
+/* La animación de ancho solo corre después del primer dibujo (la clase menu-listo la pone el script) */
+body.menu-listo aside.sidebar-principal {
+    transition: width 0.25s ease;
+}
+
+body.sidebar-colapsado aside.sidebar-principal {
+    width: 76px !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal > div:first-child {
+    display: none !important;
+}
+
+/* Menú achicado: la flecha de achicar queda arriba (sin tocar ningún botón) y cada botón
+   ocupa toda la columna, para que un clic corrido hacia un costado no caiga en el vacío ni en la flecha */
+body.sidebar-colapsado aside.sidebar-principal nav {
+    padding: 52px 8px 12px !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal > div.border-t {
+    padding: 12px 8px !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal nav a {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    font-size: 0 !important;
+    position: relative;
+    gap: 0 !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal nav a .material-symbols-outlined {
+    font-size: 24px !important;
+    margin: 0 !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal nav a .badge-no-leidos {
+    font-size: 10px !important;
+    position: absolute !important;
+    top: 6px;
+    right: 8px;
+    margin: 0 !important;
+}
+
+body.sidebar-colapsado aside.sidebar-principal .link-logout {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    font-size: 0 !important;
+    gap: 0 !important;
+}
+body.sidebar-colapsado aside.sidebar-principal .link-logout .material-symbols-outlined {
+    font-size: 24px !important;
+    margin: 0 !important;
+}
+
+#btnToggleSidebar {
+    position: absolute;
+    top: 12px;
+    right: -14px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    transition: all 0.2s;
+}
+#btnToggleSidebar:hover {
+    background: #f5f3ff;
+    border-color: #7c3aed;
+}
+#btnToggleSidebar .material-symbols-outlined {
+    font-size: 16px !important;
+    color: #7c3aed;
+}
+
+@media (max-width: 1023px) {
+    #btnToggleSidebar { display: none !important; }
+}
+
+/* El menú no participa del fundido entre páginas: queda fijo y no parpadea al navegar.
+   El resto de la página sí se funde, como antes. */
+aside.sidebar-principal {
+    view-transition-name: menu-lateral;
+}
+.admin-bottom-nav {
+    view-transition-name: menu-movil;
+}
+::view-transition-old(menu-lateral),
+::view-transition-old(menu-movil) {
+    display: none;
+}
+::view-transition-new(menu-lateral),
+::view-transition-new(menu-movil) {
+    animation: none;
+}
+
+/* Vista "Ver como organización": el aviso fijo de arriba mide 40 px; el resto del panel baja para no quedar tapado */
+body.vista-organizacion > .flex.min-h-screen {
+    margin-top: 40px;
+    height: calc(100dvh - 40px) !important;
+}
+body.vista-organizacion > .flex.min-h-screen > aside {
+    height: 100% !important;
+}
+
+/* Franja rosa "Estás viendo" del superadmin: 76 px en celular (dos renglones) y 40 px desde 640 px.
+   Finanzas usa .flex.h-screen en vez de .flex.min-h-screen */
+body.franja-organizacion > .flex.min-h-screen,
+body.franja-organizacion > .flex.h-screen {
+    margin-top: 76px;
+    height: calc(100dvh - 76px) !important;
+}
+body.franja-organizacion > .flex.min-h-screen > aside,
+body.franja-organizacion > .flex.h-screen > aside {
+    height: 100% !important;
+}
+@media (min-width: 640px) {
+    body.franja-organizacion > .flex.min-h-screen,
+    body.franja-organizacion > .flex.h-screen {
+        margin-top: 40px;
+        height: calc(100dvh - 40px) !important;
+    }
+}
+/* El selector de evento se muda a la franja (shared/selector-evento.js): mientras tanto no ocupa lugar en la página */
+body.franja-organizacion main #selectorEvento > label,
+body.franja-organizacion main #selectorEvento > select {
+    display: none;
+}

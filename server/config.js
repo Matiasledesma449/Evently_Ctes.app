@@ -14,6 +14,9 @@ const VARIABLES = {
   FIREBASE_CLIENT_EMAIL: 'FIREBASE_CLIENT_EMAIL',
   FIREBASE_PRIVATE_KEY: 'FIREBASE_PRIVATE_KEY',
   SITE_URL: 'SITE_URL',
+  // Correos (pedido 23): opcionales; sin ellas no se mandan correos
+  GMAIL_USUARIO: 'GMAIL_USUARIO',
+  GMAIL_CLAVE_APLICACION: 'GMAIL_CLAVE_APLICACION',
 };
 
 // Error de configuracion: falta alguna variable. El mensaje nombra las variables

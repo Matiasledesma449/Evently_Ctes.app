@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evently - Finanzas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f9f9f9; overflow: hidden; height: 100vh; }
+        .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
+        .campo { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; background: white; }
+        .campo:focus { outline: none; box-shadow: 0 0 0 2px #8b5cf6; }
+        g[tabindex]:focus { outline: none; }
+        g[tabindex]:focus-visible path { stroke: #241a3a; stroke-width: 2; }
+    </style>
+    <link rel="stylesheet" href="../shared/admin-shell.css" />
+</head>
+<body>
+    <script type="module" src="../shared/firebase-init.js"></script>
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="finanzas"></script>
+
+        <main class="flex-1 min-w-0 p-6 pb-24 lg:pb-6 overflow-y-auto">
+            <div class="mb-5">
+                <h1 class="text-2xl font-bold text-gray-800">Finanzas</h1>
+                <p class="text-sm text-gray-500">Cuánto se vendió y cuánto hay que pagarle a cada productora. Solo cuentan las ventas confirmadas.</p>
+            </div>
+
+            <nav class="inline-flex rounded-lg border border-gray-200 bg-white p-1 gap-1 mb-5" role="tablist" aria-label="Balance o liquidaciones">
+                <button type="button" role="tab" data-pestana="balance" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Balance</button>
+                <button type="button" role="tab" data-pestana="liquidaciones" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">Liquidaciones</button>
+            </nav>
+
+            <p id="estadoCarga" class="text-sm text-gray-500" role="status">Cargando ventas...</p>
+
+            <!-- ================= BALANCE ================= -->
+            <section id="panelBalance" class="hidden">
+                <!-- Filtros en una sola fila, arriba de los gráficos -->
+                <div class="flex flex-wrap gap-2 mb-5" role="group" aria-label="Filtros del balance">
+                    <label class="text-xs text-gray-500">Período
+                        <select id="filtroPeriodo" class="campo block mt-1"></select>
+                    </label>
+                    <!-- Oculto: la organización se elige en la franja rosa de arriba (shared/menu-admin.js) -->
+                    <label class="hidden text-xs text-gray-500">Organización
+                        <select id="filtroOrganizacion" class="campo block mt-1"><option value="todas">Todas</option></select>
+                    </label>
+                    <label class="text-xs text-gray-500">Evento
+                        <select id="filtroEvento" class="campo block mt-1 max-w-[16rem]"><option value="todos">Todos</option></select>
+                    </label>
+                    <!-- Descargas del balance (pedido 17) -->
+                    <div class="ml-auto self-end flex gap-2">
+                        <button type="button" id="balanceCsv" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar CSV</button>
+                        <button type="button" id="balancePdf" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar PDF</button>
+                    </div>
+                </div>
+                <p id="avisoBalance" class="text-xs text-red-600 -mt-3 mb-3 min-h-[1rem]" aria-live="polite"></p>
+
+                <!-- Totales del período elegido -->
+                <div id="tarjetasBalance" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"></div>
+
+                <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <h2 id="tituloGrafico" class="text-base font-bold text-gray-800">Total vendido</h2>
+                        <button type="button" id="verTabla" class="text-sm text-violet-700 hover:underline" aria-expanded="false" aria-controls="tablaBalance">Ver como tabla</button>
+                    </div>
+                    <div id="graficoBalance" class="w-full"></div>
+                    <div id="tablaBalance" class="hidden mt-4 overflow-x-auto"></div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h2 class="text-base font-bold text-gray-800 mb-3">Por organización</h2>
+                        <div id="rankingOrganizaciones"></div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-5">
+                        <h2 class="text-base font-bold text-gray-800 mb-3">Por evento</h2>
+                        <div id="rankingEventos"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= LIQUIDACIONES ================= -->
+            <section id="panelLiquidaciones" class="hidden">
+                <div class="flex flex-wrap items-end gap-2 mb-5" role="group" aria-label="Período de la liquidación">
+                    <label class="text-xs text-gray-500">Período
+                        <select id="rangoLiquidacion" class="campo block mt-1">
+                            <option value="este-mes">Este mes</option>
+                            <option value="mes-pasado">Mes pasado</option>
+                            <option value="30-dias">Últimos 30 días</option>
+                            <option value="todo">Todo</option>
+                            <option value="elegir">Elegir fechas</option>
+                        </select>
+                    </label>
+                    <label id="campoDesde" class="hidden text-xs text-gray-500">Desde <input type="date" id="desdeLiquidacion" class="campo block mt-1"></label>
+                    <label id="campoHasta" class="hidden text-xs text-gray-500">Hasta <input type="date" id="hastaLiquidacion" class="campo block mt-1"></label>
+                    <div class="ml-auto flex gap-2">
+                        <button type="button" id="exportarCsv" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar CSV</button>
+                        <button type="button" id="exportarPdf" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar PDF</button>
+                    </div>
+                </div>
+                <p id="avisoLiquidacion" class="text-xs text-red-600 -mt-3 mb-3 min-h-[1rem]" aria-live="polite"></p>
+                <div id="tarjetasLiquidacion" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5"></div>
+                <div id="listaLiquidaciones" class="space-y-3"></div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { PERIODOS, balancePorPeriodo, totales, liquidaciones, ventasEntre, periodoDe, msDeVenta } from "../shared/finanzas.js";
+        import { dibujarBarras, dibujarRanking } from "../shared/grafico-barras.js";
+        import { descargarCsv, descargarPdf, nombreDeArchivo } from "../shared/exportar.js";
+
+        let eventos = [];
+        let ventas = [];
+        let organizaciones = [];
+
+        const pesos = (n) => '$' + Math.round(n).toLocaleString('es-AR');
+        const crear = (etiqueta, clases, texto) => { const e = document.createElement(etiqueta); if (clases) e.className = clases; if (texto !== undefined) e.textContent = texto; return e; };
+
+        // Pestañas Balance / Liquidaciones
+        const botonesPestana = [...document.querySelectorAll('[data-pestana]')];
+        function mostrarPestana(cual) {
+            document.getElementById('panelBalance').classList.toggle('hidden', cual !== 'balance');
+            document.getElementById('panelLiquidaciones').classList.toggle('hidden', cual !== 'liquidaciones');
+            botonesPestana.forEach((b) => {
+                const activa = b.dataset.pestana === cual;
+                b.setAttribute('aria-selected', String(activa));
+                b.className = 'px-4 py-2 rounded-md text-sm font-medium ' + (activa ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-100');
+            });
+            if (cual === 'balance') dibujarBalance(); else dibujarLiquidaciones();
+        }
+        botonesPestana.forEach((b) => b.addEventListener('click', () => mostrarPestana(b.dataset.pestana)));
+
+        // Solo el superadmin real (en "Ver como organización" el menú ya lleva esta página a Eventos)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.replace('login.html'); return; }
+            try {
+                const perfil = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!perfil.exists() || perfil.data().rol !== 'superadmin') { window.location.replace('eventos-seleccion.html'); return; }
+                const [snapEventos, snapVentas, snapOrgs] = await Promise.all([getDocs(collection(db, 'eventos')), getDocs(collection(db, 'ventas')), getDocs(collection(db, 'organizaciones'))]);
+                eventos = snapEventos.docs.map((d) => ({ id: d.id, ...d.data() }));
+                ventas = snapVentas.docs.map((d) => ({ id: d.id, ...d.data() }));
+                organizaciones = snapOrgs.docs.map((d) => ({ id: d.id, ...d.data() }));
+                document.getElementById('estadoCarga').classList.add('hidden');
+                prepararFiltros();
+                mostrarPestana('balance');
+            } catch (error) {
+                console.error('No se pudieron leer las ventas:', error);
+                document.getElementById('estadoCarga').textContent = 'No se pudieron leer las ventas. Probá recargar la página.';
+            }
+        });
+
+        // ---------------- Balance ----------------
+        const filtroPeriodo = document.getElementById('filtroPeriodo');
+        const filtroOrganizacion = document.getElementById('filtroOrganizacion');
+        const filtroEvento = document.getElementById('filtroEvento');
+
+        function prepararFiltros() {
+            Object.entries(PERIODOS).forEach(([clave, p]) => filtroPeriodo.add(new Option(p.titulo, clave)));
+            filtroPeriodo.value = 'mes';
+            organizaciones.filter((o) => o.eliminada !== true).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'))
+                .forEach((o) => filtroOrganizacion.add(new Option(o.nombre || 'Sin nombre', o.id)));
+            const elegida = window.organizacionElegida ? window.organizacionElegida() : '';
+            if (elegida && [...filtroOrganizacion.options].some((o) => o.value === elegida)) filtroOrganizacion.value = elegida;
+            llenarEventos();
+            [filtroPeriodo, filtroOrganizacion, filtroEvento].forEach((s) => s.addEventListener('change', () => { if (s === filtroOrganizacion) llenarEventos(); dibujarBalance(); }));
+        }
+
+        // El evento depende de la organización elegida
+        function llenarEventos() {
+            const org = filtroOrganizacion.value;
+            filtroEvento.replaceChildren(new Option('Todos', 'todos'));
+            eventos.filter((e) => org === 'todas' || e.organizacionId === org)
+                .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'))
+                .forEach((e) => filtroEvento.add(new Option(e.nombre || 'Sin nombre', e.id)));
+        }
+
+        // Las ventas que entran según la organización y el evento elegidos
+        function ventasFiltradas() {
+            const org = filtroOrganizacion.value;
+            const ev = filtroEvento.value;
+            const idsDeOrg = new Set(eventos.filter((e) => org === 'todas' || e.organizacionId === org).map((e) => e.id));
+            return ventas.filter((v) => (ev === 'todos' ? idsDeOrg.has(v.eventoId) || org === 'todas' : v.eventoId === ev));
+        }
+
+        function tarjeta(titulo, valor, ayuda) {
+            const c = crear('div', 'bg-white rounded-xl border border-gray-200 p-4');
+            c.append(crear('p', 'text-sm text-gray-500', titulo), crear('p', 'text-2xl font-bold text-gray-900 mt-1 tabular-nums', valor), crear('p', 'text-xs text-gray-500 mt-1', ayuda));
+            return c;
+        }
+
+        let ultimoBalance = null; // lo último que se dibujó en el balance (lo usan las descargas)
+        function dibujarBalance() {
+            const tipo = filtroPeriodo.value;
+            const lista = ventasFiltradas();
+            const periodos = balancePorPeriodo(lista, tipo);
+            // Totales de la ventana que se ve (los mismos períodos del gráfico)
+            const claves = new Set(periodos.map((p) => p.clave));
+            const enVentana = lista.filter((v) => { const ms = msDeVenta(v); return ms !== null && claves.has(periodoDe(ms, tipo).clave); });
+            const t = totales(enVentana);
+            const tarjetas = document.getElementById('tarjetasBalance');
+            tarjetas.replaceChildren(
+                tarjeta('Total vendido', pesos(t.total), 'Entradas más costo de servicio'),
+                tarjeta('Para las productoras', pesos(t.aPagar), 'Lo que vale la entrada'),
+                tarjeta('Ganancia de Evently', pesos(t.servicio), 'Costo de servicio'),
+                tarjeta('Entradas vendidas', t.entradas.toLocaleString('es-AR'), `${t.ventas} ${t.ventas === 1 ? 'compra' : 'compras'}`)
+            );
+
+            document.getElementById('tituloGrafico').textContent = `Total vendido · ${PERIODOS[tipo].titulo.toLowerCase()}`;
+            dibujarBarras(document.getElementById('graficoBalance'), periodos.map((p) => ({
+                etiqueta: p.etiqueta, valor: p.total,
+                detalle: [['Para las productoras', pesos(p.aPagar)], ['Ganancia de Evently', pesos(p.servicio)], ['Entradas', String(p.entradas)]]
+            })), { formato: pesos, titulo: `Total vendido ${PERIODOS[tipo].titulo.toLowerCase()}` });
+
+            // Tabla (la misma información del gráfico, para leer los números exactos)
+            const tabla = crear('table', 'w-full text-sm');
+            const cabeza = crear('tr', 'text-left text-gray-500 border-b border-gray-200');
+            ['Período', 'Total vendido', 'Para las productoras', 'Ganancia de Evently', 'Entradas'].forEach((h) => cabeza.appendChild(crear('th', 'py-2 pr-4 font-medium', h)));
+            tabla.appendChild(cabeza);
+            periodos.forEach((p) => {
+                const fila = crear('tr', 'border-b border-gray-100');
+                [p.etiqueta, pesos(p.total), pesos(p.aPagar), pesos(p.servicio), String(p.entradas)].forEach((x, i) => fila.appendChild(crear('td', 'py-2 pr-4 ' + (i ? 'tabular-nums' : ''), x)));
+                tabla.appendChild(fila);
+            });
+            document.getElementById('tablaBalance').replaceChildren(tabla);
+
+            // Rankings de la ventana
+            const liq = liquidaciones(enVentana, eventos, organizaciones);
+            ultimoBalance = { tipo, periodos, totales: t, liq };
+            dibujarRanking(document.getElementById('rankingOrganizaciones'), liq.map((o) => ({ nombre: o.nombre, valor: o.aPagar + o.servicio })), { formato: pesos });
+            const porEvento = liq.flatMap((o) => o.eventos).sort((a, b) => (b.aPagar + b.servicio) - (a.aPagar + a.servicio));
+            dibujarRanking(document.getElementById('rankingEventos'), porEvento.map((e) => ({ nombre: e.nombre, valor: e.aPagar + e.servicio })), { formato: pesos });
+            if (liq.length === 0) {
+                document.getElementById('rankingOrganizaciones').replaceChildren(crear('p', 'text-sm text-gray-500', 'Sin ventas en este período.'));
+                document.getElementById('rankingEventos').replaceChildren(crear('p', 'text-sm text-gray-500', 'Sin ventas en este período.'));
+            }
+        }
+
+        document.getElementById('verTabla').addEventListener('click', (e) => {
+            const tabla = document.getElementById('tablaBalance');
+            const abierta = tabla.classList.toggle('hidden') === false;
+            e.target.setAttribute('aria-expanded', String(abierta));
+            e.target.textContent = abierta ? 'Ocultar tabla' : 'Ver como tabla';
+        });
+        window.addEventListener('resize', () => { if (!document.getElementById('panelBalance').classList.contains('hidden')) dibujarBalance(); });
+
+        // ---------------- Liquidaciones ----------------
+        const rango = document.getElementById('rangoLiquidacion');
+        // Desde/hasta en milisegundos (días en hora de Argentina, UTC-3)
+        const inicioDelDia = (aaaaMmDd) => new Date(`${aaaaMmDd}T00:00:00-03:00`).getTime();
+        const finDelDia = (aaaaMmDd) => new Date(`${aaaaMmDd}T23:59:59.999-03:00`).getTime();
+        function rangoElegido() {
+            const hoy = new Date(Date.now() - 3 * 3600 * 1000);
+            const y = hoy.getUTCFullYear(), m = hoy.getUTCMonth();
+            const dia = (yy, mm, dd) => new Date(Date.UTC(yy, mm, dd)).toISOString().slice(0, 10);
+            switch (rango.value) {
+                case 'este-mes': return { desde: inicioDelDia(dia(y, m, 1)), hasta: null, texto: 'este mes' };
+                case 'mes-pasado': return { desde: inicioDelDia(dia(y, m - 1, 1)), hasta: finDelDia(dia(y, m, 0)), texto: 'el mes pasado' };
+                case '30-dias': return { desde: Date.now() - 30 * 24 * 3600 * 1000, hasta: null, texto: 'los últimos 30 días' };
+                case 'elegir': {
+                    const d = document.getElementById('desdeLiquidacion').value, h = document.getElementById('hastaLiquidacion').value;
+                    return { desde: d ? inicioDelDia(d) : null, hasta: h ? finDelDia(h) : null, texto: 'las fechas elegidas' };
+                }
+                default: return { desde: null, hasta: null, texto: 'todo el tiempo' };
+            }
+        }
+        function liquidacionActual() {
+            const r = rangoElegido();
+            // Con una organización elegida en la franja rosa, solo la suya
+            const elegida = window.organizacionElegida ? window.organizacionElegida() : '';
+            const liq = liquidaciones(ventasEntre(ventas, r.desde, r.hasta), eventos, organizaciones);
+            return { r, liq: elegida ? liq.filter((o) => o.id === elegida) : liq };
+        }
+
+        function dibujarLiquidaciones() {
+            const elegir = rango.value === 'elegir';
+            document.getElementById('campoDesde').classList.toggle('hidden', !elegir);
+            document.getElementById('campoHasta').classList.toggle('hidden', !elegir);
+            const { r, liq } = liquidacionActual();
+            const aPagar = liq.reduce((s, o) => s + o.aPagar, 0);
+            const servicio = liq.reduce((s, o) => s + o.servicio, 0);
+            document.getElementById('tarjetasLiquidacion').replaceChildren(
+                tarjeta('A pagar a productoras', pesos(aPagar), `Ventas confirmadas de ${r.texto}`),
+                tarjeta('Ganancia de Evently', pesos(servicio), 'Costo de servicio (no se paga)'),
+                tarjeta('Organizaciones con ventas', String(liq.filter((o) => o.id).length), 'En este período')
+            );
+            const lista = document.getElementById('listaLiquidaciones');
+            lista.replaceChildren();
+            if (liq.length === 0) { lista.appendChild(crear('p', 'text-sm text-gray-500 bg-white border border-gray-200 rounded-xl p-5', `No hubo ventas confirmadas en ${r.texto}.`)); return; }
+            liq.forEach((o) => {
+                const caja = crear('details', 'bg-white rounded-xl border border-gray-200');
+                const resumen = crear('summary', 'cursor-pointer list-none p-5 flex flex-wrap items-center justify-between gap-3');
+                const izq = crear('div');
+                izq.append(crear('p', 'font-bold text-gray-900', o.nombre), crear('p', 'text-xs text-gray-500', `${o.ventas} ${o.ventas === 1 ? 'compra' : 'compras'} · ${o.entradas} entradas · Evently se queda ${pesos(o.servicio)}`));
+                const der = crear('div', 'text-right');
+                der.append(crear('p', 'text-xs text-gray-500', 'A pagar'), crear('p', 'text-xl font-bold text-violet-700 tabular-nums', pesos(o.aPagar)));
+                resumen.append(izq, der);
+                const tabla = crear('table', 'w-full text-sm');
+                const cabeza = crear('tr', 'text-left text-gray-500 border-y border-gray-100');
+                ['Evento', 'Entradas', 'Ganancia de Evently', 'A pagar'].forEach((h, i) => cabeza.appendChild(crear('th', 'py-2 px-5 font-medium ' + (i ? 'text-right' : ''), h)));
+                tabla.appendChild(cabeza);
+                o.eventos.forEach((e) => {
+                    const fila = crear('tr', 'border-b border-gray-100 last:border-0');
+                    [e.nombre, String(e.entradas), pesos(e.servicio), pesos(e.aPagar)].forEach((x, i) => fila.appendChild(crear('td', 'py-2 px-5 ' + (i ? 'text-right tabular-nums' : ''), x)));
+                    tabla.appendChild(fila);
+                });
+                caja.append(resumen, tabla);
+                lista.appendChild(caja);
+            });
+        }
+        [rango, document.getElementById('desdeLiquidacion'), document.getElementById('hastaLiquidacion')].forEach((c) => c.addEventListener('change', dibujarLiquidaciones));
+
+        // ---------------- Descargas (pedido 17): CSV y PDF del balance y de la liquidación ----------------
+        const textoElegido = (select) => (select.selectedOptions[0] ? select.selectedOptions[0].textContent.trim() : '');
+        function filtrosDelBalance() {
+            return `Período: ${textoElegido(filtroPeriodo)} · Organización: ${filtroOrganizacion.value === 'todas' ? 'Todas' : textoElegido(filtroOrganizacion)} · Evento: ${textoElegido(filtroEvento)}`;
+        }
+        async function conAviso(boton, aviso, tarea) {
+            aviso.textContent = '';
+            const texto = boton.textContent;
+            boton.disabled = true;
+            boton.textContent = 'Armando…';
+            try { await tarea(); } catch (error) {
+                console.error('No se pudo descargar:', error);
+                aviso.textContent = error.message || 'No se pudo descargar. Probá de nuevo.';
+            } finally { boton.disabled = false; boton.textContent = texto; }
+        }
+        const filaDePeriodo = (p, plata) => [p.etiqueta, plata(p.total), plata(p.aPagar), plata(p.servicio), p.entradas];
+        const COLUMNAS_BALANCE = ['Período', 'Total vendido', 'Para las productoras', 'Ganancia de Evently', 'Entradas'];
+
+        document.getElementById('balanceCsv').addEventListener('click', () => {
+            if (!ultimoBalance) return;
+            const redondo = (n) => Math.round(n);
+            descargarCsv(nombreDeArchivo(['balance', textoElegido(filtroPeriodo)], 'csv'), [COLUMNAS_BALANCE, ...ultimoBalance.periodos.map((p) => filaDePeriodo(p, redondo))]);
+        });
+        document.getElementById('balancePdf').addEventListener('click', (e) => conAviso(e.currentTarget, document.getElementById('avisoBalance'), async () => {
+            if (!ultimoBalance) return;
+            const { periodos, totales: t, liq } = ultimoBalance;
+            await descargarPdf(nombreDeArchivo(['balance', textoElegido(filtroPeriodo)], 'pdf'), {
+                titulo: 'Balance de ventas', subtitulo: 'Ventas confirmadas, agrupadas por período', filtros: filtrosDelBalance(),
+                bloques: [
+                    { titulo: 'Totales', tarjetas: [
+                        { titulo: 'Total vendido', valor: pesos(t.total) }, { titulo: 'Para las productoras', valor: pesos(t.aPagar) },
+                        { titulo: 'Ganancia de Evently', valor: pesos(t.servicio) }, { titulo: 'Entradas vendidas', valor: t.entradas.toLocaleString('es-AR') }] },
+                    { titulo: 'Por período', tabla: { columnas: COLUMNAS_BALANCE, derecha: [1, 2, 3, 4], filas: periodos.map((p) => filaDePeriodo(p, pesos)),
+                        total: ['Total', pesos(t.total), pesos(t.aPagar), pesos(t.servicio), t.entradas] } },
+                    { titulo: 'Por organización', tabla: { columnas: ['Organización', 'Total vendido', 'Participación'], derecha: [1, 2],
+                        filas: liq.map((o) => [o.nombre, pesos(o.aPagar + o.servicio), `${t.total > 0 ? (Math.round(((o.aPagar + o.servicio) / t.total) * 1000) / 10).toString().replace('.', ',') : 0}%`]) } }
+                ]
+            });
+        }));
+
+        // Liquidación: una fila por evento (CSV) o el detalle por organización (PDF)
+        document.getElementById('exportarCsv').addEventListener('click', () => {
+            const { r, liq } = liquidacionActual();
+            const filas = [['Organización', 'Evento', 'Compras', 'Entradas', 'Ganancia de Evently', 'A pagar']];
+            liq.forEach((o) => o.eventos.forEach((e) => filas.push([o.nombre, e.nombre, e.ventas, e.entradas, Math.round(e.servicio), Math.round(e.aPagar)])));
+            descargarCsv(nombreDeArchivo(['liquidacion', r.texto], 'csv'), filas);
+        });
+        document.getElementById('exportarPdf').addEventListener('click', (e) => conAviso(e.currentTarget, document.getElementById('avisoLiquidacion'), async () => {
+            const { r, liq } = liquidacionActual();
+            const aPagar = liq.reduce((s, o) => s + o.aPagar, 0);
+            const servicio = liq.reduce((s, o) => s + o.servicio, 0);
+            await descargarPdf(nombreDeArchivo(['liquidacion', r.texto], 'pdf'), {
+                titulo: 'Liquidación a productoras', subtitulo: `Ventas confirmadas de ${r.texto}`,
+                filtros: `Período: ${textoElegido(rango)}${window.organizacionElegida && window.organizacionElegida() ? ' · Solo la organización elegida' : ' · Todas las organizaciones'}`,
+                bloques: [
+                    { titulo: 'Totales', tarjetas: [{ titulo: 'A pagar a productoras', valor: pesos(aPagar) }, { titulo: 'Ganancia de Evently', valor: pesos(servicio) },
+                        { titulo: 'Organizaciones con ventas', valor: String(liq.filter((o) => o.id).length) }] },
+                    ...liq.map((o) => ({
+                        titulo: o.nombre,
+                        tabla: { columnas: ['Evento', 'Compras', 'Entradas', 'Ganancia de Evently', 'A pagar'], derecha: [1, 2, 3, 4],
+                            filas: o.eventos.map((ev) => [ev.nombre, ev.ventas, ev.entradas, pesos(ev.servicio), pesos(ev.aPagar)]),
+                            total: ['Total', o.ventas, o.entradas, pesos(o.servicio), pesos(o.aPagar)] }
+                    }))
+                ]
+            });
+        }));
+    </script>
+    <script src="../shared/menu-rol.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Mis Eventos</title>
+    <title>Evently - Eventos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -13,14 +13,6 @@
         .active-link { background: #ede9fe; color: #7c3aed; border-left: 4px solid #7c3aed; }
         .hover-card { transition: box-shadow 0.2s, transform 0.2s; }
         .hover-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-        .org-card {
-            cursor: pointer;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-        }
-        .org-card:hover { border-color: #a78bfa; }
     </style>
     <link rel="stylesheet" href="../shared/admin-shell.css" />
     <link rel="prefetch" href="dashboard.html" />
@@ -41,52 +33,29 @@
     </script>
 
     <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
-            <div class="p-6">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-                <span class="block text-xs text-gray-500">Administración</span>
-            </div>
-            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
-                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
-                <a id="linkPanelPrincipal" data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
-                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
-                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
-                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
-                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
-                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
-                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
-            </nav>
-            <div class="p-4 border-t border-gray-200">
-                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition">
-                    <span class="material-symbols-outlined">logout</span> Cerrar sesión
-                </a>
-            </div>
-        </aside>
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="eventos-seleccion"></script>
 
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
 
-            <!-- Botón volver -->
-            <div id="btnVolverOrg" class="hidden mb-4">
-                <button onclick="volverAOrganizaciones()" class="text-violet-600 hover:text-violet-800 text-sm font-medium flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">arrow_back</span> Volver a organizaciones
-                </button>
-            </div>
+            <!-- Pestañas de la sección Eventos del superadmin: Eventos y Organizaciones -->
+            <nav id="pestanasEventos" class="hidden inline-flex rounded-lg border border-gray-200 bg-white p-1 gap-1 mb-6" aria-label="Eventos u organizaciones">
+                <a href="eventos-seleccion.html" aria-current="page" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Eventos</a>
+                <a href="organizaciones.html" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">Organizaciones</a>
+            </nav>
 
             <!-- Header -->
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
-                    <h1 id="tituloPagina" class="text-2xl font-bold text-gray-800">Mis Eventos</h1>
+                    <h1 id="tituloPagina" class="text-2xl font-bold text-gray-800">Eventos</h1>
                     <p id="subtituloPagina" class="text-sm text-gray-500"></p>
                 </div>
                 <div id="filtrosContainer" class="flex flex-wrap gap-2 items-center">
                     
                     <!-- Boton de Solicitar Evento (Oculto por defecto, se muestra para clientes) -->
                     <a href="eventos.html" id="btnSolicitarEventoCliente" class="hidden bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm mr-2">
-                        <span class="material-symbols-outlined text-sm">add</span> Solicitar Evento
+                        <span class="material-symbols-outlined text-sm">add</span> Solicitar evento
                     </a>
 
                     <div class="relative">
@@ -94,12 +63,24 @@
                         <input id="searchInput" type="text" placeholder="Buscar evento..." class="w-48 sm:w-64 pl-10 pr-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
                     </div>
                     
+                    <!-- Filtro por organización (solo superadmin) -->
+                    <select id="organizacionFilter" aria-label="Filtrar por organización" class="hidden border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                        <option value="todas">Todas las organizaciones</option>
+                    </select>
+
+                    <!-- Crear evento para la organización elegida en el filtro (solo superadmin) -->
+                    <a href="eventos.html?modo=directo" id="btnCrearEventoOrganizacion" class="hidden bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
+                        <span class="material-symbols-outlined text-sm">add</span> Crear evento
+                    </a>
+
                     <!-- Filtros ajustados -->
                     <select id="estadoFilter" class="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
                         <option value="todos">Todos</option>
                         <option value="publicado">Publicados</option>
                         <option value="pendiente">Pendientes</option>
                         <option value="rechazada">Rechazados</option>
+                        <option value="suspendido">Suspendidos</option>
+                        <option value="eliminado">Eliminados</option>
                     </select>
                 </div>
             </div>
@@ -111,25 +92,17 @@
         </main>
     </div>
 
-    <!-- Bottom nav (móvil) -->
-    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
-        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-violet-600"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
-        <a id="linkPanelPrincipalMobile" data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
-        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
-        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
-        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
-        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
-        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
-    </nav>
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onSnapshot, collection, doc, getDoc, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { situacionDelEvento, cambiosDeAccion, accionesDeEvento } from "../shared/estado-evento.js";
+        import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
+        import { ultimoComentario } from "../shared/solicitudes-evento.js";
+        import { eventosParaVer, organizacionDeEvento as organizacionDelEvento } from "../shared/organizaciones.js";
+        import { mostrarToast, confirmar } from "../shared/ui-utils.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
         const searchInput = document.getElementById('searchInput');
@@ -137,16 +110,19 @@
         const filtrosContainer = document.getElementById('filtrosContainer');
         const tituloPagina = document.getElementById('tituloPagina');
         const subtituloPagina = document.getElementById('subtituloPagina');
-        const btnVolverOrg = document.getElementById('btnVolverOrg');
+        const organizacionFilter = document.getElementById('organizacionFilter');
         const btnSolicitarEventoCliente = document.getElementById('btnSolicitarEventoCliente');
 
         // Estado
         let miUsuario = null;
+        // soySuperAdmin: qué se MUESTRA (rol con el que se mira; en "Ver como organización" es false).
+        // superadminReal: el rol de verdad (por ejemplo, para saber si está en "Ver como organización").
         let soySuperAdmin = false;
+        let superadminReal = false;
+        let organizacionQueSeMira = ''; // la propia (organización) o la elegida en la vista
         let organizaciones = [];
         let eventos = [];
         let solicitudes = []; // Nuevo array para peticiones en limbo
-        let orgSeleccionada = null;
 
         // ✅ Restaurar filtro de estado guardado
         (function restaurarFiltroEstado() {
@@ -165,16 +141,35 @@
             const userDoc = await getDoc(doc(db, "usuarios", user.uid));
             if (userDoc.exists()) {
                 miUsuario = userDoc.data();
-                soySuperAdmin = miUsuario.rol === 'superadmin';
+                superadminReal = miUsuario.rol === 'superadmin';
+                const rolQueSeMira = window.rolEfectivo ? window.rolEfectivo(miUsuario.rol) : miUsuario.rol;
+                soySuperAdmin = rolQueSeMira === 'superadmin';
             }
+            // "Eliminados" es solo del superadmin real (si estaba elegido, el filtro vuelve a "Todos")
+            if (!(soySuperAdmin && superadminReal)) estadoFilter.querySelector('option[value="eliminado"]')?.remove();
 
             if (soySuperAdmin) {
-                tituloPagina.textContent = 'Organizaciones';
-                subtituloPagina.textContent = 'Seleccioná una organización para ver sus eventos';
-                filtrosContainer.classList.add('hidden');
+                // El superadmin ve los eventos de todas las organizaciones directamente
+                tituloPagina.textContent = 'Eventos';
+                subtituloPagina.textContent = 'Todos los eventos de todas las organizaciones';
+                filtrosContainer.classList.remove('hidden');
+                // La organización se elige en la franja rosa de arriba (shared/menu-admin.js); el filtro queda oculto
+                document.getElementById('pestanasEventos').classList.remove('hidden');
                 cargarOrganizaciones();
+            } else if (superadminReal) {
+                // "Ver como organización": los eventos de la organización elegida en la barra violeta, sin categorías ni filtro
+                organizacionQueSeMira = window.vistaOrganizacion ? window.vistaOrganizacion() : '';
+                tituloPagina.textContent = 'Eventos';
+                subtituloPagina.textContent = organizacionQueSeMira ? 'Los eventos de la organización elegida' : '';
+                filtrosContainer.classList.remove('hidden');
+                if (!organizacionQueSeMira) {
+                    renderizarListaEventos([], 'Elegí una organización en la barra de arriba para ver sus eventos.');
+                    return;
+                }
+                cargarEventos();
             } else {
-                tituloPagina.textContent = 'Mis Eventos';
+                organizacionQueSeMira = typeof miUsuario?.organizacionId === 'string' ? miUsuario.organizacionId.trim() : '';
+                tituloPagina.textContent = 'Eventos';
                 subtituloPagina.textContent = 'Todos tus eventos';
                 filtrosContainer.classList.remove('hidden');
                 btnSolicitarEventoCliente.classList.remove('hidden'); // Mostrar botón al cliente
@@ -183,28 +178,24 @@
         });
 
         // =====================================================
-        // SUPERADMIN: ORGANIZACIONES (Queda intacto)
+        // SUPERADMIN: EVENTOS DE TODAS LAS ORGANIZACIONES
         // =====================================================
         function cargarOrganizaciones() {
-            onSnapshot(collection(db, "usuarios"), (snapshot) => {
+            // Las organizaciones son una colección propia; su id es el organizacionId de los eventos
+            onSnapshot(collection(db, "organizaciones"), (snapshot) => {
                 organizaciones = [];
-                snapshot.forEach(d => {
-                    const u = d.data();
-                    if (u.rol === 'organizacion') {
-                        organizaciones.push({ id: d.id, ...u });
-                    }
-                });
-                organizaciones.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-
-                if (eventos.length === 0) {
-                    onSnapshot(collection(db, "eventos"), (snapEv) => {
-                        eventos = [];
-                        snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
-                        renderizarVista();
-                    });
-                } else {
-                    renderizarVista();
-                }
+                snapshot.forEach(d => organizaciones.push({ id: d.id, ...d.data() }));
+                organizaciones.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+                rellenarSelectorDeOrganizaciones();
+                renderizarVista();
+            }, (error) => {
+                console.error('No se pudieron leer las organizaciones:', error);
+                mostrarToast('No se pudieron leer las organizaciones.', 'error');
+            });
+            onSnapshot(collection(db, "eventos"), (snapEv) => {
+                eventos = [];
+                snapEv.forEach(d => eventos.push({ id: d.id, estado: 'publicado', ...d.data() }));
+                renderizarVista();
             });
         }
 
@@ -221,9 +212,11 @@
                 renderizarVista();
             });
 
-            // 2. Escuchar los pendientes/rechazados (colección solicitudes)
+            // 2. Escuchar los pendientes/rechazados (colección solicitudes): las propias, o en la vista las de la organización elegida
             if (!soySuperAdmin && auth.currentUser) {
-                const qSol = query(collection(db, "solicitudes_eventos"), where("creadoPor", "==", auth.currentUser.uid));
+                const qSol = superadminReal
+                    ? query(collection(db, "solicitudes_eventos"), where("organizacionId", "==", organizacionQueSeMira))
+                    : query(collection(db, "solicitudes_eventos"), where("creadoPor", "==", auth.currentUser.uid));
                 onSnapshot(qSol, (snapSol) => {
                     solicitudes = [];
                     snapSol.forEach(d => {
@@ -243,121 +236,50 @@
         // =====================================================
         function renderizarVista() {
             if (soySuperAdmin) {
-                if (orgSeleccionada) {
-                    renderizarEventosDeOrg(orgSeleccionada);
-                } else {
-                    renderizarOrganizaciones();
-                }
+                renderizarEventosDelSuperadmin();
             } else {
                 renderizarEventosCliente();
             }
         }
 
-        // ✅ Vista: Organizaciones
-        function renderizarOrganizaciones() {
-            filtrosContainer.classList.add('hidden');
-            btnVolverOrg.classList.add('hidden');
-            tituloPagina.textContent = 'Organizaciones';
-            subtituloPagina.textContent = `${organizaciones.length} organizaciones registradas`;
-
-            if (organizaciones.length === 0) {
-                contenidoContainer.innerHTML = `
-                    <div class="text-center py-12">
-                        <span class="material-symbols-outlined text-6xl text-gray-300">corporate_fare</span>
-                        <p class="text-gray-400 mt-3">No hay organizaciones registradas.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            contenidoContainer.innerHTML = `
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${organizaciones.map(org => {
-                        const eventosOrg = eventos.filter(ev => 
-                            (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
-                            (ev.creadoPor && ev.creadoPor === org.id) ||
-                            (ev.correo && ev.correo === org.email)
-                        );
-                        const activos = eventosOrg.filter(ev => esActivo(ev)).length;
-                        const inactivos = eventosOrg.length - activos;
-                        const inicial = (org.nombre || 'O').charAt(0).toUpperCase();
-
-                        return `
-                            <div class="org-card hover-card" onclick="seleccionarOrganizacion('${org.id}')">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                                        <span class="font-bold text-violet-700 text-lg">${inicial}</span>
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <h3 class="font-semibold text-gray-800 truncate">${org.nombre || 'Sin nombre'}</h3>
-                                        <p class="text-xs text-gray-500 truncate">${org.email || ''}</p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
-                                    <div>
-                                        <p class="text-[10px] text-gray-500 uppercase">Activos</p>
-                                        <p class="text-lg font-bold text-green-600">${activos}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] text-gray-500 uppercase">Inactivos</p>
-                                        <p class="text-lg font-bold text-gray-400">${inactivos}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-[10px] text-gray-500 uppercase">Total</p>
-                                        <p class="text-lg font-bold text-gray-800">${eventosOrg.length}</p>
-                                    </div>
-                                </div>
-                                <div class="mt-4 text-violet-600 text-sm font-medium flex items-center justify-between">
-                                    <span>Ver eventos</span>
-                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
+        // La organización a la que pertenece un evento (solo por organizacionId), o null si no tiene
+        function organizacionDeEvento(ev) {
+            return organizacionDelEvento(ev, organizaciones);
         }
 
-        window.seleccionarOrganizacion = function(orgId) {
-            const org = organizaciones.find(o => o.id === orgId);
-            if (!org) return;
-            orgSeleccionada = org;
-            filtrosContainer.classList.remove('hidden');
-            btnVolverOrg.classList.remove('hidden');
-            renderizarVista();
-        };
+        // Filtro oculto de organización: toma la elegida en la franja rosa ("todas" si no hay)
+        function rellenarSelectorDeOrganizaciones() {
+            const elegida = (window.organizacionElegida && window.organizacionElegida()) || 'todas';
+            organizacionFilter.replaceChildren(new Option('Todas las organizaciones', 'todas'));
+            // Las organizaciones eliminadas no se ofrecen (sus eventos siguen apareciendo en "Todas")
+            organizaciones.filter(org => org.eliminada !== true).forEach(org => organizacionFilter.add(new Option(org.nombre || 'Sin nombre', org.id)));
+            organizacionFilter.value = organizaciones.some(org => org.id === elegida && org.eliminada !== true) ? elegida : 'todas';
+        }
 
-        window.volverAOrganizaciones = function() {
-            orgSeleccionada = null;
-            searchInput.value = '';
-            estadoFilter.value = 'todos';
-            renderizarVista();
-        };
-
-        function renderizarEventosDeOrg(org) {
-            tituloPagina.textContent = org.nombre || 'Organización';
-            subtituloPagina.textContent = org.email || '';
-
-            let eventosFiltrados = eventos.filter(ev => 
-                (ev.organizacionId && ev.organizacionId === org.organizacionId) ||
-                (ev.creadoPor && ev.creadoPor === org.id) ||
-                (ev.correo && ev.correo === org.email)
-            );
-
-            eventosFiltrados = aplicarFiltrosBusqueda(eventosFiltrados);
-            renderizarListaEventos(eventosFiltrados, `Esta organización no tiene eventos.`);
+        // ✅ Vista del superadmin: todos los eventos, con la organización de cada uno
+        function renderizarEventosDelSuperadmin() {
+            let lista = eventos;
+            // "Crear evento" lleva a Crear evento con la organización del filtro ya elegida
+            const btnCrear = document.getElementById('btnCrearEventoOrganizacion');
+            btnCrear.classList.toggle('hidden', !superadminReal || organizacionFilter.value === 'todas');
+            btnCrear.href = `eventos.html?modo=directo&organizacion=${encodeURIComponent(organizacionFilter.value)}`;
+            if (organizacionFilter.value !== 'todas') {
+                lista = lista.filter(ev => organizacionDeEvento(ev)?.id === organizacionFilter.value);
+            }
+            lista = aplicarFiltrosBusqueda(lista);
+            subtituloPagina.textContent = `${lista.length} ${lista.length === 1 ? 'evento' : 'eventos'}`;
+            renderizarListaEventos(lista, 'No hay eventos para mostrar.');
         }
 
         // ✅ Vista: Eventos y Solicitudes combinados del cliente
         function renderizarEventosCliente() {
-            tituloPagina.textContent = 'Mis Eventos';
+            tituloPagina.textContent = 'Eventos';
             
-            // 1. Tomamos sus eventos publicados
-            let misEventos = eventos.filter(ev => 
-                (ev.organizacionId && ev.organizacionId === miUsuario.organizacionId) ||
-                (ev.creadoPor && ev.creadoPor === auth.currentUser?.uid) ||
-                (ev.correo && ev.correo === miUsuario.email)
-            );
+            // 1. Sus eventos publicados: los de su organización (o los de la elegida en "Ver como organización")
+            let misEventos = eventosParaVer({
+                eventos, rolEfectivo: 'organizacion', rolReal: superadminReal ? 'superadmin' : 'organizacion',
+                organizacionId: organizacionQueSeMira, organizacionElegida: organizacionQueSeMira
+            });
 
             // 2. Juntamos con sus solicitudes en espera o rechazadas (filtrando rechazadas de > 30 días)
             const ahora = new Date();
@@ -375,7 +297,8 @@
             subtituloPagina.textContent = `${listaCompleta.length} registros en total`;
 
             let filtrados = aplicarFiltrosBusqueda(listaCompleta);
-            renderizarListaEventos(filtrados, `No tenés eventos creados todavía.`);
+            renderizarListaEventos(filtrados, organizacionQueSeMira ? `No tenés eventos creados todavía.`
+                : 'Tu cuenta todavía no está vinculada a una organización. Pedile a Evently que la vincule.');
         }
 
         // ✅ Aplicar filtros (Modificado para usar "estado")
@@ -385,9 +308,13 @@
 
             let filtrados = [...lista];
 
-            // Filtro por tab/select
-            if (estado !== 'todos') {
-                filtrados = filtrados.filter(ev => (ev.estado || 'publicado') === estado);
+            // Filtro por tab/select. Los eliminados (recuperables) se ven solo con "Eliminados"
+            if (estado === 'eliminado') {
+                filtrados = filtrados.filter(ev => situacionDelEvento(ev) === 'eliminado');
+            } else {
+                filtrados = filtrados.filter(ev => situacionDelEvento(ev) !== 'eliminado');
+                if (estado === 'suspendido') filtrados = filtrados.filter(ev => situacionDelEvento(ev) === 'suspendido');
+                else if (estado !== 'todos') filtrados = filtrados.filter(ev => (ev.estado || 'publicado') === estado);
             }
 
             if (searchTerm) {
@@ -413,7 +340,6 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     ${lista.map(evento => {
                         const estado = evento.estado || 'publicado'; // Seguro por defecto
-                        const imagen = evento.imagen || '/public/imag/Imagen de evento 1.jpg';
                         
                         let badgeClass = '';
                         let estadoTexto = '';
@@ -426,7 +352,7 @@
                             estadoTexto = 'Publicado';
                             botonHTML = `
                                 <a href="dashboard.html?id=${evento.id}" onclick="localStorage.setItem('eventoId', '${evento.id}')" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
-                                    <span>Entrar al Dashboard</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                    <span>Ver resumen</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
                                 </a>
                             `;
                         } else if (estado === 'pendiente') {
@@ -455,26 +381,68 @@
                             `;
                         }
 
+                        // Publicado pero suspendido o eliminado (pedido 13): insignia propia
+                        const situacion = estado === 'publicado' ? situacionDelEvento(evento) : 'activo';
+                        if (situacion === 'suspendido') { badgeClass = 'bg-amber-100 text-amber-800'; estadoTexto = 'Suspendido'; }
+                        if (situacion === 'eliminado') { badgeClass = 'bg-red-100 text-red-800'; estadoTexto = 'Eliminado'; botonHTML = ''; }
+
+                        // Acciones del superadmin real: suspender, volver a activar, eliminar y recuperar.
+                        // El id va escapado dentro de comillas dobles; los textos son fijos.
+                        const TEXTO_ACCION = { suspender: 'Suspender', activar: 'Volver a activar', eliminar: 'Eliminar', recuperar: 'Recuperar' };
+                        const CLASE_ACCION = {
+                            suspender: 'border-amber-500 text-amber-700 hover:bg-amber-50', activar: 'border-green-600 text-green-700 hover:bg-green-50',
+                            eliminar: 'border-red-500 text-red-600 hover:bg-red-50', recuperar: 'border-violet-600 text-violet-700 hover:bg-violet-50'
+                        };
+                        const accionesHTML = estado === 'publicado' && soySuperAdmin && superadminReal
+                            ? `<div class="mt-2 flex gap-2">${accionesDeEvento(evento).map(a => `
+                                    <button type="button" data-accion="${a}" data-id="${escaparHtml(evento.id)}" class="flex-1 border ${CLASE_ACCION[a]} px-3 py-2 rounded-full text-sm font-medium transition">${TEXTO_ACCION[a]}</button>`).join('')}
+                                </div>`
+                            : '';
+
+                        // El superadmin ve de qué organización es cada evento
+                        const organizacionHTML = soySuperAdmin
+                            ? `<p class="text-sm text-violet-600 font-medium flex items-center gap-2 mb-2 truncate">
+                                    <span class="material-symbols-outlined text-[16px]">corporate_fare</span> ${escaparHtml(organizacionDeEvento(evento)?.nombre || 'Sin organización')}
+                                </p>`
+                            : '';
+
+                        // La organización ve el último comentario del superadmin en sus solicitudes (no en los eventos publicados)
+                        const comentario = estado === 'publicado' ? null : ultimoComentario(evento);
+                        const comentarioHTML = comentario
+                            ? `<div class="mt-3 p-3 bg-violet-50 rounded-lg text-sm text-violet-900 border border-violet-100">
+                                    <strong class="block mb-1">Comentario de Evently:</strong>
+                                    ${escaparHtml(comentario.texto)}
+                                </div>`
+                            : '';
+
                         return `
                             <div class="bg-white rounded-xl border border-gray-200 hover-card overflow-hidden flex flex-col">
                                 <div class="relative">
-                                    <img src="${imagen}" alt="${evento.nombre}" class="w-full h-40 object-cover bg-gray-100">
+                                    ${htmlDeImagenEvento(evento, { clases: 'h-40' })}
                                     <div class="absolute top-3 right-3">
                                         <span class="text-xs font-bold px-3 py-1 rounded-full shadow-sm ${badgeClass}">${estadoTexto}</span>
                                     </div>
                                 </div>
                                 <div class="p-5 flex-1 flex flex-col">
-                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${evento.nombre}">${evento.nombre || 'Sin nombre'}</h3>
+                                    <h3 class="text-lg font-bold text-gray-800 truncate mb-3" title="${escaparHtml(evento.nombre)}">${escaparHtml(evento.nombre || 'Sin nombre')}</h3>
                                     
                                     <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
-                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> ${escaparHtml(evento.fecha || 'Fecha no definida')}
                                     </p>
                                     <p class="text-sm text-gray-500 flex items-center gap-2 mb-2 truncate">
-                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                                        <span class="material-symbols-outlined text-[16px] text-gray-400">location_on</span> ${escaparHtml(evento.lugar || 'Lugar no definido')}
                                     </p>
                                     
+                                    ${organizacionHTML}
+                                    ${estado === 'publicado' && situacion !== 'eliminado' ? `
+                                    <div class="mt-3 flex gap-2">
+                                        <a href="../public/evento.html?id=${encodeURIComponent(evento.id)}" target="_blank" rel="noopener" class="flex-1 text-center border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-full text-sm font-medium transition">Ver en Evently</a>
+                                        ${soySuperAdmin && superadminReal ? `<a href="eventos.html?modo=directo&editar=${encodeURIComponent(evento.id)}" class="flex-1 text-center border border-violet-600 text-violet-700 hover:bg-violet-50 px-3 py-2 rounded-full text-sm font-medium transition">Editar</a>` : ''}
+                                    </div>` : ''}
+                                    ${accionesHTML}
                                     ${motivoHTML}
-                                    
+                                    ${comentarioHTML}
+
                                     <div class="mt-auto pt-5">
                                         ${botonHTML}
                                     </div>
@@ -486,26 +454,33 @@
             `;
         }
 
-        // Se usa solo para los cálculos de la vista de superadmin (organizaciones)
-        function esActivo(evento) {
-            if (evento.activo !== undefined) return evento.activo;
-            if (evento.fecha) {
-                const hoy = new Date();
-                const partes = evento.fecha.split(' ');
-                if (partes.length === 3) {
-                    const meses = { 'Enero':0, 'Febrero':1, 'Marzo':2, 'Abril':3, 'Mayo':4, 'Junio':5, 'Julio':6, 'Agosto':7, 'Septiembre':8, 'Octubre':9, 'Noviembre':10, 'Diciembre':11 };
-                    const dia = parseInt(partes[0]);
-                    const mes = meses[partes[1]];
-                    const anio = parseInt(partes[2]);
-                    if (!isNaN(dia) && mes !== undefined && !isNaN(anio)) {
-                        return new Date(anio, mes, dia) >= hoy;
-                    }
-                }
+        // Suspender, volver a activar, eliminar (con confirmación) y recuperar. Nada se borra de la base.
+        const CONFIRMACIONES = {
+            suspender: { titulo: 'Suspender evento', texto: 'El evento deja de verse en Evently y no se pueden comprar entradas. Lo podés seguir editando y volver a activar cuando quieras.', ok: 'Suspender' },
+            eliminar: { titulo: 'Eliminar evento', texto: 'El evento deja de verse en Evently y en las listas del panel. Las ventas no se borran. Lo podés recuperar desde el filtro "Eliminados".', ok: 'Eliminar' },
+        };
+        const AVISOS = { suspender: 'Evento suspendido.', activar: 'El evento volvió a estar a la venta.', eliminar: 'Evento eliminado. Lo podés recuperar desde "Eliminados".', recuperar: 'Evento recuperado. Quedó suspendido: activalo cuando quieras.' };
+        contenidoContainer.addEventListener('click', async (e) => {
+            const boton = e.target.closest('button[data-accion]');
+            if (!boton || !superadminReal) return;
+            const accion = boton.dataset.accion;
+            const cambios = cambiosDeAccion(accion);
+            if (!cambios) return;
+            const pregunta = CONFIRMACIONES[accion];
+            if (pregunta && !(await confirmar(pregunta.texto, { titulo: pregunta.titulo, textoOk: pregunta.ok }))) return;
+            boton.disabled = true;
+            try {
+                await updateDoc(doc(db, 'eventos', boton.dataset.id), { ...cambios, fechaCambioDeEstado: serverTimestamp() });
+                mostrarToast(AVISOS[accion], 'success');
+            } catch (error) {
+                console.error('No se pudo cambiar el estado del evento:', error);
+                mostrarToast('No se pudo cambiar el estado del evento. Probá de nuevo.', 'error');
+                boton.disabled = false;
             }
-            return true;
-        }
+        });
 
         searchInput.addEventListener('input', renderizarVista);
+        organizacionFilter.addEventListener('change', renderizarVista);
         estadoFilter.addEventListener('change', function() {
             localStorage.setItem('eventoEstadoFilter', this.value);
             renderizarVista();

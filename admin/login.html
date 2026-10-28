@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
+        /* Igual que el resto del panel: así el paso al login no deja un error en la consola del navegador */
+        @view-transition { navigation: auto; }
         body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
     </style>
 </head>
@@ -56,7 +58,7 @@
             </div>
 
             <div id="olvidoForm">
-                <p class="text-sm text-gray-600 mb-4">Completá tus datos y el equipo de Evently se comunicará con vos por WhatsApp para ayudarte a recuperar tu cuenta.</p>
+                <p class="text-sm text-gray-600 mb-4">Escribí el correo con el que entrás al panel y te mandamos un enlace para crear una contraseña nueva.</p>
 
                 <div class="space-y-3 mb-4">
                     <div>
@@ -64,14 +66,14 @@
                         <input type="email" id="emailRecuperar" placeholder="tu@email.com" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" />
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">WhatsApp</label>
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1">WhatsApp <span class="normal-case font-normal">(opcional, por si el correo no te llega)</span></label>
                         <input type="tel" id="telefonoRecuperar" placeholder="+54 9 3782 456789" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" />
                     </div>
                 </div>
 
                 <div class="flex gap-3 justify-end">
                     <button onclick="cerrarModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-full font-medium">Cancelar</button>
-                    <button id="btnEnviarRecuperacion" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full font-medium">Enviar solicitud</button>
+                    <button id="btnEnviarRecuperacion" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-full font-medium">Enviar enlace</button>
                 </div>
                 <div id="msgRecuperar" class="mt-3 text-sm text-center hidden"></div>
             </div>
@@ -80,8 +82,9 @@
                 <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
                     <span class="material-symbols-outlined text-3xl text-green-600">check_circle</span>
                 </div>
-                <h4 class="font-bold text-gray-800 mb-1">¡Solicitud recibida!</h4>
-                <p class="text-sm text-gray-500">En unos momentos nos comunicaremos con vos por WhatsApp para ayudarte a recuperar tu cuenta.</p>
+                <h4 class="font-bold text-gray-800 mb-1">¡Listo! Revisá tu correo</h4>
+                <p class="text-sm text-gray-500">Si <strong id="correoEnviado"></strong> tiene una cuenta en Evently, en unos minutos te llega un correo con el enlace para crear tu contraseña nueva.</p>
+                <p class="text-xs text-gray-400 mt-2">¿No lo ves? Revisá las carpetas de Spam y Promociones. El enlace vence en una hora.</p>
             </div>
         </div>
     </div>
@@ -114,6 +117,8 @@
                 btnLogin.disabled = true;
 
                 await signInWithEmailAndPassword(auth, email, password);
+                // Al entrar de nuevo siempre se empieza en la vista normal (nunca en "Ver como organización")
+                try { localStorage.removeItem('vistaComo'); localStorage.removeItem('vistaOrganizacionId'); } catch (e) { /* sin almacenamiento */ }
                 try {
                     const perfil = await getDoc(doc(db, 'usuarios', auth.currentUser.uid));
                     if (perfil.exists()) localStorage.setItem('eventlyRol', perfil.data().rol || '');
@@ -157,17 +162,23 @@
             if (email) document.getElementById('emailRecuperar').value = email;
         });
 
+        // Recuperar contraseña (pedido 19): Firebase manda el correo con el enlace para crear una contraseña nueva.
+        // Si además dejó su WhatsApp, queda un pedido para que el superadmin lo contacte (aparece en Mensajes).
+        // Por seguridad no se dice si el correo tiene cuenta o no.
         document.getElementById('btnEnviarRecuperacion').addEventListener('click', async () => {
             const email = document.getElementById('emailRecuperar').value.trim();
             const telefono = document.getElementById('telefonoRecuperar').value.trim();
             const msgEl = document.getElementById('msgRecuperar');
             const btn = document.getElementById('btnEnviarRecuperacion');
             msgEl.classList.add('hidden');
-
-            if (!email || !telefono) {
-                msgEl.textContent = 'Completá tu email y tu WhatsApp.';
+            const avisar = (texto) => {
+                msgEl.textContent = texto;
                 msgEl.className = 'mt-3 text-sm text-center text-red-500';
                 msgEl.classList.remove('hidden');
+            };
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                avisar('Escribí un correo válido.');
                 return;
             }
 
@@ -175,26 +186,31 @@
             btn.textContent = 'Enviando...';
 
             try {
-                await addDoc(collection(db, 'solicitudes_password'), {
-                    email: email,
-                    telefono: telefono,
-                    estado: 'pendiente',
-                    fecha: serverTimestamp()
-                });
-
-                // Mostrar mensaje de éxito
+                auth.languageCode = 'es';
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                } catch (error) {
+                    // Un correo sin cuenta se trata igual que uno con cuenta (no se revela quién está registrado)
+                    if (!error || error.code !== 'auth/user-not-found') throw error;
+                }
+                if (telefono) {
+                    try {
+                        await addDoc(collection(db, 'solicitudes_password'), { email, telefono, estado: 'pendiente', fecha: serverTimestamp() });
+                    } catch (error) {
+                        console.error('No se pudo guardar el pedido por WhatsApp:', error);
+                    }
+                }
+                document.getElementById('correoEnviado').textContent = email;
                 document.getElementById('olvidoForm').classList.add('hidden');
                 document.getElementById('olvidoExito').classList.remove('hidden');
-
-                setTimeout(() => cerrarModal(), 5000);
             } catch (error) {
-                console.error('Error al enviar solicitud:', error);
-                msgEl.textContent = 'No se pudo enviar la solicitud. Intentá de nuevo.';
-                msgEl.className = 'mt-3 text-sm text-center text-red-500';
-                msgEl.classList.remove('hidden');
+                console.error('No se pudo enviar el correo de recuperación:', error);
+                if (error && error.code === 'auth/too-many-requests') avisar('Pediste muchos correos seguidos. Esperá unos minutos y probá de nuevo.');
+                else if (error && error.code === 'auth/invalid-email') avisar('Escribí un correo válido.');
+                else avisar('No se pudo enviar el correo. Revisá tu conexión e intentá de nuevo.');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Enviar solicitud';
+                btn.textContent = 'Enviar enlace';
             }
         });
     </script>

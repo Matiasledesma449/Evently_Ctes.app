@@ -11,7 +11,7 @@
         /* 👇 CAMBIO PRINCIPAL: body con flex column y min-height */
         body { 
             font-family: 'Inter', sans-serif; 
-            background: #f9f9f9;
+            background: #f6f5fa;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -33,7 +33,7 @@
             border-color: #c4b5fd;
         }
         .event-image {
-            height: 208px;
+            aspect-ratio: 4 / 5; /* el afiche manda: proporción vertical de afiche */
             background: #f3f0ff;
             position: relative;
             overflow: hidden;
@@ -129,17 +129,6 @@
             box-shadow: 0 4px 12px rgba(124,58,237,0.15);
         }
         .nav-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
-        .support-link {
-            color: #6b7280;
-            transition: color 0.2s;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .support-link:hover {
-            color: #7c3aed;
-        }
         .footer-text {
             color: #9ca3af;
             font-size: 0.8rem;
@@ -148,24 +137,14 @@
 </head>
 <body>
 
-    <!-- Header público (sin Admin, con Soporte) -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-            </div>
-            <button type="button" data-open-consulta data-origen="public/index.html" class="support-link border-0 bg-transparent">
-                <span class="material-symbols-outlined text-sm">help</span> Soporte
-            </button>
-        </div>
-    </header>
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
     <!-- Contenido principal -->
     <main class="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full">
         <section aria-labelledby="tituloDestacados">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
                 <div>
-                    <p class="text-xs uppercase font-semibold text-violet-700">Evently · Agenda</p>
                     <h1 id="tituloDestacados" class="text-2xl font-bold text-gray-900 mt-1">Encontrá tu próximo evento</h1>
                 </div>
                 <p class="text-sm text-gray-500">Experiencias para compartir, cerca y más adelante.</p>
@@ -181,7 +160,7 @@
                         <div class="hero-shade"></div>
                     </div>
                     <div id="heroContent" class="hero-content absolute inset-0 z-10 flex flex-col justify-end items-start p-6 sm:p-10 text-white">
-                        <p id="heroBadge" class="text-xs uppercase tracking-wide font-semibold mb-2">Destacado</p>
+                        <p id="heroBadge" class="text-sm font-semibold mb-2 bg-white/15 backdrop-blur px-3 py-1 rounded-full">Destacado</p>
                         <h2 id="heroTitle" class="text-2xl sm:text-4xl font-bold max-w-2xl"></h2>
                         <div class="flex flex-wrap gap-x-5 gap-y-2 mt-3 text-sm text-white/90">
                             <p class="flex items-center gap-1.5"><span class="material-symbols-outlined text-base">calendar_month</span><span id="heroDate"></span></p>
@@ -191,10 +170,10 @@
                             Ver evento <span class="material-symbols-outlined text-base">arrow_forward</span>
                         </a>
                     </div>
-                    <button id="heroAnterior" type="button" aria-label="Evento destacado anterior" class="nav-arrow absolute left-3 top-1/2 -translate-y-1/2 z-20">
+                    <button id="heroAnterior" type="button" aria-label="Evento destacado anterior" class="nav-arrow absolute right-16 top-3 sm:right-auto sm:left-3 sm:top-1/2 sm:-translate-y-1/2 z-20">
                         <span class="material-symbols-outlined">chevron_left</span>
                     </button>
-                    <button id="heroSiguiente" type="button" aria-label="Siguiente evento destacado" class="nav-arrow absolute right-3 top-1/2 -translate-y-1/2 z-20">
+                    <button id="heroSiguiente" type="button" aria-label="Siguiente evento destacado" class="nav-arrow absolute right-3 top-3 sm:top-1/2 sm:-translate-y-1/2 z-20">
                         <span class="material-symbols-outlined">chevron_right</span>
                     </button>
                 </div>
@@ -213,24 +192,22 @@
                 <p class="text-gray-400 py-10 text-center col-span-full">Cargando eventos...</p>
             </div>
         </section>
-        <section class="mt-10 border-t border-gray-200 py-6 text-center">
-            <p class="text-sm text-gray-600">¿Necesitás ayuda con una compra?</p>
-            <button type="button" data-open-consulta data-origen="public/index.html" class="mt-2 font-semibold text-violet-700 hover:text-violet-900">
-                Enviar una consulta
-            </button>
-        </section>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 py-4 text-center footer-text">
-        © 2024 Evently by Bali Group
-    </footer>
+    <footer id="pie" class="bg-white border-t border-gray-200 py-4 text-center footer-text"></footer>
 
     <!-- Importar Firebase (módulo) -->
     <script type="module" src="../shared/firebase-init.js"></script>
 
     <script type="module">
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { imagenDelEvento } from "../shared/imagen-evento.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
+        import { dibujarCabecera } from "../shared/cabecera-publica.js";
+
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'inicio'));
+        dibujarCabecera(document.getElementById('cabecera'), 'inicio');
 
         const db = window.db;
         const container = document.getElementById('eventosContainer');
@@ -282,12 +259,6 @@
                 : evento.fecha || 'Fecha por confirmar';
         }
 
-        function imagenEvento(evento) {
-            return typeof evento.imagen === 'string' && evento.imagen.trim()
-                ? evento.imagen.trim()
-                : './imag/Imagen de evento 1.jpg';
-        }
-
         function etiquetaProximidad(evento) {
             const fecha = fechaEvento(evento.fecha);
             if (!fecha) return '';
@@ -298,14 +269,35 @@
             return '';
         }
 
-        function configurarImagen(img, placeholder, src, alt) {
+        // La foto del evento; si no tiene (o no carga) se ve su relleno propio: letra inicial sobre un violeta, distinto por evento
+        function configurarImagen(img, placeholder, evento, alt) {
+            const { src, relleno } = imagenDelEvento(evento);
+            // En el destacado hay una capa oscura encima: ahí el fondo es el violeta fuerte y la letra queda clara
+            const enDestacado = placeholder.id === 'heroPlaceholder';
+            placeholder.style.background = enDestacado ? relleno.texto : relleno.fondo;
+            placeholder.style.color = enDestacado ? 'rgba(255,255,255,0.4)' : relleno.texto;
+            const letra = document.createElement('span');
+            letra.className = 'font-bold select-none';
+            letra.style.fontSize = '4rem';
+            letra.style.lineHeight = '1';
+            letra.textContent = relleno.letra;
+            placeholder.replaceChildren(letra);
+            placeholder.dataset.imagenEvento = `relleno:${relleno.letra}:${relleno.fondo}`;
             img.alt = alt;
-            img.hidden = false;
-            placeholder.hidden = true;
             img.onerror = () => {
                 img.hidden = true;
                 placeholder.hidden = false;
             };
+            if (!src) {
+                img.removeAttribute('src');
+                img.hidden = true;
+                placeholder.hidden = false;
+                img.dataset.imagenEvento = '';
+                return;
+            }
+            img.hidden = false;
+            placeholder.hidden = true;
+            img.dataset.imagenEvento = src;
             img.src = src;
         }
 
@@ -330,7 +322,7 @@
             placeholder.className = 'event-placeholder';
             placeholder.hidden = true;
             placeholder.appendChild(crearIcono('image', 'text-5xl'));
-            configurarImagen(img, placeholder, imagenEvento(evento), evento.nombre || 'Imagen del evento');
+            configurarImagen(img, placeholder, evento, evento.nombre || 'Imagen del evento');
             frame.append(img, placeholder);
 
             const badgeText = etiquetaProximidad(evento);
@@ -342,13 +334,13 @@
             }
 
             const body = document.createElement('div');
-            body.className = 'p-4 flex flex-col min-h-[174px]';
+            body.className = 'p-4 flex flex-col';
             const title = document.createElement('h3');
-            title.className = 'text-lg font-bold leading-snug text-gray-900 line-clamp-2';
+            title.className = 'text-base font-bold leading-snug text-gray-900 line-clamp-2';
             title.textContent = evento.nombre || 'Sin nombre';
 
             const details = document.createElement('div');
-            details.className = 'mt-3 space-y-2';
+            details.className = 'mt-2 space-y-1';
             const dateRow = document.createElement('p');
             dateRow.className = 'event-meta';
             dateRow.append(crearIcono('calendar_month'), document.createTextNode(fechaLegible(evento)));
@@ -358,7 +350,7 @@
             details.append(dateRow, placeRow);
 
             const actions = document.createElement('div');
-            actions.className = 'mt-auto pt-4 flex items-center justify-between gap-3';
+            actions.className = 'mt-auto pt-3 flex items-center justify-between gap-3';
             const precio = Number(evento.lotes?.[0]?.precio);
             if (Number.isFinite(precio) && precio > 0) {
                 const price = document.createElement('span');
@@ -403,7 +395,7 @@
             void heroContent.offsetWidth;
             heroContent.classList.add('hero-content');
 
-            configurarImagen(heroImage, heroPlaceholder, imagenEvento(evento), evento.nombre || 'Evento destacado');
+            configurarImagen(heroImage, heroPlaceholder, evento, evento.nombre || 'Evento destacado');
             document.getElementById('heroTitle').textContent = evento.nombre || 'Evento destacado';
             document.getElementById('heroDate').textContent = fechaLegible(evento);
             document.getElementById('heroPlace').textContent = evento.lugar || 'Lugar no definido';
@@ -451,7 +443,7 @@
                 const querySnapshot = await getDocs(eventosPublicados);
                 const todos = querySnapshot.docs
                     .map(documento => ({ id: documento.id, ...documento.data() }))
-                    .filter(evento => evento.activo !== false);
+                    .filter(evento => evento.activo !== false && evento.eliminado !== true); // sin suspendidos ni eliminados
 
                 const hoy = inicioDelDia(new Date());
                 const eventos = todos
@@ -487,6 +479,5 @@
 
         cargarEventos();
     </script>
-    <script type="module" src="contacto-modal.js"></script>
 </body>
 </html>

@@ -1,14 +1,17 @@
     // ==========================================
     // admin/aprobaciones.js
-    // Lógica de solicitudes pendientes en superadmin.html
+    // Lógica de las solicitudes de eventos: pestaña "Solicitudes" de "Crear evento" (eventos.html?modo=directo)
     // ==========================================
 
     const db = window.db;
     const auth = window.auth;
 
+    import { crearImagenEvento } from "../shared/imagen-evento.js";
+    import { eventosDeOrganizacion } from "../shared/organizaciones.js";
+    import { armarComentario, comentariosDeSolicitud, ultimoComentario, enlacesDeContacto } from "../shared/solicitudes-evento.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
-        serverTimestamp, getDoc, getDocs
+        serverTimestamp, getDoc, getDocs, deleteField, arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
@@ -33,7 +36,11 @@
 
     let accionPendiente = null;
     let solicitudSeleccionada = null;
+    // Cuentas de organización (para el contacto: correo y teléfono), por uid, organizacionId y correo
     const organizacionesPorClave = new Map();
+    // Nombre de cada organización (colección organizaciones), por su id: el organizacionId de las solicitudes
+    const nombresDeOrganizacion = new Map();
+    const organizacionPorSolicitud = new Map();
     let solicitudesCache = [];
     let estadoSolicitudesActual = 'pendiente';
     let solicitudEditando = null;
@@ -71,6 +78,16 @@
                     .filter(Boolean)
                     .forEach(clave => organizacionesPorClave.set(clave, organizacion));
             });
+
+            // Selector de organizaciones de la sección: las de la colección organizaciones, ordenadas por nombre
+            const organizacionesSnapLista = await getDocs(collection(db, 'organizaciones'));
+            organizacionesSnapLista.forEach(d => nombresDeOrganizacion.set(d.id, (d.data() || {}).nombre || 'Sin nombre'));
+            const selector = document.getElementById('filtroOrganizacionSolicitud');
+            const eliminadas = new Set(organizacionesSnapLista.docs.filter(d => (d.data() || {}).eliminada === true).map(d => d.id));
+            [...nombresDeOrganizacion.entries()]
+                .filter(([id]) => !eliminadas.has(id))
+                .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+                .forEach(([id, nombre]) => selector.add(new Option(nombre, id)));
         } catch (error) {
             console.error('No se pudieron cargar las organizaciones para agrupar solicitudes:', error);
         }
@@ -82,6 +99,11 @@
     function inicializarSolicitudes() {
         onSnapshot(collection(db, 'solicitudes_eventos'), snapshot => {
             solicitudesCache = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+            const pendientes = solicitudesCache.filter(solicitud => (solicitud.estado || 'pendiente') === 'pendiente').length;
+            const insigniaPendientes = document.getElementById('pendientesSolicitudes');
+            insigniaPendientes.textContent = pendientes;
+            insigniaPendientes.classList.toggle('hidden', pendientes === 0);
+            insigniaPendientes.classList.toggle('flex', pendientes > 0);
             renderizarSolicitudes();
         }, error => {
             console.error('No se pudieron cargar solicitudes pendientes:', error);
@@ -90,25 +112,25 @@
     }
 
     function renderizarSolicitudes() {
-        const busqueda = document.getElementById('searchInput').value.toLowerCase().trim();
-        const organizacionId = document.getElementById('filtroOrganizacion').value;
-        const periodo = document.getElementById('filtroPeriodo').value;
+        const busqueda = document.getElementById('buscarSolicitud').value.toLowerCase().trim();
+        const organizacionId = document.getElementById('filtroOrganizacionSolicitud').value;
+        const periodo = document.getElementById('filtroPeriodoSolicitud').value;
         const limite = new Date();
         if (periodo !== 'todos') limite.setDate(limite.getDate() - Number(periodo));
 
-        const visibles = solicitudesCache.filter(solicitud => {
-            const org = organizacionesPorClave.get(solicitud.organizacionId)
-                || organizacionesPorClave.get(solicitud.creadoPor)
-                || organizacionesPorClave.get(solicitud.correo?.toLowerCase());
+        // La organización de una solicitud es solo su organizacionId (la misma regla que los eventos)
+        const deLaOrganizacion = organizacionId === 'todas' ? solicitudesCache : eventosDeOrganizacion(solicitudesCache, organizacionId);
+        const visibles = deLaOrganizacion.filter(solicitud => {
+            const nombreOrg = nombresDeOrganizacion.get(solicitud.organizacionId);
             const coincideEstado = (solicitud.estado || 'pendiente') === estadoSolicitudesActual;
-            const coincideOrg = organizacionId === 'todas' || org?.id === organizacionId;
-            const coincideBusqueda = !busqueda || [solicitud.nombre, solicitud.correo, org?.nombre]
+            const coincideOrg = true;
+            const coincideBusqueda = !busqueda || [solicitud.nombre, solicitud.correo, nombreOrg]
                 .some(valor => (valor || '').toLowerCase().includes(busqueda));
             const fecha = solicitud.fechaSolicitud && typeof solicitud.fechaSolicitud.toDate === 'function'
                 ? solicitud.fechaSolicitud.toDate()
                 : null;
             const coincidePeriodo = periodo === 'todos' || !fecha || fecha >= limite;
-            return coincideEstado && coincideOrg && coincideBusqueda && coincidePeriodo;
+            return coincideEstado && coincideOrg && coincideBusqueda && coincidePeriodo; // coincideOrg: ya se filtró arriba
         });
 
         gridSolicitudes.replaceChildren();
@@ -127,13 +149,15 @@
 
         const grupos = new Map();
         visibles.forEach(solicitud => {
-            const organizacion = organizacionesPorClave.get(solicitud.organizacionId)
-                || organizacionesPorClave.get(solicitud.creadoPor)
+            // La cuenta que la envió (solo para el contacto) y su organización (para agrupar)
+            const organizacion = organizacionesPorClave.get(solicitud.creadoPor)
                 || organizacionesPorClave.get(solicitud.correo?.toLowerCase());
-            const clave = organizacion?.id || solicitud.organizacionId || solicitud.creadoPor || solicitud.correo || 'sin-organizacion';
-            const nombre = organizacion?.nombre || solicitud.nombreOrganizacion || solicitud.organizacionId || solicitud.correo || 'Organización no identificada';
+            const clave = solicitud.organizacionId || 'sin-organizacion';
+            const nombre = nombresDeOrganizacion.get(solicitud.organizacionId) || 'Sin organización';
             if (!grupos.has(clave)) grupos.set(clave, { nombre, solicitudes: [] });
-            grupos.get(clave).solicitudes.push({ ...solicitud, nombreOrganizacion: organizacion?.nombre || nombre });
+            grupos.get(clave).solicitudes.push({ ...solicitud, nombreOrganizacion: nombre });
+            // El teléfono se guarda aparte: la solicitud se copia entera al evento público y no debe llevarlo
+            organizacionPorSolicitud.set(solicitud.id, organizacion || null);
         });
 
         [...grupos.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).forEach(grupo => {
@@ -154,8 +178,8 @@
         });
     }
 
-    ['searchInput', 'filtroOrganizacion', 'filtroPeriodo'].forEach(id => {
-        document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', renderizarSolicitudes);
+    ['buscarSolicitud', 'filtroOrganizacionSolicitud', 'filtroPeriodoSolicitud'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'buscarSolicitud' ? 'input' : 'change', renderizarSolicitudes);
     });
 
     // ==========================================
@@ -180,13 +204,7 @@
 
         const imagenFrame = document.createElement('div');
         imagenFrame.className = 'relative h-32 w-full bg-violet-50';
-        const imagen = document.createElement('img');
-        imagen.className = 'w-full h-full object-cover';
-        imagen.alt = `Portada de ${solicitud.nombre || 'la solicitud'}`;
-        imagen.src = typeof solicitud.imagen === 'string' && solicitud.imagen.trim()
-            ? solicitud.imagen.trim()
-            : 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=400&auto=format&fit=crop';
-        imagen.onerror = () => { imagen.hidden = true; };
+        const imagen = crearImagenEvento(solicitud, document, { clases: 'h-32' });
 
         const badge = document.createElement('span');
         badge.className = 'absolute top-2 right-2 bg-white/95 px-2 py-1 rounded text-[10px] font-bold text-violet-800 shadow-sm';
@@ -205,6 +223,39 @@
         detalle.textContent = `${fechaCorta} · ${solicitud.lugar || 'Lugar sin definir'}`;
         detalle.title = detalle.textContent;
 
+        // Último comentario del superadmin (como texto) y accesos a comentar y a contactar a la organización
+        const ultimo = ultimoComentario(solicitud);
+        const comentarioVisible = document.createElement('p');
+        comentarioVisible.className = ultimo ? 'text-xs text-gray-600 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2 mt-3 line-clamp-2' : 'hidden';
+        comentarioVisible.textContent = ultimo ? `Comentario: ${ultimo.texto}` : '';
+
+        const contacto = document.createElement('div');
+        contacto.className = 'flex flex-wrap gap-2 mt-3';
+        const comentar = document.createElement('button');
+        comentar.type = 'button';
+        comentar.className = 'px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1';
+        const cantidadComentarios = comentariosDeSolicitud(solicitud).length;
+        comentar.textContent = cantidadComentarios ? `Comentar (${cantidadComentarios})` : 'Comentar';
+        comentar.addEventListener('click', () => abrirModalComentarios(solicitud.id));
+        contacto.appendChild(comentar);
+
+        const organizacion = organizacionPorSolicitud.get(solicitud.id);
+        const enlaces = enlacesDeContacto({
+            correo: solicitud.correo || organizacion?.email,
+            telefono: organizacion?.telefono,
+            nombreEvento: solicitud.nombre
+        });
+        [['Escribir por correo', enlaces.correo], ['WhatsApp', enlaces.whatsapp]].forEach(([texto, href]) => {
+            if (!href) return;
+            const enlace = document.createElement('a');
+            enlace.href = href;
+            enlace.target = '_blank';
+            enlace.rel = 'noopener noreferrer';
+            enlace.className = 'px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold';
+            enlace.textContent = texto;
+            contacto.appendChild(enlace);
+        });
+
         const acciones = document.createElement('div');
         acciones.className = 'flex gap-2 mt-auto pt-4';
         if (pendiente) {
@@ -222,7 +273,7 @@
             acciones.append(rechazar, publicar);
         }
 
-        body.append(titulo, detalle, acciones);
+        body.append(titulo, detalle, comentarioVisible, contacto, acciones);
         cardElement.append(imagenFrame, body);
 
         contenedor.appendChild(cardElement);
@@ -232,6 +283,7 @@
         const fila = document.createElement('div');
         fila.dataset.loteEdicion = 'true';
         fila.dataset.vendidas = String(Number(lote.vendidas) || 0);
+        if (lote.tipo === 'fechas' || lote.tipo === 'siempre') { fila.dataset.tipo = lote.tipo; fila.dataset.desde = lote.desde || ''; fila.dataset.hasta = lote.hasta || ''; }
         fila.className = 'grid grid-cols-1 sm:grid-cols-3 gap-2 rounded-lg border border-gray-200 p-3';
 
         const nombre = document.createElement('input');
@@ -285,7 +337,13 @@
         if ((solicitud.estado || 'pendiente') !== 'pendiente') return;
         solicitudEditando = solicitud;
         document.getElementById('editarNombreSolicitud').value = solicitud.nombre || '';
-        document.getElementById('editarFechaSolicitud').value = solicitud.fecha || '';
+        const campoFecha = document.getElementById('editarFechaSolicitud');
+        campoFecha.value = solicitud.fecha || '';
+        // Con días y horarios cargados, la fecha es la del primer día: cambiarla a mano los dejaría contradictorios
+        const tieneDias = Array.isArray(solicitud.dias) && solicitud.dias.length > 0;
+        campoFecha.readOnly = tieneDias;
+        campoFecha.classList.toggle('bg-gray-100', tieneDias);
+        campoFecha.title = tieneDias ? 'La fecha sale de los días del evento. Para cambiarlos, pedí una solicitud nueva.' : '';
         document.getElementById('editarLugarSolicitud').value = solicitud.lugar || '';
         errorEditarSolicitud.classList.add('hidden');
         lotesEdicionContainer.replaceChildren();
@@ -324,7 +382,9 @@
             precio: Number(fila.querySelector('[data-campo="precio"]').value),
             disponibles: Number.parseInt(fila.querySelector('[data-campo="disponibles"]').value, 10),
             vendidas: Number(fila.dataset.vendidas) || 0,
-            vigencia: fila.querySelector('[data-campo="vigencia"]').value.trim()
+            vigencia: fila.querySelector('[data-campo="vigencia"]').value.trim(),
+            // El tipo y las fechas no se editan acá: se conservan los que traía el lote
+            ...(fila.dataset.tipo ? { tipo: fila.dataset.tipo, desde: fila.dataset.desde || '', hasta: fila.dataset.hasta || '' } : {})
         }));
 
         if (lotes.length === 0 || lotes.some(lote => !lote.nombre || !Number.isFinite(lote.precio) || lote.precio <= 0 || !Number.isInteger(lote.disponibles) || lote.disponibles < 1)) {
@@ -339,6 +399,8 @@
             lugar: document.getElementById('editarLugarSolicitud').value.trim(),
             lotes
         };
+        // Si cambia el texto del lugar, el punto del mapa elegido antes ya no corresponde: se saca para no mostrar un mapa equivocado
+        if (solicitudActual.ubicacion && cambios.lugar !== (solicitudActual.lugar || '')) cambios.ubicacion = deleteField();
         if (!cambios.nombre || !cambios.fecha || !cambios.lugar) {
             errorEditarSolicitud.textContent = 'Nombre, fecha y lugar son obligatorios.';
             errorEditarSolicitud.classList.remove('hidden');
@@ -355,6 +417,91 @@
             errorEditarSolicitud.classList.remove('hidden');
         } finally {
             btnGuardarEdicion.disabled = false;
+        }
+    });
+
+    // ==========================================
+    // 3b. COMENTARIOS DE UNA SOLICITUD
+    // ==========================================
+    const modalComentar = document.getElementById('modalComentarSolicitud');
+    const historialComentarios = document.getElementById('historialComentarios');
+    const formComentar = document.getElementById('formComentarSolicitud');
+    const textoComentar = document.getElementById('textoComentarSolicitud');
+    const errorComentar = document.getElementById('errorComentarSolicitud');
+    const btnGuardarComentar = document.getElementById('btnGuardarComentar');
+    let solicitudComentandoId = null;
+
+    // El historial se dibuja con textContent: el texto de un comentario nunca se interpreta como HTML
+    function dibujarHistorial(solicitud) {
+        historialComentarios.replaceChildren();
+        const comentarios = comentariosDeSolicitud(solicitud);
+        if (comentarios.length === 0) {
+            const vacio = document.createElement('p');
+            vacio.className = 'text-sm text-gray-400';
+            vacio.textContent = 'Todavía no hay comentarios en esta solicitud.';
+            historialComentarios.appendChild(vacio);
+            return;
+        }
+        comentarios.forEach(comentario => {
+            const caja = document.createElement('div');
+            caja.className = 'bg-violet-50 border border-violet-100 rounded-lg px-3 py-2';
+            const texto = document.createElement('p');
+            texto.className = 'text-sm text-gray-800 whitespace-pre-line';
+            texto.textContent = comentario.texto;
+            const cuando = document.createElement('p');
+            cuando.className = 'text-[11px] text-gray-400 mt-1';
+            const fecha = new Date(comentario.fecha);
+            cuando.textContent = Number.isNaN(fecha.getTime()) ? '' : fecha.toLocaleString('es-AR');
+            caja.append(texto, cuando);
+            historialComentarios.appendChild(caja);
+        });
+    }
+
+    function abrirModalComentarios(solicitudId) {
+        const solicitud = solicitudesCache.find(item => item.id === solicitudId);
+        if (!solicitud) return;
+        solicitudComentandoId = solicitudId;
+        document.getElementById('subtituloComentarSolicitud').textContent = solicitud.nombre || 'Solicitud sin título';
+        textoComentar.value = '';
+        errorComentar.classList.add('hidden');
+        dibujarHistorial(solicitud);
+        modalComentar.classList.remove('hidden');
+        modalComentar.classList.add('flex');
+        textoComentar.focus();
+    }
+
+    function cerrarModalComentarios() {
+        modalComentar.classList.add('hidden');
+        modalComentar.classList.remove('flex');
+        solicitudComentandoId = null;
+    }
+
+    document.getElementById('btnCerrarModalComentar').addEventListener('click', cerrarModalComentarios);
+    document.getElementById('btnCancelarComentar').addEventListener('click', cerrarModalComentarios);
+
+    formComentar.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!solicitudComentandoId) return;
+        const comentario = armarComentario(textoComentar.value, new Date());
+        if (!comentario) {
+            errorComentar.textContent = 'Escribí el comentario antes de guardar.';
+            errorComentar.classList.remove('hidden');
+            return;
+        }
+        errorComentar.classList.add('hidden');
+        btnGuardarComentar.disabled = true;
+        try {
+            // arrayUnion agrega sin pisar los comentarios anteriores. No cambia el estado de la solicitud.
+            await updateDoc(doc(db, 'solicitudes_eventos', solicitudComentandoId), { comentarios: arrayUnion(comentario) });
+            textoComentar.value = '';
+            const actualizada = solicitudesCache.find(item => item.id === solicitudComentandoId);
+            if (actualizada) dibujarHistorial({ ...actualizada, comentarios: [...(actualizada.comentarios || []), comentario] });
+        } catch (error) {
+            console.error('No se pudo guardar el comentario:', error);
+            errorComentar.textContent = 'No se pudo guardar el comentario. Intentá otra vez.';
+            errorComentar.classList.remove('hidden');
+        } finally {
+            btnGuardarComentar.disabled = false;
         }
     });
 
@@ -424,8 +571,17 @@
         const solicitudRef = doc(db, 'solicitudes_eventos', solicitud.id);
         const eventoRef = doc(db, 'eventos', solicitud.id);
 
-        const dataEvento = { ...solicitud };
+        // El evento es de la organización de la solicitud. Si la cuenta se vinculó después de enviarla, se toma la de la cuenta.
+        const cuenta = organizacionPorSolicitud.get(solicitud.id);
+        const organizacionId = solicitud.organizacionId || cuenta?.organizacionId || '';
+        if (!organizacionId || !nombresDeOrganizacion.has(organizacionId)) {
+            throw new Error('La solicitud no tiene una organización que exista. Vinculá la cuenta que la envió en "Organizaciones" y volvé a publicarla.');
+        }
+
+        const dataEvento = { ...solicitud, organizacionId };
         delete dataEvento.id;
+        delete dataEvento.nombreOrganizacion; // es solo para mostrar en esta pantalla
+        delete dataEvento.comentarios; // los comentarios son entre el superadmin y la organización: el evento es público
         dataEvento.imagen = typeof solicitud.imagen === 'string' ? solicitud.imagen.trim() : '';
         dataEvento.estado = 'publicado';
         dataEvento.fechaPublicacion = serverTimestamp();

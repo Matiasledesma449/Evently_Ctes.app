@@ -22,10 +22,16 @@ async function crearVentaPendiente(db, { eventoId, evento, pedido, calculo, ahor
   await ref.set({
     eventoId,
     eventoNombre: evento.nombre || '',
+    // De qué organización es la venta (la del evento): las reglas de Firestore dejan que cada organización lea solo las suyas
+    organizacionId: typeof evento.organizacionId === 'string' ? evento.organizacionId.trim() : '',
     loteIndex: pedido.loteIndex,
     loteNombre: calculo.lote.nombre || '',
     cantidad: pedido.cantidad,
     precio_unitario: calculo.precioUnitario,
+    subtotal: calculo.subtotal,
+    costo_servicio: calculo.costoServicio,
+    comision_porcentaje: calculo.comisionPorcentaje,
+    comision_categoria: calculo.comisionCategoria,
     monto_total: calculo.total,
     moneda: 'ARS',
     nombre: pedido.nombre,

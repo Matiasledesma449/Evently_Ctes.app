@@ -37,7 +37,7 @@
     </main>
 
     <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
-        © 2024 Evently by Bali Group
+        © 2026 Evently by Bali Group
     </footer>
 
     <!-- Solo se usa para dibujar los codigos QR. Esta pagina no se conecta a la base de datos:
@@ -115,12 +115,20 @@
                 lista.appendChild(p);
             };
             const e = v.evento || {};
+            // El número de compra (id de la venta, ya está en la dirección) sirve para el Centro de ayuda y el arrepentimiento
+            if (ventaId) fila('Número de compra', ventaId);
             fila('Evento', e.nombre || '-');
             if (e.fecha) fila('Fecha', e.fecha);
             if (e.lugar) fila('Lugar', e.lugar);
             fila('Lote', v.lote || '-');
             fila('Cantidad', v.cantidad || 0);
             if (v.metodoPago) fila('Método de pago', v.metodoPago);
+            // Solo las compras con costo de servicio muestran el desglose; las demás se ven como siempre
+            const servicio = Number(v.costoServicio);
+            if (Number.isFinite(servicio) && servicio > 0) {
+                fila('Entradas', formatoMonto(Number(v.monto) - servicio));
+                fila('Costo de servicio', formatoMonto(servicio));
+            }
             lista.appendChild(crear('p', 'text-lg font-bold text-violet-600', 'Total: ' + formatoMonto(v.monto)));
             caja.appendChild(lista);
             return caja;

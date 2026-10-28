@@ -5,7 +5,7 @@
 
 const { requerir, VARIABLES, siteUrl, ConfigError } = require('./config');
 const { validarPedido } = require('./validaciones');
-const { leerEvento, calcularCompra } = require('./compra');
+const { leerEvento, leerConfiguracionComision, calcularCompra } = require('./compra');
 const { crearVentaPendiente, guardarPreferencia, marcarRechazada } = require('./ventas');
 const { armarPreferencia, crearPreferencia, MercadoPagoError } = require('./mercadopago');
 const { obtenerDb } = require('./firestore');
@@ -39,7 +39,9 @@ async function crearPago(cuerpoPedido, deps = {}) {
 
     // 3) Evento, precio y stock: todo desde lo guardado en el servidor
     const evento = await leerEvento(db, pedido.eventoId);
-    const calculo = calcularCompra(evento, pedido);
+    // Si no se puede leer el costo de servicio, lanza y no se vende (lo atrapa el catch de abajo)
+    const config = evento ? await leerConfiguracionComision(db) : null;
+    const calculo = calcularCompra(evento, pedido, config);
     if (!calculo.ok) {
       const error = { codigo: calculo.codigo, mensaje: calculo.mensaje };
       if (calculo.disponibles !== undefined) error.disponibles = calculo.disponibles;

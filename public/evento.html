@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f9f9f9; }
+        body { font-family: 'Inter', sans-serif; background: #f6f5fa; }
         .lote-selected { border-color: #7c3aed; background: #f5f3ff; }
         .step { display: none; }
         .step.active { display: block; }
@@ -18,19 +18,8 @@
 </head>
 <body>
 
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <a href="index.html" class="text-violet-600 hover:underline flex items-center gap-1 text-sm">
-                    <span class="material-symbols-outlined text-sm">arrow_back</span> Volver
-                </a>
-                <span class="text-2xl font-bold text-violet-600 ml-4">Evently</span>
-            </div>
-            <button type="button" data-open-consulta data-origen="public/evento.html" class="text-sm font-medium text-violet-700 hover:text-violet-900 flex items-center gap-1 border-0 bg-transparent">
-                <span class="material-symbols-outlined text-base">help</span> Ayuda
-            </button>
-        </div>
-    </header>
+    <!-- Cabecera común: la dibuja shared/cabecera-publica.js (logo al inicio, Eventos y Centro de ayuda) -->
+    <header id="cabecera" class="bg-white border-b border-[#e7e3f0] sticky top-0 z-50 h-16"></header>
 
     <main class="max-w-4xl mx-auto px-4 py-8">
         <div id="eventoContainer">
@@ -41,7 +30,7 @@
         <div id="step1" class="step active mt-8 bg-white rounded-xl border border-gray-200 p-6">
             <h3 class="text-xl font-bold text-gray-800 mb-4">Selecciona tus entradas</h3>
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Elige un lote</label>
+                <label id="etiquetaLotes" class="block text-sm font-medium text-gray-700 mb-2">Elige un lote</label>
                 <div id="lotesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
             <div class="mb-4">
@@ -62,12 +51,6 @@
              Aca NO se piden datos de tarjeta, billetera ni efectivo: eso se carga solo en la pagina de Mercado Pago. -->
         <div id="step2" class="step mt-8 bg-white rounded-xl border border-gray-200 p-6">
             <h3 class="text-xl font-bold text-gray-800 mb-4">Tus datos</h3>
-
-            <!-- Aviso de modo de prueba: se puede quitar este bloque cuando Mercado Pago pase a modo real -->
-            <div id="avisoModoPrueba" role="note" class="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-5 text-left">
-                <p class="text-sm font-semibold text-yellow-800">Modo de prueba</p>
-                <p class="text-sm text-gray-700 mt-1">Los pagos de este sitio son de prueba: no se cobra dinero real. No uses tus tarjetas ni tus datos reales; usá las tarjetas de prueba de Mercado Pago.</p>
-            </div>
 
             <form id="formCompra" novalidate class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -99,6 +82,12 @@
                         <p><span class="text-gray-500">Lote:</span> <span id="resumenLote">-</span></p>
                         <p><span class="text-gray-500">Cantidad:</span> <span id="resumenCantidad">-</span></p>
                     </div>
+                    <!-- Solo se ve si el evento tiene costo de servicio -->
+                    <div id="filasServicio" class="hidden mt-2 space-y-1 text-sm">
+                        <p class="flex justify-between"><span class="text-gray-500">Entradas</span> <span id="resumenEntradas">$0</span></p>
+                        <p class="flex justify-between"><span class="text-gray-500" id="etiquetaServicio">Costo de servicio</span> <span id="resumenServicio">$0</span></p>
+                    </div>
+                    <p id="avisoServicio" class="hidden mt-2 text-xs text-gray-500">Si corresponde, el costo de servicio se suma en la página de pago.</p>
                     <div class="border-t border-gray-200 mt-3 pt-3 flex items-center justify-between">
                         <span class="text-sm text-gray-500">Total a pagar</span>
                         <span id="totalMostrado" class="text-2xl font-bold text-violet-600">$0</span>
@@ -110,11 +99,22 @@
                 <button type="submit" id="btnPagarAhora" class="w-full bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition shadow-md">
                     Pagar con Mercado Pago
                 </button>
-                <p class="text-xs text-gray-500 text-center">Vas a pasar a la página de Mercado Pago para completar el pago de forma segura. Se puede pagar con tarjeta de crédito, de débito, prepaga o con dinero en tu cuenta de Mercado Pago.</p>
+                <p class="text-xs text-gray-500 text-center">Vas a pasar a la página de Mercado Pago para completar el pago de forma segura. Se puede pagar con <span id="formasDePago"></span>.</p>
             </form>
 
             <button type="button" id="btnVolverPaso1" class="mt-4 text-sm text-violet-600 hover:underline">← Volver a seleccionar entradas</button>
         </div>
+
+        <!-- Se llenan al cargar el evento (y quedan ocultas si no se pudo cargar) -->
+        <section id="sobreEventoContainer" class="hidden mt-8 bg-white rounded-xl border border-gray-200 p-6" aria-labelledby="tituloSobreEvento">
+            <h2 id="tituloSobreEvento" class="text-xl font-bold text-gray-800">Sobre el evento</h2>
+            <div id="detalleEvento"></div>
+        </section>
+
+        <section id="dondeEsContainer" class="hidden mt-8 bg-white rounded-xl border border-gray-200 p-6" aria-labelledby="tituloDondeEs">
+            <h2 id="tituloDondeEs" class="text-xl font-bold text-gray-800">Dónde es</h2>
+            <div id="lugarEvento"></div>
+        </section>
 
         <div id="loadingContainer" class="hidden mt-8 text-center py-8">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-violet-600 border-t-transparent"></div>
@@ -122,18 +122,36 @@
         </div>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400">
-        © 2024 Evently by Bali Group
-    </footer>
+    <footer id="pie" class="bg-white border-t border-gray-200 mt-12 py-4 text-center text-sm text-gray-400"></footer>
 
     <script type="module" src="../shared/firebase-init.js"></script>
 
     <script type="module">
         // Esta pagina solo LEE el evento. La venta, el precio y el stock los maneja el servidor (/api/crear-pago).
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
+        import { estadoDeLote, hoyEnArgentina, textoDeVigencia, diaMes } from "../shared/lotes.js";
+        import { textoDeFormasDePago } from "../shared/formas-de-pago.js";
+        import { resumenDeDias, detalleParaMostrar, ubicacionDeEvento } from "../shared/evento-datos.js";
+        import { cargarLeaflet, dibujarMapa } from "../shared/lugar-mapa.js";
+        import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
+        import { dibujarCabecera } from "../shared/cabecera-publica.js";
+        import { categoriaDeComision, desgloseDeCompra } from "../shared/comision.js";
+        import { seVendeEnElSitio, situacionDelEvento } from "../shared/estado-evento.js";
+
+        cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'evento'));
+        dibujarCabecera(document.getElementById('cabecera'), 'evento');
+
+        // El aviso del paso de pago nombra las formas de pago desde la lista compartida
+        document.getElementById('formasDePago').textContent = textoDeFormasDePago();
 
         // Elementos
         const container = document.getElementById('eventoContainer');
+        const sobreEventoContainer = document.getElementById('sobreEventoContainer');
+        const detalleEvento = document.getElementById('detalleEvento');
+        const dondeEsContainer = document.getElementById('dondeEsContainer');
+        const lugarEvento = document.getElementById('lugarEvento');
         const lotesContainer = document.getElementById('lotesContainer');
         const cantidadInput = document.getElementById('cantidadInput');
         const btnMenos = document.getElementById('btnMenos');
@@ -151,6 +169,11 @@
         const resumenEvento = document.getElementById('resumenEvento');
         const resumenLote = document.getElementById('resumenLote');
         const resumenCantidad = document.getElementById('resumenCantidad');
+        const filasServicio = document.getElementById('filasServicio');
+        const resumenEntradas = document.getElementById('resumenEntradas');
+        const etiquetaServicio = document.getElementById('etiquetaServicio');
+        const resumenServicio = document.getElementById('resumenServicio');
+        const avisoServicio = document.getElementById('avisoServicio');
 
         // Campos del comprador y donde se muestra el error de cada uno (el nombre coincide con el que usa el servidor)
         const CAMPOS = {
@@ -164,6 +187,8 @@
         const BOTON_NORMAL = 'Pagar con Mercado Pago';
 
         let eventoActual = null;
+        let categoriaServicio = null;       // categoría de costo de servicio del evento (null = 0%)
+        let servicioSinConfirmar = false;   // el evento tiene categoría pero no se pudo leer su porcentaje
         let loteSeleccionado = null;
         let enviando = false;
         const urlParams = new URLSearchParams(window.location.search);
@@ -207,8 +232,32 @@
                     container.innerHTML = `<p class="text-red-500">Evento no encontrado.</p>`;
                     return;
                 }
+                // Suspendido o eliminado por el superadmin (pedido 13): no se muestra ni se vende.
+                // Suspendido es temporal (ajustes): se avisa con un mensaje amable. Todo el texto es fijo.
+                if (!seVendeEnElSitio(docSnap.data())) {
+                    const suspendido = situacionDelEvento(docSnap.data()) === 'suspendido';
+                    document.querySelectorAll('.step').forEach((paso) => { paso.style.display = 'none'; });
+                    container.innerHTML = suspendido ? `
+                        <div class="bg-white rounded-2xl border border-violet-100 p-8 text-center shadow-sm">
+                            <span class="material-symbols-outlined text-5xl text-violet-500" aria-hidden="true">construction</span>
+                            <h1 class="text-2xl font-bold text-gray-900 mt-3">Estamos preparando todo para vos</h1>
+                            <p class="text-gray-600 mt-2 max-w-md mx-auto">Este evento está en mantenimiento por unos ajustes de último momento. En un rato vas a poder seguir comprando tus entradas con normalidad.</p>
+                            <p class="text-sm text-gray-500 mt-4">¡Gracias por la paciencia! Volvé a entrar en unos minutos.</p>
+                            <a href="index.html" class="inline-block mt-6 bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-full text-sm font-semibold">Ver otros eventos</a>
+                        </div>` : `
+                        <div class="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-400" aria-hidden="true">event_busy</span>
+                            <h1 class="text-2xl font-bold text-gray-900 mt-3">Este evento ya no está disponible</h1>
+                            <p class="text-gray-600 mt-2">Mirá los demás eventos que tenemos para vos.</p>
+                            <a href="index.html" class="inline-block mt-6 bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-full text-sm font-semibold">Ver eventos</a>
+                        </div>`;
+                    return;
+                }
                 eventoActual = { id: docSnap.id, ...docSnap.data() };
+                await cargarCostoDeServicio(eventoActual);
                 renderEvento(eventoActual);
+                // Entrada única: no se habla de lotes (se muestra solo la entrada con su precio)
+                if (eventoActual.ventaSimple === true) document.getElementById('etiquetaLotes').textContent = 'Tu entrada';
                 renderLotes(eventoActual.lotes || []);
                 actualizarTotal();
             } catch (error) {
@@ -217,73 +266,132 @@
             }
         }
 
+        // Lee el porcentaje de costo de servicio del evento. Es solo una vista previa: el servidor lo vuelve a calcular.
+        // Si el evento no tiene categoría no se lee nada (0%). Si la lectura falla, se muestra solo el total con un aviso.
+        async function cargarCostoDeServicio(evento) {
+            categoriaServicio = null;
+            servicioSinConfirmar = false;
+            if (typeof evento.comisionCategoriaId !== 'string' || evento.comisionCategoriaId === '') return;
+            try {
+                const snap = await getDoc(doc(db, "configuracion", "comisiones"));
+                categoriaServicio = categoriaDeComision(evento, snap.exists() ? snap.data() : null);
+            } catch (error) {
+                console.error('No se pudo leer el costo de servicio:', error);
+                servicioSinConfirmar = true;
+            }
+        }
+
         function renderEvento(evento) {
-            const imagenUrl = typeof evento.imagen === 'string' && evento.imagen.trim()
-                ? evento.imagen.trim()
-                : './imag/Imagen de evento 1.jpg';
+            const renglonesDeDias = resumenDeDias(evento);
+            if (renglonesDeDias.length === 0) renglonesDeDias.push('Fecha no definida');
+            const htmlDeDias = renglonesDeDias.map((renglon, idx) => `
+                        <p class="text-gray-500 flex items-center gap-2 ${idx === 0 ? 'mt-2' : ''}">
+                            <span class="material-symbols-outlined">${idx === 0 ? 'calendar_month' : 'event'}</span> ${escaparHtml(renglon)}
+                        </p>`).join('');
+            const lugar = evento.lugar || 'Lugar no definido';
+            const ubicacionDelEvento = ubicacionDeEvento(evento);
+            const filasDeDetalle = detalleParaMostrar(evento);
+            const htmlDeDetalle = filasDeDetalle.length === 0
+                ? `<p class="text-gray-600 mt-3">${escaparHtml('¡No te lo pierdas!')}</p>`
+                : filasDeDetalle.map((fila, idx) => `
+                        <p class="text-gray-600 ${idx === 0 ? 'mt-3' : 'mt-2'}">${fila.titulo ? `<span class="font-medium text-gray-700">${escaparHtml(fila.titulo)}:</span> ` : ''}${escaparHtml(fila.texto)}</p>`).join('');
+
+            // 1. Afiche con nombre, días y lugar
             container.innerHTML = `
                 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <img src="${imagenUrl}" alt="${evento.nombre || 'Imagen del evento'}" class="w-full h-64 object-cover" onerror="this.hidden=true; this.nextElementSibling.classList.remove('hidden')">
-                    <div class="hidden w-full h-64 bg-violet-50 text-violet-300 items-center justify-center" aria-label="Imagen no disponible">
-                        <span class="material-symbols-outlined text-6xl">image</span>
-                    </div>
+                    ${htmlDeImagenEvento(evento, { clases: 'h-64' })}
                     <div class="p-6">
-                        <h1 class="text-3xl font-bold text-gray-800">${evento.nombre || 'Evento sin nombre'}</h1>
-                        <p class="text-gray-500 flex items-center gap-2 mt-2">
-                            <span class="material-symbols-outlined">calendar_month</span> ${evento.fecha || 'Fecha no definida'}
-                        </p>
+                        <h1 class="text-3xl font-bold text-gray-800">${escaparHtml(evento.nombre || 'Evento sin nombre')}</h1>
+                        ${htmlDeDias}
                         <p class="text-gray-500 flex items-center gap-2">
-                            <span class="material-symbols-outlined">location_on</span> ${evento.lugar || 'Lugar no definido'}
+                            <span class="material-symbols-outlined">location_on</span> ${escaparHtml(lugar)}
                         </p>
-                        <p class="text-gray-600 mt-4">${evento.descripcion || '¡No te lo pierdas!'}</p>
                     </div>
                 </div>
             `;
+
+            // 2. Sobre el evento: el detalle (o "¡No te lo pierdas!" si no hay)
+            detalleEvento.innerHTML = htmlDeDetalle;
+            sobreEventoContainer.classList.remove('hidden');
+
+            // 3. Dónde es: el lugar, el botón "Abrir en Maps" y, si el evento tiene ubicación, el mapa.
+            // Google Maps se abre solo si la persona toca el botón (con las coordenadas o, si no hay, con el texto del lugar).
+            const busquedaMaps = ubicacionDelEvento ? `${ubicacionDelEvento.lat},${ubicacionDelEvento.lng}` : (evento.lugar || '').trim();
+            const enlaceMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(busquedaMaps)}`;
+            lugarEvento.innerHTML = `
+                <p class="text-gray-600 mt-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined">location_on</span> ${escaparHtml(lugar)}
+                </p>
+                ${busquedaMaps ? `<a id="abrirEnMaps" href="${escaparHtml(enlaceMaps)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 mt-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-full transition">
+                    <span class="material-symbols-outlined text-base">open_in_new</span> Abrir en Maps
+                </a>` : ''}
+                ${ubicacionDelEvento ? '<div id="mapaEvento" class="hidden mt-3 h-56 rounded-lg border border-gray-200"></div>' : ''}
+            `;
+            dondeEsContainer.classList.remove('hidden');
+            if (ubicacionDelEvento) mostrarMapa(ubicacionDelEvento);
         }
 
+        // Mapa del lugar: solo si el evento tiene ubicación. Si Leaflet no carga, el lugar queda como texto.
+        async function mostrarMapa(ubicacion) {
+            if (await cargarLeaflet()) dibujarMapa(document.getElementById('mapaEvento'), ubicacion);
+        }
+
+        // Los lotes: un lote "por fechas" se puede elegir solo entre sus fechas (o si el superadmin lo habilitó antes).
+        // Los que todavía no empezaron o ya terminaron se ven apagados con su texto. Nombres y fechas van escapados.
         function renderLotes(lotes) {
             if (!lotes || lotes.length === 0) {
                 lotesContainer.innerHTML = `<p class="text-gray-500">No hay lotes disponibles para este evento.</p>`;
                 return;
             }
+            const hoy = hoyEnArgentina();
             lotesContainer.innerHTML = lotes.map((lote, index) => {
                 const vendidas = Number(lote.vendidas) || 0;
                 const disponibles = Number(lote.disponibles) || 0;
                 const disponiblesRestantes = Math.max(0, disponibles - vendidas);
-                const disponibleTexto = disponiblesRestantes > 0 ? `${disponiblesRestantes} disponibles` : 'Agotado';
-                const selectedClass = index === 0 ? 'lote-selected border-2 border-violet-600' : 'border border-gray-200';
+                const estado = estadoDeLote(lote, hoy);
                 const precioNum = Number(lote.precio) || 0;
+                // Se puede tocar si está en fecha (si está agotado, al continuar se avisa, como siempre)
+                const elegible = estado === 'disponible';
+                const textoEstado = estado === 'proximo'
+                    ? `Disponible desde el ${diaMes(lote.desde)}`
+                    : estado === 'finalizado' ? 'Venta finalizada'
+                    : disponiblesRestantes > 0 ? `${disponiblesRestantes} disponibles` : 'Agotado';
+                const colorEstado = elegible && disponiblesRestantes > 0 ? 'text-green-600' : estado === 'proximo' ? 'text-amber-600' : 'text-red-500';
                 return `
-                    <div class="lote-card p-4 rounded-xl cursor-pointer transition ${selectedClass}" data-index="${index}">
-                        <div class="flex justify-between items-start">
+                    <div class="lote-card p-4 rounded-xl transition border border-gray-200 ${elegible ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed bg-gray-50'}" data-index="${index}" data-elegible="${elegible ? '1' : '0'}" ${elegible ? '' : 'aria-disabled="true"'}>
+                        <div class="flex justify-between items-start gap-3">
                             <div>
-                                <h4 class="font-semibold text-gray-800">${lote.nombre || 'Sin nombre'}</h4>
-                                <p class="text-sm text-gray-500">${lote.vigencia || ''}</p>
+                                <h4 class="font-semibold text-gray-800">${escaparHtml(lote.nombre || 'Sin nombre')}</h4>
+                                <p class="text-sm text-gray-500">${escaparHtml(textoDeVigencia(lote))}</p>
                             </div>
                             <span class="text-lg font-bold text-violet-600">$${precioNum.toLocaleString()}</span>
                         </div>
-                        <p class="text-sm ${disponiblesRestantes > 0 ? 'text-green-600' : 'text-red-500'} mt-2">${disponibleTexto}</p>
-                        ${disponiblesRestantes === 0 ? '<p class="text-xs text-red-400">Agotado</p>' : ''}
+                        <p class="text-sm ${colorEstado} mt-2">${escaparHtml(textoEstado)}</p>
                     </div>
                 `;
             }).join('');
 
-            const cards = lotesContainer.querySelectorAll('.lote-card');
-            if (cards.length > 0) {
-                cards.forEach((card, i) => {
-                    card.addEventListener('click', () => {
-                        cards.forEach(c => {
-                            c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
-                            c.classList.add('border', 'border-gray-200');
-                        });
-                        card.classList.add('lote-selected', 'border-2', 'border-violet-600');
-                        loteSeleccionado = i;
-                        errorPaso1.classList.add('hidden');
-                        actualizarTotal();
-                    });
+            const cards = [...lotesContainer.querySelectorAll('.lote-card')];
+            const marcar = (card) => {
+                cards.forEach(c => {
+                    c.classList.remove('lote-selected', 'border-2', 'border-violet-600');
+                    c.classList.add('border', 'border-gray-200');
                 });
-                // Seleccionar el primero por defecto
-                cards[0].click();
+                card.classList.add('lote-selected', 'border-2', 'border-violet-600');
+                loteSeleccionado = Number(card.dataset.index);
+                errorPaso1.classList.add('hidden');
+                actualizarTotal();
+            };
+            cards.forEach((card) => {
+                if (card.dataset.elegible !== '1') return; // un lote que no está a la venta no se puede elegir
+                card.addEventListener('click', () => marcar(card));
+            });
+            // Se elige el primer lote que está a la venta (si no hay ninguno, no queda ninguno elegido)
+            const primero = cards.find((c) => c.dataset.elegible === '1');
+            if (primero) marcar(primero);
+            else {
+                loteSeleccionado = null;
+                mostrarTexto(errorPaso1, 'Por ahora no hay entradas a la venta para este evento.');
             }
         }
 
@@ -300,8 +408,15 @@
             if (!eventoActual || loteSeleccionado === null) return;
             const lote = eventoActual.lotes[loteSeleccionado];
             const cantidad = cantidadElegida();
-            const total = (Number(lote.precio) || 0) * cantidad;
+            const porcentaje = categoriaServicio ? categoriaServicio.porcentaje : 0;
+            const { subtotal, costoServicio, total } = desgloseDeCompra(lote.precio, cantidad, porcentaje);
             totalMostrado.textContent = `$${total.toLocaleString()}`;
+            // Con 0% se ve solo el total, como siempre
+            filasServicio.classList.toggle('hidden', costoServicio <= 0);
+            avisoServicio.classList.toggle('hidden', !servicioSinConfirmar);
+            resumenEntradas.textContent = `$${subtotal.toLocaleString()}`;
+            etiquetaServicio.textContent = `Costo de servicio (${porcentaje.toLocaleString()}%)`;
+            resumenServicio.textContent = `$${costoServicio.toLocaleString()}`;
             resumenEvento.textContent = eventoActual.nombre || '-';
             resumenLote.textContent = lote.nombre || '-';
             resumenCantidad.textContent = String(cantidad);
@@ -425,6 +540,5 @@
         // Iniciar
         cargarEvento(eventoId);
     </script>
-    <script type="module" src="contacto-modal.js"></script>
 </body>
 </html>

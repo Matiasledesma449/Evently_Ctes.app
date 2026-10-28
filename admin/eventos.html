@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Evently - Solicitar Evento</title>
+    <title>Evently - Solicitar evento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -18,6 +18,8 @@
         .lote-item .remove-lote:hover { color: #dc2626; }
         .preview-image { max-width: 200px; max-height: 200px; border-radius: 8px; border: 1px solid #e5e7eb; }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="../shared/admin-shell.css" />
     <link rel="prefetch" href="eventos-seleccion.html" />
     <link rel="prefetch" href="dashboard.html" />
@@ -44,34 +46,72 @@
     </script>
 
     <div class="flex h-screen min-h-0">
-        <!-- Sidebar -->
-        <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
-            <div class="p-6">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-                <span class="block text-xs text-gray-500">Administración</span>
-            </div>
-            <nav class="admin-role-nav invisible flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
-                <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">apps</span><span>Mis Eventos</span></a>
-                <a data-nav-key="dashboard" href="dashboard.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">dashboard</span><span>Panel Principal</span></a>
-                <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Solicitar Evento</span></a>
-                <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">add_circle</span><span>Crear Evento Directo</span></a>
-                <a data-nav-key="reportes" href="reportes.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">bar_chart</span><span>Reportes</span></a>
-                <a data-nav-key="ventas" href="ventas.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">payments</span><span>Ventas</span></a>
-                <a data-nav-key="escaner" href="escaner.html" class="admin-nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">qr_code_scanner</span><span>Escáner</span></a>
-                <a data-nav-key="soporte-mensajes" class="admin-nav-link link-soporte relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition" href="soporte.html"><span class="material-symbols-outlined icono-soporte">support_agent</span><span class="texto-soporte">Soporte</span><span class="badge-no-leidos hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="admin-nav-link link-consultas hidden relative flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">contact_support</span><span>Consultas públicas</span><span class="badge-consultas-publicas hidden ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-                <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="admin-nav-link hidden flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition"><span class="material-symbols-outlined">admin_panel_settings</span><span>Panel Global</span></a>
-            </nav>
-            <div class="p-4 border-t border-gray-200">
-                <a href="#" id="btnCerrarSesion" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></a>
-            </div>
-        </aside>
+        <!-- Menú compartido del panel: lo dibuja shared/menu-admin.js (escritorio y celular) -->
+        <script src="../shared/menu-admin.js" data-pagina="eventos"></script>
 
         <!-- Contenido principal -->
         <main class="flex-1 min-h-0 overflow-y-auto p-6 pb-24 lg:pb-6">
-            <div class="max-w-4xl mx-auto">
-                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar nuevo evento</h1>
+            <!-- Pestañas del superadmin (solo en ?modo=directo): Crear evento y Solicitudes -->
+            <div id="pestanasSuperadmin" class="hidden max-w-6xl mx-auto mb-6 inline-flex rounded-lg border border-gray-200 bg-white p-1" role="tablist" aria-label="Crear evento o ver solicitudes">
+                <button type="button" id="pestanaCrear" data-pestana="crear" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Crear evento</button>
+                <button type="button" id="pestanaSolicitudes" data-pestana="solicitudes" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center gap-2">
+                    Solicitudes <span id="pendientesSolicitudes" class="hidden bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span>
+                </button>
+            </div>
+
+            <!-- SECCIÓN: Solicitudes de eventos (solo superadmin; la maneja aprobaciones.js) -->
+            <div id="panelSolicitudes" class="hidden max-w-6xl mx-auto">
+                <div id="seccion-solicitudes" class="mb-8 hidden">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                        <div class="flex items-center">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-violet-600">notifications_active</span>
+                                Solicitudes de eventos
+                            </h2>
+                            <span id="contador-solicitudes" class="bg-violet-600 text-white text-sm font-semibold px-3 py-1 rounded-full ml-3 shadow-sm">0</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                                <input id="buscarSolicitud" type="search" placeholder="Buscar solicitud..." class="w-full sm:w-56 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                            </div>
+                            <select id="filtroOrganizacionSolicitud" aria-label="Filtrar por organización" class="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
+                                <option value="todas">Todas las organizaciones</option>
+                            </select>
+                            <select id="filtroPeriodoSolicitud" aria-label="Filtrar por período" class="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
+                                <option value="7">Últimos 7 días</option>
+                                <option value="30" selected>Últimos 30 días</option>
+                                <option value="todos">Todo el período</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="filtros-estado-solicitudes" class="inline-flex rounded-lg border border-gray-200 bg-white p-1 mb-4" role="tablist" aria-label="Filtrar solicitudes por estado">
+                        <button type="button" data-estado-solicitud="pendiente" class="px-3 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white" aria-pressed="true">Pendientes</button>
+                        <button type="button" data-estado-solicitud="aprobada" class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100" aria-pressed="false">Aceptados</button>
+                        <button type="button" data-estado-solicitud="rechazada" class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100" aria-pressed="false">Rechazados</button>
+                    </div>
+                    <div id="grid-solicitudes" class="space-y-5">
+                        <p class="text-gray-500 col-span-full text-center py-8" id="mensaje-vacio">Cargando solicitudes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="panelCrear" class="max-w-4xl mx-auto">
+                <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar evento</h1>
                 <p id="descripcionFormulario" class="text-gray-500 mb-6">Completa el formulario para solicitar un nuevo evento. Nuestro equipo evaluará la solicitud y se pondrá en contacto contigo.</p>
+
+                <!-- Costo de servicio (solo superadmin, en modo directo): categorías de porcentaje. Lo maneja crear-evento-superadmin.js -->
+                <section id="panelServicio" class="hidden mb-6 bg-white rounded-xl border border-gray-200 p-5" aria-labelledby="tituloServicio">
+                    <h2 id="tituloServicio" class="text-lg font-bold text-gray-800">Costo de servicio</h2>
+                    <p class="text-sm text-gray-500 mb-4">Lo paga quien compra y se muestra aparte del precio de la entrada. Creá categorías con su porcentaje y elegí una para cada evento. Un evento sin categoría no cobra costo de servicio (0%). Esto lo ve solo el superadmin.</p>
+                    <div id="listaCategorias" class="space-y-2"></div>
+                    <form id="formNuevaCategoria" class="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-gray-100" novalidate>
+                        <input id="nuevaCategoriaNombre" type="text" maxlength="40" aria-label="Nombre de la categoría nueva" placeholder="Nombre de la categoría (ej: Estándar)" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                        <input id="nuevaCategoriaPorcentaje" type="text" inputmode="decimal" maxlength="6" aria-label="Porcentaje de la categoría nueva" placeholder="Porcentaje (ej: 8)" class="sm:w-40 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                        <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Agregar categoría</button>
+                    </form>
+                    <p id="mensajeServicio" role="status" class="hidden mt-3 text-sm"></p>
+                </section>
 
                 <form id="formSolicitud" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
                     <div>
@@ -79,23 +119,48 @@
                         <input type="text" id="nombre" name="nombre" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Fiesta de Fin de Año 2024">
                     </div>
 
+                    <!-- Solo superadmin (modo directo): de qué organización es el evento y cuánto cobra de costo de servicio -->
+                    <div id="bloqueSuperadmin" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="organizacionEvento" class="block text-sm font-medium text-gray-700 mb-1">Organización *</label>
+                            <select id="organizacionEvento" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                <option value="">Cargando organizaciones...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="categoriaEvento" class="block text-sm font-medium text-gray-700 mb-1">Costo de servicio</label>
+                            <select id="categoriaEvento" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                <option value="">Sin categoría (0%)</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
-                        <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
-                        <input type="text" id="fecha" name="fecha" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: 15 Diciembre 2024">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="block text-sm font-medium text-gray-700">Días y horarios * (mínimo 1)</label>
+                            <button type="button" id="agregarDia" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-full transition flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">add</span> Agregar día
+                            </button>
+                        </div>
+                        <div id="diasContainer"></div>
+                        <p class="text-xs text-gray-400 mt-2">Si la hora de fin es menor que la de inicio, se entiende que el evento termina al día siguiente.</p>
                     </div>
 
                     <div>
                         <label for="lugar" class="block text-sm font-medium text-gray-700 mb-1">Lugar *</label>
-                        <input type="text" id="lugar" name="lugar" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Complejo Municipal, Saladas">
+                        <div class="relative">
+                            <input type="text" id="lugar" name="lugar" required autocomplete="off" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Complejo Municipal, Saladas">
+                            <div id="lugarSugerencias" class="hidden absolute z-[1000] left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"></div>
+                        </div>
+                        <p id="lugarAviso" role="status" class="hidden text-xs text-gray-500 mt-1"></p>
+                        <div id="lugarMapa" class="hidden mt-3 h-64 rounded-lg border border-gray-200" aria-label="Mapa para marcar el lugar del evento"></div>
+                        <p class="text-xs text-gray-500 mt-1">Escribí el lugar y elegí una sugerencia, o tocá el mapa / arrastrá el marcador hasta el punto exacto: la dirección se completa sola.</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Imagen del evento</label>
                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <input type="file" id="imagenFile" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
-                            <button type="button" id="btnSubirImagen" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap">
-                                Subir imagen
-                            </button>
+                            <input type="file" id="imagenFile" accept="image/jpeg,image/png,image/webp" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
                         </div>
                         <div id="previewContainer" class="mt-3 hidden">
                             <p class="text-sm text-gray-500">Vista previa:</p>
@@ -103,15 +168,68 @@
                             <span id="nombreArchivo" class="text-xs text-gray-400 block mt-1"></span>
                         </div>
                         <input type="hidden" id="imagenUrl" name="imagen" value="" />
-                        <p class="text-xs text-gray-400 mt-1">Selecciona una imagen y haz clic en "Subir imagen". Opcional.</p>
+                        <p id="mensajeImagen" role="status" class="hidden text-sm mt-2"></p>
+                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP); se achica sola. Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
                     </div>
 
-                    <div>
-                        <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                        <textarea id="descripcion" name="descripcion" rows="4" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Describe el evento, actividades, etc."></textarea>
+                    <div class="space-y-4">
+                        <label class="block text-sm font-medium text-gray-700">Sobre el evento</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="detalleActividad" class="block text-xs text-gray-500 mb-1">Actividad *</label>
+                                <input type="text" id="detalleActividad" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Baile con DJ en vivo">
+                            </div>
+                            <div>
+                                <label for="detalleTipo" class="block text-xs text-gray-500 mb-1">Tipo de evento *</label>
+                                <select id="detalleTipo" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none"></select>
+                                <input type="text" id="detalleTipoOtro" maxlength="500" class="hidden w-full border border-gray-300 rounded-lg px-4 py-2 mt-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="¿Qué tipo de evento es?">
+                            </div>
+                            <div>
+                                <label for="detalleRequisitos" class="block text-xs text-gray-500 mb-1">Requisitos</label>
+                                <input type="text" id="detalleRequisitos" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Llevar DNI">
+                            </div>
+                            <div>
+                                <label for="detalleEdad" class="block text-xs text-gray-500 mb-1">Edad</label>
+                                <input type="text" id="detalleEdad" maxlength="500" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Mayores de 18 años">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="descripcion" class="block text-xs text-gray-500 mb-1">Algo más para contarle al público (opcional)</label>
+                            <textarea id="descripcion" name="descripcion" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Más información del evento."></textarea>
+                        </div>
                     </div>
 
-                    <div>
+                    <!-- Cómo se venden las entradas: una entrada única (precio, cantidad y hasta cuándo) o por lotes -->
+                    <fieldset>
+                        <legend class="block text-sm font-medium text-gray-700 mb-2">¿Cómo se venden las entradas? *</legend>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="flex items-start gap-3 border border-gray-200 rounded-xl p-4 cursor-pointer has-[:checked]:border-violet-600 has-[:checked]:bg-violet-50">
+                                <input type="radio" name="modoVenta" value="unica" class="mt-1 accent-violet-600">
+                                <span><span class="block font-semibold text-gray-800">Entrada única</span><span class="block text-xs text-gray-500">Un solo precio. Sin lotes.</span></span>
+                            </label>
+                            <label class="flex items-start gap-3 border border-gray-200 rounded-xl p-4 cursor-pointer has-[:checked]:border-violet-600 has-[:checked]:bg-violet-50">
+                                <input type="radio" name="modoVenta" value="lotes" checked class="mt-1 accent-violet-600">
+                                <span><span class="block font-semibold text-gray-800">Con lotes</span><span class="block text-xs text-gray-500">Preventas por fecha o sectores (Campo, Platea, VIP).</span></span>
+                            </label>
+                        </div>
+                        <!-- Al editar: por qué no se puede pasar a entrada única (lo escribe el JavaScript con textContent) -->
+                        <p id="avisoModoVenta" class="hidden mt-2 text-xs text-gray-500"></p>
+                    </fieldset>
+
+                    <!-- Entrada única -->
+                    <div id="bloqueVentaUnica" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="text-xs font-medium text-gray-500">Precio *
+                            <input type="number" id="unicaPrecio" min="1" placeholder="Ej: 15000" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
+                        <label class="text-xs font-medium text-gray-500">Cantidad de entradas *
+                            <input type="number" id="unicaCantidad" min="1" placeholder="Ej: 300" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
+                        <label class="text-xs font-medium text-gray-500">Se vende hasta <span class="font-normal">(opcional)</span>
+                            <input type="date" id="unicaHasta" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
+                    </div>
+
+                    <div id="bloqueLotes">
                         <div class="flex justify-between items-center mb-3">
                             <label class="block text-sm font-medium text-gray-700">Lotes * (mínimo 1)</label>
                             <button type="button" id="agregarLote" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-full transition flex items-center gap-1">
@@ -129,8 +247,20 @@
                                     <input type="number" name="lote_precio[]" placeholder="Precio (ej. 15000)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="0">
                                     <input type="number" name="lote_disponibles[]" placeholder="Disponibles (ej. 300)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="1">
                                 </div>
-                                <div class="mt-2">
-                                    <input type="text" name="lote_vigencia[]" placeholder="Vigencia (ej. 01/12 — 15/12)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                <!-- Cuándo se vende: por fechas (preventa, con calendario) o siempre (sectores de un concierto: Campo, Platea, VIP) -->
+                                <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <label class="text-xs font-medium text-gray-500">Cuándo se vende
+                                        <select name="lote_tipo[]" class="mt-1 w-full bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                            <option value="fechas">Por fechas (preventa)</option>
+                                            <option value="siempre">Siempre disponible (sector)</option>
+                                        </select>
+                                    </label>
+                                    <label class="text-xs font-medium text-gray-500" data-fecha-lote>Desde
+                                        <input type="date" name="lote_desde[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                    </label>
+                                    <label class="text-xs font-medium text-gray-500" data-fecha-lote>Hasta
+                                        <input type="date" name="lote_hasta[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -152,26 +282,103 @@
         </main>
     </div>
 
-    <!-- Bottom nav (móvil) -->
-    <nav class="admin-bottom-nav admin-role-nav invisible lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex items-center gap-1 h-16 z-50 overflow-x-auto px-2" aria-label="Navegación móvil">
-        <a data-nav-key="eventos-seleccion" href="eventos-seleccion.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">apps</span><span class="text-[10px]">Eventos</span></a>
-        <a data-nav-key="dashboard" href="dashboard.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">dashboard</span><span class="text-[10px]">Panel</span></a>
-        <a data-role="organizacion" data-nav-key="eventos" href="eventos.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Solicitar</span></a>
-        <a data-role="superadmin" data-nav-key="eventos" href="eventos.html?modo=directo" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[82px] h-full text-gray-500"><span class="material-symbols-outlined">add_circle</span><span class="text-[10px]">Crear evento</span></a>
-        <a data-nav-key="reportes" href="reportes.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">bar_chart</span><span class="text-[10px]">Reportes</span></a>
-        <a data-nav-key="ventas" href="ventas.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">payments</span><span class="text-[10px]">Ventas</span></a>
-        <a data-nav-key="escaner" href="escaner.html" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">qr_code_scanner</span><span class="text-[10px]">Escáner</span></a>
-        <a data-nav-key="soporte-mensajes" class="mobile-nav-link link-soporte-mobile flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500" href="soporte.html"><span class="material-symbols-outlined icono-soporte-mobile">support_agent</span><span class="text-[10px] texto-soporte-mobile">Soporte</span><span class="badge-no-leidos hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="consultas-publicas" href="consultas-publicas.html" class="mobile-nav-link link-consultas hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">contact_support</span><span class="text-[10px]">Consultas</span><span class="badge-consultas-publicas hidden absolute top-1 right-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span></a>
-        <a data-role="superadmin" data-nav-key="superadmin" href="superadmin.html" class="mobile-nav-link hidden flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">admin_panel_settings</span><span class="text-[10px]">Super Admin</span></a>
-        <a href="#" id="btnCerrarSesionMobile" class="mobile-nav-link flex flex-shrink-0 flex-col items-center justify-center relative w-[76px] h-full text-gray-500"><span class="material-symbols-outlined">logout</span><span class="text-[10px]">Salir</span></a>
-    </nav>
+
+    <!-- Modal: confirmación de aprobación o rechazo de una solicitud -->
+    <div id="modalConfirmacion" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 id="modalConfirmacionTitulo" class="text-xl font-bold text-gray-900 mb-2">Confirmar Acción</h3>
+            <p id="modalConfirmacionMensaje" class="text-gray-600 mb-4 text-sm">¿Estás seguro?</p>
+            <div id="contenedorMotivoConfirmacion" class="hidden mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del rechazo (Opcional)</label>
+                <textarea id="inputMotivoConfirmacion" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-600 focus:border-violet-600 outline-none" placeholder="Ej: Faltan detalles..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="btnCancelarModalConfirmacion" class="px-5 py-2 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition">Cancelar</button>
+                <button id="btnConfirmarModalConfirmacion" class="px-5 py-2 text-white font-medium rounded-lg transition shadow-md min-w-[120px] bg-violet-600 hover:bg-violet-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: editar únicamente solicitudes pendientes -->
+    <div id="modalEditarSolicitud" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] px-4 py-6">
+        <section class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="tituloEditarSolicitud">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h2 id="tituloEditarSolicitud" class="text-xl font-bold text-gray-900">Editar solicitud</h2>
+                    <p class="text-sm text-gray-500 mt-1">Los cambios se guardan en la solicitud pendiente.</p>
+                </div>
+                <button id="btnCerrarModalEditar" type="button" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar edición">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="formEditarSolicitud" class="space-y-4">
+                <div>
+                    <label for="editarNombreSolicitud" class="block text-sm font-medium text-gray-700 mb-1">Nombre del evento</label>
+                    <input id="editarNombreSolicitud" maxlength="150" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="editarFechaSolicitud" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                        <input id="editarFechaSolicitud" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                    </div>
+                    <div>
+                        <label for="editarLugarSolicitud" class="block text-sm font-medium text-gray-700 mb-1">Lugar</label>
+                        <input id="editarLugarSolicitud" maxlength="200" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <h3 class="text-sm font-semibold text-gray-800">Lotes</h3>
+                        <button id="btnAgregarLoteEdicion" type="button" class="text-sm font-medium text-violet-700 hover:text-violet-900">+ Agregar lote</button>
+                    </div>
+                    <div id="lotesEdicionContainer" class="space-y-3"></div>
+                </div>
+                <p id="errorEditarSolicitud" class="hidden text-sm text-red-600" role="alert"></p>
+                <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                    <button id="btnCancelarEdicion" type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
+                    <button id="btnGuardarEdicion" type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700">Guardar cambios</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <!-- Modal: comentar una solicitud (el comentario lo ve la organización en su lista de eventos) -->
+    <div id="modalComentarSolicitud" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] px-4 py-6">
+        <section class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="tituloComentarSolicitud">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="min-w-0">
+                    <h2 id="tituloComentarSolicitud" class="text-xl font-bold text-gray-900">Comentarios</h2>
+                    <p id="subtituloComentarSolicitud" class="text-sm text-gray-500 mt-1 truncate"></p>
+                </div>
+                <button id="btnCerrarModalComentar" type="button" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar comentarios">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="historialComentarios" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
+            <form id="formComentarSolicitud" class="space-y-3">
+                <label for="textoComentarSolicitud" class="block text-sm font-medium text-gray-700">Escribir un comentario para la organización</label>
+                <textarea id="textoComentarSolicitud" rows="3" maxlength="500" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Falta la hora de fin."></textarea>
+                <p id="errorComentarSolicitud" class="hidden text-sm text-red-600" role="alert"></p>
+                <div class="flex justify-end gap-2">
+                    <button id="btnCancelarComentar" type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cerrar</button>
+                    <button id="btnGuardarComentar" type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700">Guardar comentario</button>
+                </div>
+            </form>
+        </section>
+    </div>
 
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { addDoc, collection, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+        import { addDoc, collection, serverTimestamp, doc, getDoc, getDocs, query, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { pasarAUnica } from "../shared/forma-de-venta.js";
+        import { consultaDeVentas } from "../shared/consulta-ventas.js";
+        import { confirmar } from "../shared/ui-utils.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
+        import { TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, armarDetalle } from "../shared/evento-datos.js";
+        import { activarLugarConMapa } from "../shared/lugar-mapa.js";
+        import { validarFechasDeLote, textoDeVigencia, diaMes, hoyEnArgentina } from "../shared/lotes.js";
 
         const form = document.getElementById('formSolicitud');
         const lotesContainer = document.getElementById('lotesContainer');
@@ -181,22 +388,54 @@
         const textoBotonEnviar = document.getElementById('textoBotonEnviar');
         const fileInput = document.getElementById('imagenFile');
         const btnLimpiar = form.querySelector('button[type="reset"]');
-        const btnSubirImagen = document.getElementById('btnSubirImagen');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
         const nombreArchivo = document.getElementById('nombreArchivo');
         const imagenUrlInput = document.getElementById('imagenUrl');
         const modoDirecto = new URLSearchParams(window.location.search).get('modo') === 'directo';
+        const diasContainer = document.getElementById('diasContainer');
+        const selectTipo = document.getElementById('detalleTipo');
+        const inputTipoOtro = document.getElementById('detalleTipoOtro');
+
+        // Organización y costo de servicio del evento: solo el superadmin, en modo directo
+        const superadmin = modoDirecto ? import('./crear-evento-superadmin.js') : null;
 
         if (modoDirecto) {
-            document.title = 'Evently - Crear Evento Directo';
-            document.getElementById('tituloFormulario').textContent = 'Crear evento directo';
+            document.title = 'Evently - Crear evento';
+            document.getElementById('tituloFormulario').textContent = 'Crear evento';
             document.getElementById('descripcionFormulario').textContent = 'Publicá un evento directamente en Evently, sin crear una solicitud.';
             document.getElementById('textoBotonEnviar').textContent = 'Publicar evento';
+            iniciarPestanasSuperadmin();
+        }
+
+        // ============ PESTAÑAS DEL SUPERADMIN: CREAR EVENTO / SOLICITUDES ============
+        // aprobaciones.js maneja la sección de solicitudes (y comprueba por su cuenta que sea superadmin)
+        function iniciarPestanasSuperadmin() {
+            const pestanas = document.getElementById('pestanasSuperadmin');
+            const panelCrear = document.getElementById('panelCrear');
+            const panelSolicitudes = document.getElementById('panelSolicitudes');
+            const botones = pestanas.querySelectorAll('[data-pestana]');
+            pestanas.classList.remove('hidden');
+
+            function mostrar(cual) {
+                const verSolicitudes = cual === 'solicitudes';
+                panelCrear.classList.toggle('hidden', verSolicitudes);
+                panelSolicitudes.classList.toggle('hidden', !verSolicitudes);
+                botones.forEach((boton) => {
+                    const activa = boton.dataset.pestana === cual;
+                    boton.setAttribute('aria-selected', String(activa));
+                    boton.className = 'px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 '
+                        + (activa ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-100');
+                });
+                history.replaceState(null, '', verSolicitudes ? '#solicitudes' : location.pathname + location.search);
+            }
+
+            botones.forEach((boton) => boton.addEventListener('click', () => mostrar(boton.dataset.pestana)));
+            mostrar(location.hash === '#solicitudes' ? 'solicitudes' : 'crear');
+            import('./aprobaciones.js');
         }
 
         let loteIndex = 1;
-        let imagenSubiendo = false;
 
         // ============ AGREGAR LOTE (con scroll correcto) ============
         function agregarLote() {
@@ -211,8 +450,20 @@
                         <input type="number" name="lote_precio[]" placeholder="Precio (ej. 15000)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="0">
                         <input type="number" name="lote_disponibles[]" placeholder="Disponibles (ej. 300)" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" required min="1">
                     </div>
-                    <div class="mt-2">
-                        <input type="text" name="lote_vigencia[]" placeholder="Vigencia (ej. 01/12 — 15/12)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                    <!-- Cuándo se vende: por fechas (preventa, con calendario) o siempre (sectores de un concierto: Campo, Platea, VIP) -->
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="text-xs font-medium text-gray-500">Cuándo se vende
+                            <select name="lote_tipo[]" class="mt-1 w-full bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                                <option value="fechas">Por fechas (preventa)</option>
+                                <option value="siempre">Siempre disponible (sector)</option>
+                            </select>
+                        </label>
+                        <label class="text-xs font-medium text-gray-500" data-fecha-lote>Desde
+                            <input type="date" name="lote_desde[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
+                        <label class="text-xs font-medium text-gray-500" data-fecha-lote>Hasta
+                            <input type="date" name="lote_hasta[]" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                        </label>
                     </div>
                 </div>
             `;
@@ -240,74 +491,442 @@
         function eliminarLote(e) {
             const item = e.target.closest('.lote-item');
             if (item) {
-                const totalLotes = document.querySelectorAll('.lote-item').length;
+                const totalLotes = lotesContainer.querySelectorAll('.lote-item').length;
                 if (totalLotes <= 1) {
                     alert('Debe haber al menos un lote.');
                     return;
                 }
                 item.remove();
-                document.querySelectorAll('.lote-item').forEach((el, idx) => {
+                lotesContainer.querySelectorAll('.lote-item').forEach((el, idx) => {
                     el.querySelector('h4').textContent = `Lote ${idx + 1}`;
                 });
             }
         }
 
         btnAgregarLote.addEventListener('click', agregarLote);
+
+        // Entrada única o con lotes: se ve solo lo que corresponde
+        const modoDeVenta = () => (form.querySelector('input[name="modoVenta"]:checked') || {}).value === 'unica' ? 'unica' : 'lotes';
+        function mostrarModoDeVenta() {
+            const unica = modoDeVenta() === 'unica';
+            document.getElementById('bloqueVentaUnica').classList.toggle('hidden', !unica);
+            document.getElementById('bloqueLotes').classList.toggle('hidden', unica);
+            // Los campos de lotes ocultos no se piden
+            lotesContainer.querySelectorAll('input[required]').forEach((campo) => { campo.disabled = unica; });
+        }
+        form.querySelectorAll('input[name="modoVenta"]').forEach((r) => r.addEventListener('change', mostrarModoDeVenta));
+        form.addEventListener('reset', () => setTimeout(mostrarModoDeVenta, 0));
+
+        // "Siempre disponible" no lleva fechas: se ocultan los calendarios de ese lote
+        lotesContainer.addEventListener('change', (e) => {
+            const tipo = e.target.closest('select[name="lote_tipo[]"]');
+            if (!tipo) return;
+            tipo.closest('.lote-item').querySelectorAll('[data-fecha-lote]').forEach((campo) => campo.classList.toggle('hidden', tipo.value === 'siempre'));
+        });
         asignarEventosEliminar();
 
+        // ============ DÍAS Y HORARIOS ============
+        const CLASE_CAMPO = 'border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none';
+
+        function crearCampoDia(etiqueta, tipo, campo) {
+            const contenedor = document.createElement('label');
+            contenedor.className = 'block text-xs text-gray-500';
+            contenedor.append(etiqueta);
+            const input = document.createElement('input');
+            input.type = tipo;
+            input.dataset.campo = campo;
+            input.className = 'w-full mt-1 text-sm text-gray-800 ' + CLASE_CAMPO;
+            contenedor.appendChild(input);
+            return contenedor;
+        }
+
+        function agregarDia() {
+            const item = document.createElement('div');
+            item.className = 'lote-item';
+            item.dataset.dia = '';
+            const cabecera = document.createElement('div');
+            cabecera.className = 'flex justify-between items-start';
+            const titulo = document.createElement('h4');
+            titulo.className = 'font-medium text-gray-700';
+            const quitar = document.createElement('button');
+            quitar.type = 'button';
+            quitar.className = 'text-red-500 hover:text-red-700 text-sm font-medium';
+            quitar.textContent = 'Eliminar';
+            quitar.addEventListener('click', () => {
+                if (diasContainer.children.length <= 1) {
+                    alert('Debe haber al menos un día.');
+                    return;
+                }
+                item.remove();
+                numerarDias();
+            });
+            cabecera.append(titulo, quitar);
+            const grilla = document.createElement('div');
+            grilla.className = 'grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3';
+            grilla.append(crearCampoDia('Fecha', 'date', 'fecha'), crearCampoDia('Hora de inicio', 'time', 'horaInicio'), crearCampoDia('Hora de fin', 'time', 'horaFin'));
+            item.append(cabecera, grilla);
+            diasContainer.appendChild(item);
+            numerarDias();
+        }
+
+        function numerarDias() {
+            diasContainer.querySelectorAll('[data-dia] h4').forEach((titulo, idx) => { titulo.textContent = `Día ${idx + 1}`; });
+        }
+
+        function leerDias() {
+            return [...diasContainer.querySelectorAll('[data-dia]')].map(item => ({
+                fecha: item.querySelector('[data-campo="fecha"]').value,
+                horaInicio: item.querySelector('[data-campo="horaInicio"]').value,
+                horaFin: item.querySelector('[data-campo="horaFin"]').value
+            }));
+        }
+
+        function reiniciarDias() {
+            diasContainer.replaceChildren();
+            agregarDia();
+        }
+
+        document.getElementById('agregarDia').addEventListener('click', agregarDia);
+        reiniciarDias();
+
+        // ============ DETALLE ============
+        TIPOS_DE_EVENTO.forEach(tipo => selectTipo.appendChild(new Option(tipo, tipo)));
+        const OTRO = TIPOS_DE_EVENTO[TIPOS_DE_EVENTO.length - 1];
+        function mostrarTipoOtro() { inputTipoOtro.classList.toggle('hidden', selectTipo.value !== OTRO); }
+        selectTipo.addEventListener('change', mostrarTipoOtro);
+
         // ============ IMAGEN ============
-        fileInput.addEventListener('change', () => {
+        // La foto no se sube a ningún servicio: se achica y queda guardada dentro del propio evento (campo "imagen").
+        const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
+        const MAXIMO_BYTES = 200 * 1024;           // lo que se guarda en el evento
+        const ENTRADA_MAXIMA = 15 * 1024 * 1024;   // la foto original, antes de achicarla
+        const PASOS_DE_ACHICADO = [[1200, 0.8], [1200, 0.7], [1000, 0.7], [1000, 0.6], [800, 0.6], [640, 0.6]]; // [lado mayor en px, calidad]
+        const mensajeImagen = document.getElementById('mensajeImagen');
+        let imagenPreparando = false;
+        let versionImagen = 0;                     // cada vez que se elige un archivo sube; un resultado viejo se descarta
+
+        // Avisos de la foto, dentro de la página y como texto (nunca como HTML)
+        function avisoImagen(texto, tipo = 'info') {
+            mensajeImagen.textContent = texto;
+            mensajeImagen.className = 'text-sm mt-2 ' + (tipo === 'error' ? 'text-red-600' : tipo === 'ok' ? 'text-green-600' : 'text-gray-500');
+            mensajeImagen.classList.toggle('hidden', !texto);
+        }
+
+        function limpiarImagen() {
             imagenUrlInput.value = '';
-            btnSubirImagen.textContent = 'Subir imagen';
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewImage.src = e.target.result;
-                    previewContainer.classList.remove('hidden');
-                    nombreArchivo.textContent = `Archivo: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewContainer.classList.add('hidden');
+            previewContainer.classList.add('hidden');
+        }
+
+        function leerComoTexto(blob) {
+            return new Promise((resolver, rechazar) => {
+                const lector = new FileReader();
+                lector.onload = () => resolver(lector.result);
+                lector.onerror = () => rechazar(new Error('lectura'));
+                lector.readAsDataURL(blob);
+            });
+        }
+
+        // Achica la foto en pasos hasta que pese 200 KB o menos. Devuelve la foto como texto (data:image/jpeg;base64,...)
+        async function prepararFoto(file) {
+            let bitmap;
+            try {
+                bitmap = await createImageBitmap(file);
+            } catch (e) {
+                throw new Error('ilegible');
             }
+            try {
+                for (const [lado, calidad] of PASOS_DE_ACHICADO) {
+                    const escala = Math.min(1, lado / Math.max(bitmap.width, bitmap.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+                    canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+                    const dibujo = canvas.getContext('2d');
+                    dibujo.fillStyle = '#ffffff'; // los PNG con transparencia quedan sobre blanco, no negro
+                    dibujo.fillRect(0, 0, canvas.width, canvas.height);
+                    dibujo.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                    const blob = await new Promise((resolver) => canvas.toBlob(resolver, 'image/jpeg', calidad));
+                    if (blob && blob.size <= MAXIMO_BYTES) return await leerComoTexto(blob);
+                }
+            } finally {
+                if (bitmap.close) bitmap.close();
+            }
+            throw new Error('pesada');
+        }
+
+        fileInput.addEventListener('change', async () => {
+            const miVersion = ++versionImagen;
+            imagenPreparando = false;
+            limpiarImagen();
+            avisoImagen('');
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (!TIPOS_IMAGEN.includes(file.type)) {
+                avisoImagen('El archivo tiene que ser una imagen (JPG, PNG o WebP).', 'error');
+                fileInput.value = '';
+                return;
+            }
+            if (file.size > ENTRADA_MAXIMA) {
+                avisoImagen('La foto es demasiado grande (máximo 15 MB). Elegí otra.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            imagenPreparando = true;
+            avisoImagen('Preparando la foto...');
+            let foto = '';
+            let fallo = '';
+            try {
+                foto = await prepararFoto(file);
+            } catch (error) {
+                fallo = error && error.message;
+            }
+            if (miVersion !== versionImagen) return; // eligió otra mientras tanto: este resultado ya no sirve
+            imagenPreparando = false;
+            if (!foto) {
+                avisoImagen(fallo === 'pesada'
+                    ? 'No se pudo achicar la foto lo suficiente. Elegí otra.'
+                    : 'No se pudo leer ese archivo como imagen. Elegí otra foto.', 'error');
+                fileInput.value = '';
+                return;
+            }
+            imagenUrlInput.value = foto;
+            previewImage.src = foto;
+            previewContainer.classList.remove('hidden');
+            nombreArchivo.textContent = `Foto lista (${Math.max(1, Math.round(foto.length * 0.75 / 1024))} KB)`;
+            avisoImagen('La foto está lista.', 'ok');
         });
 
-        btnSubirImagen.addEventListener('click', async () => {
-            const file = fileInput.files[0];
-            if (!file) { alert('Selecciona un archivo de imagen primero.'); return; }
-            if (file.size > 2 * 1024 * 1024) { alert('La imagen no debe superar los 2MB.'); return; }
-            if (!file.type.startsWith('image/')) { alert('El archivo debe ser una imagen.'); return; }
-            try {
-                imagenSubiendo = true;
-                btnSubirImagen.disabled = true;
-                fileInput.disabled = true;
-                btnLimpiar.disabled = true;
-                btnSubirImagen.textContent = 'Subiendo...';
-                // ✅ USAR storage desde window
-                const storage = window.storage;
-                const path = `eventos_solicitudes/${Date.now()}_${file.name}`;
-                const storageRef = ref(storage, path);
-                const uploadResult = await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(uploadResult.ref);
-                if (!url) throw new Error('Storage no devolvió una URL para la imagen.');
-                imagenUrlInput.value = url;
-                btnSubirImagen.textContent = '✅ Subida correcta';
-                btnSubirImagen.disabled = false;
-                fileInput.disabled = false;
-                btnLimpiar.disabled = false;
-                imagenSubiendo = false;
-                console.log('Imagen subida:', url);
-            } catch (error) {
-                console.error('Error al subir imagen:', error);
-                alert('Error al subir la imagen. Intenta nuevamente.');
-                btnSubirImagen.textContent = 'Subir imagen';
-                btnSubirImagen.disabled = false;
-                fileInput.disabled = false;
-                btnLimpiar.disabled = false;
-                imagenSubiendo = false;
-            }
+        // ============ LUGAR CON SUGERENCIAS Y MAPA ============
+        const lugarConMapa = activarLugarConMapa({
+            input: document.getElementById('lugar'),
+            lista: document.getElementById('lugarSugerencias'),
+            mapa: document.getElementById('lugarMapa'),
+            aviso: document.getElementById('lugarAviso')
         });
+
+        // ============ EDITAR UN EVENTO (superadmin): eventos.html?modo=directo&editar=<id> ============
+        // Carga el evento en este mismo formulario. Los lotes que ya existen no se pueden borrar ni renombrar
+        // (el servidor confirma cada venta por la posición y el nombre del lote); sí cambiar precio, fechas y cantidad.
+        const idAEditar = modoDirecto ? new URLSearchParams(window.location.search).get('editar') : null;
+        let eventoEditado = null;
+        let resultadoUnica = null; // si el evento con varios lotes puede pasar a entrada única (pasarAUnica)
+        let modoAlCargar = null;   // forma de venta elegida (para volver atrás si no se confirma el cambio)
+
+        function lotesDelFormulario() { return [...lotesContainer.querySelectorAll('.lote-item')]; }
+
+        async function cargarEventoParaEditar(id) {
+            const snap = await getDoc(doc(db, 'eventos', id));
+            if (!snap.exists()) throw new Error('No encontramos ese evento.');
+            const ev = snap.data();
+            eventoEditado = { id, ...ev };
+            document.title = 'Evently - Editar evento';
+            document.getElementById('tituloFormulario').textContent = 'Editar evento';
+            document.getElementById('descripcionFormulario').textContent = 'Corregí lo que haga falta y guardá. Los lotes que ya existen no se pueden borrar ni cambiar de nombre (pueden tener ventas).';
+            textoBotonEnviar.textContent = 'Guardar cambios';
+
+            document.getElementById('nombre').value = ev.nombre || '';
+            // Días
+            const dias = Array.isArray(ev.dias) && ev.dias.length > 0 ? ev.dias : [{ fecha: '', horaInicio: '', horaFin: '' }];
+            diasContainer.replaceChildren();
+            dias.forEach((d) => {
+                agregarDia();
+                const item = diasContainer.lastElementChild;
+                item.querySelector('[data-campo="fecha"]').value = d.fecha || '';
+                item.querySelector('[data-campo="horaInicio"]').value = d.horaInicio || '';
+                item.querySelector('[data-campo="horaFin"]').value = d.horaFin || '';
+            });
+            // Lugar y punto del mapa
+            document.getElementById('lugar').value = ev.lugar || '';
+            if (ev.ubicacion) lugarConMapa.ponerUbicacion(ev.ubicacion);
+            // Foto
+            if (ev.imagen) {
+                imagenUrlInput.value = ev.imagen;
+                previewImage.src = ev.imagen;
+                previewContainer.classList.remove('hidden');
+                nombreArchivo.textContent = 'Foto actual';
+            }
+            // Detalle
+            const detalle = ev.detalle || {};
+            document.getElementById('detalleActividad').value = detalle.actividad || '';
+            if (detalle.tipo && TIPOS_DE_EVENTO.includes(detalle.tipo)) selectTipo.value = detalle.tipo;
+            else if (detalle.tipo) { selectTipo.value = OTRO; inputTipoOtro.value = detalle.tipo; }
+            mostrarTipoOtro();
+            document.getElementById('detalleRequisitos').value = detalle.requisitos || '';
+            document.getElementById('detalleEdad').value = detalle.edad || '';
+            document.getElementById('descripcion').value = ev.descripcion || '';
+            // Venta: entrada única o lotes. Se cargan las dos formas para poder cambiar de una a la otra sin perder lo
+            // vendido: los lotes que ya existen quedan con su nombre y posición (el servidor confirma las ventas así).
+            const lotes = Array.isArray(ev.lotes) ? ev.lotes : [];
+            const unicaRadio = form.querySelector('input[name="modoVenta"][value="unica"]');
+            const lotesRadio = form.querySelector('input[name="modoVenta"][value="lotes"]');
+            if (lotes.length >= 1) {
+                // La entrada única usa el primer lote (conserva su nombre, su posición y lo vendido)
+                document.getElementById('unicaPrecio').value = lotes[0].precio || '';
+                document.getElementById('unicaCantidad').value = lotes[0].disponibles || '';
+                if (Number(lotes[0].vendidas) > 0) document.getElementById('unicaCantidad').min = String(Number(lotes[0].vendidas));
+                document.getElementById('unicaHasta').value = lotes[0].hasta || '';
+            }
+            if (lotes.length > 1) {
+                // Varios lotes: se puede pasar a entrada única solo si los lotes que se quitan no tienen ventas
+                // (ni confirmadas ni con el pago en curso). Mientras se revisa, la opción queda bloqueada.
+                unicaRadio.disabled = true;
+                const aviso = document.getElementById('avisoModoVenta');
+                aviso.textContent = 'Revisando si los lotes tienen ventas…';
+                aviso.classList.remove('hidden');
+                try {
+                    const snapVentas = await getDocs(await consultaDeVentas(where('eventoId', '==', id)));
+                    resultadoUnica = pasarAUnica(lotes, snapVentas.docs.map((d) => d.data()));
+                } catch (error) {
+                    console.error('No se pudieron revisar las ventas del evento:', error);
+                    resultadoUnica = { sePuede: false, quitados: [], conVentas: [], sinDatos: true };
+                }
+                const primero = lotes[0].nombre || 'Lote 1';
+                if (resultadoUnica.sePuede) {
+                    unicaRadio.disabled = false;
+                    aviso.textContent = `Si pasás a entrada única, queda "${primero}" (con lo vendido) y se quitan ${resultadoUnica.quitados.map((n) => `"${n}"`).join(', ')}, que no tienen ventas.`;
+                } else if (resultadoUnica.sinDatos) {
+                    aviso.textContent = 'No se pudieron revisar las ventas del evento: por seguridad no se puede pasar a entrada única ahora. Probá recargar la página.';
+                } else {
+                    aviso.textContent = `No se puede pasar a entrada única: ${resultadoUnica.conVentas.map((n) => `"${n}"`).join(', ')} ${resultadoUnica.conVentas.length === 1 ? 'tiene' : 'tienen'} ventas (o pagos en curso) y se perderían. Solo se puede si los lotes que se quitan no vendieron nada.`;
+                }
+            }
+            if (ev.ventaSimple === true && lotes[0]) unicaRadio.checked = true; else lotesRadio.checked = true;
+            {
+                lotesContainer.replaceChildren();
+                loteIndex = 0;
+                lotes.forEach((l) => {
+                    agregarLote();
+                    const item = lotesContainer.lastElementChild;
+                    item.dataset.existente = '1';
+                    const nombre = item.querySelector('input[name="lote_nombre[]"]');
+                    nombre.value = l.nombre || '';
+                    nombre.readOnly = true; // no se renombra un lote que ya existe
+                    nombre.classList.add('bg-gray-50');
+                    item.querySelector('input[name="lote_precio[]"]').value = l.precio || '';
+                    item.querySelector('input[name="lote_disponibles[]"]').value = l.disponibles || '';
+                    const vendidas = Number(l.vendidas) || 0;
+                    if (vendidas > 0) item.querySelector('input[name="lote_disponibles[]"]').min = String(vendidas);
+                    const tipo = item.querySelector('select[name="lote_tipo[]"]');
+                    tipo.value = l.tipo === 'fechas' || (!l.tipo && (l.desde || l.hasta)) ? 'fechas' : 'siempre';
+                    // La entrada única con "Se vende hasta" no tiene "desde": se completa con hoy (o con su "hasta" si ya pasó)
+                    const hoy = hoyEnArgentina();
+                    item.querySelector('input[name="lote_desde[]"]').value = l.desde || (l.hasta ? (hoy <= l.hasta ? hoy : l.hasta) : '');
+                    item.querySelector('input[name="lote_hasta[]"]').value = l.hasta || '';
+                    item.querySelectorAll('[data-fecha-lote]').forEach((c) => c.classList.toggle('hidden', tipo.value === 'siempre'));
+                    const quitar = item.querySelector('.remove-lote');
+                    if (quitar) quitar.remove(); // no se borra un lote que ya existe
+                });
+            }
+            mostrarModoDeVenta();
+            modoAlCargar = modoDeVenta();
+            // Organización y costo de servicio del evento
+            (await superadmin).elegirDatosDelEvento({ organizacionId: ev.organizacionId, comisionCategoriaId: ev.comisionCategoriaId });
+            const main = document.querySelector('main');
+            if (main) main.scrollTo({ top: 0 });
+        }
+
+        // Al editar, cambiar la forma de venta pide confirmación (en los dos sentidos). Nada se guarda hasta "Guardar cambios".
+        form.querySelectorAll('input[name="modoVenta"]').forEach((radio) => radio.addEventListener('change', async () => {
+            if (!eventoEditado || !modoAlCargar || modoDeVenta() === modoAlCargar) return;
+            // confirmar() arma su ventana con HTML: el nombre del lote (lo escribe una organización) va escapado
+            const primero = escaparHtml((eventoEditado.lotes && eventoEditado.lotes[0] && eventoEditado.lotes[0].nombre) || 'el primer lote');
+            const aUnica = modoDeVenta() === 'unica';
+            const texto = aUnica
+                ? `Vas a pasar a entrada única: queda "${primero}" con lo que ya se vendió${resultadoUnica && resultadoUnica.quitados.length ? ' y se quitan los demás lotes (no tienen ventas)' : ''}. Los cambios se guardan recién cuando toques "Guardar cambios".`
+                : `Vas a pasar a venta con lotes: la entrada actual queda como primer lote ("${primero}"), con lo que ya se vendió, y podés agregar lotes nuevos. Los cambios se guardan recién cuando toques "Guardar cambios".`;
+            const ok = await confirmar(texto, { titulo: 'Cambiar la forma de venta', textoOk: 'Sí, cambiar' });
+            if (!ok) {
+                form.querySelector(`input[name="modoVenta"][value="${modoAlCargar}"]`).checked = true;
+                mostrarModoDeVenta();
+                return;
+            }
+            modoAlCargar = modoDeVenta();
+        }));
+
+        // Antes de guardar un evento editado se pide la misma contraseña del login (por si quedó la sesión abierta).
+        // Devuelve la contraseña o null si se cancela. Todo el texto es fijo; la contraseña nunca se guarda.
+        function pedirContrasena() {
+            return new Promise((resolve) => {
+                const fondo = document.createElement('div');
+                fondo.className = 'fixed inset-0 z-[100000] bg-black/60 flex items-center justify-center p-4';
+                fondo.innerHTML = `
+                    <form class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" role="dialog" aria-modal="true" aria-labelledby="tituloClave">
+                        <h2 id="tituloClave" class="text-lg font-bold text-gray-900">Confirmá que sos vos</h2>
+                        <p class="text-sm text-gray-500 mt-1">Para guardar los cambios del evento, escribí la contraseña con la que entrás al panel.</p>
+                        <label class="block text-xs font-medium text-gray-500 mt-4">Contraseña
+                            <input type="password" required autocomplete="current-password" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                        </label>
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button type="button" data-cancelar class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium">Confirmar y guardar</button>
+                        </div>
+                    </form>`;
+                const caja = fondo.querySelector('form');
+                const campo = fondo.querySelector('input');
+                const cerrar = (valor) => { fondo.remove(); resolve(valor); };
+                fondo.querySelector('[data-cancelar]').addEventListener('click', () => cerrar(null));
+                caja.addEventListener('submit', (e) => { e.preventDefault(); cerrar(campo.value); });
+                fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(null); });
+                document.body.appendChild(fondo);
+                campo.focus();
+            });
+        }
+
+        async function confirmarIdentidad() {
+            const usuario = auth.currentUser;
+            if (!usuario || !usuario.email) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
+            const clave = await pedirContrasena();
+            if (clave === null) return false;
+            try {
+                await reauthenticateWithCredential(usuario, EmailAuthProvider.credential(usuario.email, clave));
+                return true;
+            } catch (error) {
+                if (error && error.code === 'auth/too-many-requests') throw new Error('Demasiados intentos. Esperá unos minutos y probá de nuevo.');
+                throw new Error('La contraseña no es correcta. Los cambios no se guardaron.');
+            }
+        }
+
+        if (idAEditar) {
+            cargarEventoParaEditar(idAEditar).catch((error) => {
+                console.error('No se pudo cargar el evento para editar:', error);
+                mensajeResultado.className = 'mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200';
+                mensajeResultado.textContent = error.message || 'No se pudo cargar el evento.';
+                mensajeResultado.classList.remove('hidden');
+            });
+        }
+
+        // Guarda los cambios de un evento con una transacción: conserva las vendidas de cada lote (las cambia el
+        // servidor al confirmar ventas) y no deja dejar menos lugares que los vendidos.
+        async function guardarEventoEditado(evento) {
+            // Pasar a entrada única quitando lotes: se vuelven a revisar las ventas justo antes de guardar,
+            // por si alguien empezó a pagar en uno de esos lotes desde que se abrió la página
+            if (evento.ventaSimple === true && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length > 1) {
+                const snapVentas = await getDocs(await consultaDeVentas(where('eventoId', '==', eventoEditado.id)));
+                resultadoUnica = pasarAUnica(eventoEditado.lotes, snapVentas.docs.map((d) => d.data()));
+                if (!resultadoUnica.sePuede) throw new Error(`Mientras editabas, ${resultadoUnica.conVentas.map((n) => `"${n}"`).join(', ')} tuvo ventas: ya no se puede pasar a entrada única. Recargá la página.`);
+            }
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'eventos', eventoEditado.id);
+                const snap = await tx.get(ref);
+                if (!snap.exists()) throw new Error('El evento ya no existe.');
+                const viejos = Array.isArray(snap.data().lotes) ? snap.data().lotes : [];
+                // Pasar a entrada única puede quitar los lotes de atrás, solo si no tienen ventas (se revisó al cargar)
+                const aUnica = evento.ventaSimple === true && evento.lotes.length === 1 && resultadoUnica && resultadoUnica.sePuede;
+                if (aUnica && viejos.slice(1).some((l) => Number(l && l.vendidas) > 0)) throw new Error('Uno de los lotes que se quitan ya tiene ventas: no se puede pasar a entrada única.');
+                if (evento.lotes.length < viejos.length && !aUnica) throw new Error('No se puede quitar un lote que ya existe.');
+                const lotes = evento.lotes.map((l, i) => {
+                    const previo = viejos[i];
+                    if (!previo) return l; // lote nuevo, al final
+                    if ((previo.nombre || '') !== l.nombre) throw new Error('No se puede cambiar el nombre de un lote que ya existe.');
+                    const vendidas = Number(previo.vendidas) || 0;
+                    if (l.disponibles < vendidas) throw new Error(`${l.nombre}: ya se vendieron ${vendidas} entradas, no podés poner menos lugares.`);
+                    return { ...previo, ...l, vendidas, habilitadoManual: previo.habilitadoManual === true };
+                });
+                // Se conservan quién lo creó, su estado y su fecha de publicación
+                const { estado, creadoPor, correo, fechaPublicacion, fechaSolicitud, ...cambios } = evento;
+                // Sin categoría elegida, el evento queda sin costo de servicio (0%)
+                tx.update(ref, { ...cambios, comisionCategoriaId: cambios.comisionCategoriaId || '', lotes, fechaEdicion: serverTimestamp() });
+            });
+        }
 
         // ============ ENVÍO ============
         form.addEventListener('submit', async (e) => {
@@ -318,30 +937,73 @@
 
             try {
                 const nombre = document.getElementById('nombre').value.trim();
-                const fecha = document.getElementById('fecha').value.trim();
                 const lugar = document.getElementById('lugar').value.trim();
                 const descripcion = document.getElementById('descripcion').value.trim();
                 const imagenUrl = imagenUrlInput.value.trim();
+                const ubicacion = lugarConMapa.obtenerUbicacion();
 
-                if (!nombre || !fecha || !lugar) throw new Error('Nombre, fecha y lugar son obligatorios.');
+                if (!nombre || !lugar) throw new Error('Nombre y lugar son obligatorios.');
 
-                const loteItems = document.querySelectorAll('.lote-item');
+                const problemaDias = validarDias(leerDias());
+                if (problemaDias) throw new Error(problemaDias);
+                const dias = normalizarDias(leerDias());
+                const fecha = fechaDeTexto(dias);
+
+                const tipo = selectTipo.value === OTRO ? inputTipoOtro.value.trim() : selectTipo.value;
+                const detalle = armarDetalle({
+                    actividad: document.getElementById('detalleActividad').value,
+                    tipo,
+                    requisitos: document.getElementById('detalleRequisitos').value,
+                    edad: document.getElementById('detalleEdad').value
+                });
+                if (!detalle.actividad) throw new Error('Contá cuál es la actividad del evento.');
+                if (!detalle.tipo) throw new Error('Elegí el tipo de evento (si es "Otro", escribí cuál).');
+
+                // Entrada única: un solo lote "Entrada general" (sin fecha de inicio; "hasta" es opcional)
+                const ventaSimple = modoDeVenta() === 'unica';
+                if (ventaSimple) {
+                    const precioUnico = parseFloat(document.getElementById('unicaPrecio').value);
+                    const cantidadUnica = parseInt(document.getElementById('unicaCantidad').value, 10);
+                    if (!(precioUnico > 0) || !(cantidadUnica > 0)) throw new Error('Poné el precio y la cantidad de entradas.');
+                    const hastaElegido = document.getElementById('unicaHasta').value;
+                    if (hastaElegido && hastaElegido < hoyEnArgentina()) throw new Error('"Se vende hasta" no puede ser una fecha que ya pasó.');
+                }
+                // Solo los de la lista de lotes: los días usan el mismo estilo de tarjeta (.lote-item)
+                const loteItems = ventaSimple ? [] : lotesContainer.querySelectorAll('.lote-item');
                 const lotes = [];
                 let lotesValidos = true;
+                let problemaDeLotes = '';
                 loteItems.forEach(item => {
                     const nombreLote = item.querySelector('input[name="lote_nombre[]"]').value.trim();
                     const precio = parseFloat(item.querySelector('input[name="lote_precio[]"]').value);
                     const disponibles = parseInt(item.querySelector('input[name="lote_disponibles[]"]').value);
-                    const vigencia = item.querySelector('input[name="lote_vigencia[]"]').value.trim();
+                    const tipo = item.querySelector('select[name="lote_tipo[]"]').value === 'siempre' ? 'siempre' : 'fechas';
+                    const desde = tipo === 'fechas' ? item.querySelector('input[name="lote_desde[]"]').value : '';
+                    const hasta = tipo === 'fechas' ? item.querySelector('input[name="lote_hasta[]"]').value : '';
                     if (!nombreLote || isNaN(precio) || precio <= 0 || isNaN(disponibles) || disponibles <= 0) {
                         lotesValidos = false; return;
                     }
-                    lotes.push({ nombre: nombreLote, precio, disponibles, vendidas: 0, vigencia: vigencia || '' });
+                    const problemaFechas = validarFechasDeLote({ tipo, desde, hasta });
+                    if (problemaFechas && !problemaDeLotes) problemaDeLotes = `${nombreLote}: ${problemaFechas}`;
+                    const lote = { nombre: nombreLote, precio, disponibles, vendidas: 0, tipo, desde, hasta };
+                    lotes.push({ ...lote, vigencia: textoDeVigencia(lote) });
                 });
 
+                if (ventaSimple) {
+                    const hastaUnica = document.getElementById('unicaHasta').value;
+                    // Al editar, el único lote conserva su nombre (las ventas se confirman por nombre y posición)
+                    const loteActual = eventoEditado && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length >= 1 ? eventoEditado.lotes[0] : null;
+                    lotes.push({
+                        nombre: loteActual ? (loteActual.nombre || '') : 'Entrada general', precio: parseFloat(document.getElementById('unicaPrecio').value),
+                        disponibles: parseInt(document.getElementById('unicaCantidad').value, 10), vendidas: 0,
+                        tipo: hastaUnica ? 'fechas' : 'siempre', desde: '', hasta: hastaUnica || '',
+                        vigencia: hastaUnica ? `Hasta el ${diaMes(hastaUnica)}` : ''
+                    });
+                }
                 if (!lotesValidos || lotes.length === 0) throw new Error('Todos los lotes deben tener nombre, precio válido y cantidad disponible (mayor a 0).');
-                if (imagenSubiendo) throw new Error('La imagen aún se está subiendo. Espera a que termine.');
-                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('Subí la imagen antes de enviar el evento.');
+                if (problemaDeLotes) throw new Error(problemaDeLotes);
+                if (imagenPreparando) throw new Error('La foto todavía se está preparando. Esperá a que termine.');
+                if (fileInput.files.length > 0 && !imagenUrl) throw new Error('La foto no está lista. Elegí otra o quitala con "Limpiar".');
 
                 const user = auth.currentUser;
                 if (!user) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
@@ -349,22 +1011,40 @@
                 if (!userSnap.exists()) throw new Error('No se encontró el perfil del usuario.');
                 const userData = userSnap.data();
                 if (modoDirecto && userData.rol !== 'superadmin') throw new Error('Solo el superadmin puede publicar eventos directamente.');
-                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear Evento Directo.');
+                if (!modoDirecto && userData.rol === 'superadmin') throw new Error('El superadmin debe usar Crear evento.');
 
                 const evento = {
-                    nombre, fecha, lugar,
+                    nombre, fecha, dias, lugar,
+                    ...(ubicacion ? { ubicacion } : {}),
                     imagen: imagenUrl || '',
                     descripcion: descripcion || '',
+                    detalle,
                     lotes,
+                    ventaSimple,
                     estado: modoDirecto ? 'publicado' : 'pendiente',
                     creadoPor: user.uid,
                     correo: user.email || userData.email || '',
                     organizacionId: userData.organizacionId || '',
+                    // El superadmin elige la organización (obligatoria) y la categoría de costo de servicio
+                    ...(modoDirecto ? (await superadmin).datosDelSuperadmin() : {}),
                     ...(modoDirecto
                         ? { fechaPublicacion: serverTimestamp() }
                         : { fechaSolicitud: serverTimestamp() })
                 };
 
+                if (eventoEditado) {
+                    if (!(await confirmarIdentidad())) {
+                        btnEnviar.disabled = false;
+                        textoBotonEnviar.textContent = 'Guardar cambios';
+                        return;
+                    }
+                    await guardarEventoEditado(evento);
+                    mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';
+                    mensajeResultado.textContent = 'Cambios guardados. Volviendo a Eventos...';
+                    mensajeResultado.classList.remove('hidden');
+                    setTimeout(() => { window.location.href = 'eventos-seleccion.html'; }, 800);
+                    return;
+                }
                 const eventoRef = await addDoc(collection(db, modoDirecto ? 'eventos' : 'solicitudes_eventos'), evento);
 
                 mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';
@@ -386,24 +1066,28 @@
             } catch (error) {
                 console.error('Error al enviar solicitud:', error);
                 mensajeResultado.className = 'mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200';
-                mensajeResultado.innerHTML = `
-                    <span class="material-symbols-outlined align-middle text-red-600">error</span>
-                    <strong>Error:</strong> ${error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'}
-                `;
+                const iconoError = document.createElement('span');
+                iconoError.className = 'material-symbols-outlined align-middle text-red-600';
+                iconoError.textContent = 'error';
+                const fuerte = document.createElement('strong');
+                fuerte.textContent = 'Error:';
+                mensajeResultado.replaceChildren(iconoError, ' ', fuerte, ' ' + (error.message || 'No se pudo enviar la solicitud. Intenta nuevamente.'));
                 mensajeResultado.classList.remove('hidden');
                 
                 btnEnviar.disabled = false;
-                textoBotonEnviar.textContent = modoDirecto ? 'Publicar evento' : 'Enviar solicitud';
+                textoBotonEnviar.textContent = eventoEditado ? 'Guardar cambios' : (modoDirecto ? 'Publicar evento' : 'Enviar solicitud');
             }
         });
 
         form.addEventListener('reset', () => {
             mensajeResultado.classList.add('hidden');
-            previewContainer.classList.add('hidden');
-            imagenUrlInput.value = '';
-            fileInput.disabled = false;
-            btnLimpiar.disabled = false;
-            btnSubirImagen.textContent = 'Subir imagen';
+            limpiarImagen();
+            avisoImagen('');
+            versionImagen++;
+            imagenPreparando = false;
+            reiniciarDias();
+            lugarConMapa.limpiar();
+            setTimeout(mostrarTipoOtro, 0); // el desplegable vuelve a su primer valor después del reinicio
         });
     </script>
 

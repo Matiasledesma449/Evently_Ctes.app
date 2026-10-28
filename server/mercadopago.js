@@ -37,15 +37,28 @@ function armarPreferencia({ ventaId, token, eventoId, evento, pedido, calculo, s
   const vence = new Date(ahora.getTime() + MINUTOS_VENCIMIENTO * 60 * 1000);
   const titulo = `${evento.nombre || 'Evento'} - ${calculo.lote.nombre || 'Entrada'}`.slice(0, 250);
 
-  return {
-    items: [{
-      id: `${eventoId}-${calculo.loteIndex}`,
-      title: titulo,
-      description: `${pedido.cantidad} ${pedido.cantidad === 1 ? 'entrada' : 'entradas'}`,
-      quantity: pedido.cantidad,
-      unit_price: calculo.precioUnitario,
+  const items = [{
+    id: `${eventoId}-${calculo.loteIndex}`,
+    title: titulo,
+    description: `${pedido.cantidad} ${pedido.cantidad === 1 ? 'entrada' : 'entradas'}`,
+    quantity: pedido.cantidad,
+    unit_price: calculo.precioUnitario,
+    currency_id: 'ARS',
+  }];
+  // El costo de servicio va como renglon aparte, para que el resumen de Mercado Pago coincida con la pagina
+  if (calculo.costoServicio > 0) {
+    items.push({
+      id: `${eventoId}-servicio`,
+      title: 'Costo de servicio',
+      quantity: 1,
+      unit_price: calculo.costoServicio,
       currency_id: 'ARS',
-    }],
+    });
+  }
+
+  // No se manda `payment_methods.installments`: Mercado Pago muestra las cuotas que corresponden.
+  return {
+    items,
     payer: { name: pedido.nombre, surname: pedido.apellido, email: pedido.correo },
     back_urls: { success: volver, pending: volver, failure: volver },
     auto_return: 'approved',

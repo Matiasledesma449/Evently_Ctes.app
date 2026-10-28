@@ -20,7 +20,7 @@ const htmlRenderizado = html.replace(/<!--[\s\S]*?-->/g, '');
 verificar('6.1b no hay campos de tarjeta, billetera ni efectivo (ni sus ids ni sus estilos)',
   !/cardNumber|cardCvv|cardExp|cardName|debitCard|cuotas|billetera|tarjeta-option|metodo-option|pagoEfectivo|pagoTransferencia|pagoCredito|pagoDebito|data-metodo/i.test(htmlRenderizado));
 verificar('6.1c ningun input pide numero de tarjeta, vencimiento ni CVV', !inputs.some((i) => /cvv|card|tarjeta|vencim|expir/i.test(i)));
-verificar('6.1d hay aviso visible de modo de prueba', /id="avisoModoPrueba"/.test(paso2) && /Modo de prueba/.test(paso2) && /no se cobra dinero real/i.test(paso2));
+verificar('6.1d ya no hay aviso de modo de prueba (Mercado Pago cobra de verdad desde el 2026-10-22)', !/avisoModoPrueba|Modo de prueba|no se cobra dinero real/i.test(paso2));
 verificar('6.1e el boton dice "Pagar con Mercado Pago" y hay resumen de la compra', />\s*Pagar con Mercado Pago\s*</.test(paso2) && /Resumen de tu compra/.test(paso2) && /id="totalMostrado"/.test(paso2));
 verificar('6.1f el formulario tiene correo, nombre y apellido con autocompletado', /autocomplete="given-name"/.test(paso2) && /autocomplete="family-name"/.test(paso2) && /autocomplete="email"/.test(paso2));
 
@@ -56,15 +56,20 @@ class El {
   get oculto() { return this._clases.has('hidden'); }
 }
 
-function crearPagina({ evento, fetchFn, buscar = '?id=Evt1' }) {
+// `config`: lo que devuelve configuracion/comisiones (undefined = el documento no existe; un Error = falla la lectura)
+function crearPagina({ evento, fetchFn, buscar = '?id=Evt1', config }) {
   const els = {};
   for (const id of idsEnHtml) els[id] = new El(id);
   // Los .lote-card aparecen cuando el JS escribe el HTML de los lotes
   els.lotesContainer.querySelectorAll = (sel) => {
     if (sel !== '.lote-card') return [];
     const n = (els.lotesContainer.innerHTML.match(/class="lote-card/g) || []).length;
-    els.lotesContainer._cards = els.lotesContainer._cards || Array.from({ length: n }, () => {
-      const c = new El('card'); c.click = () => c.disparar('click'); return c;
+    // Cada tarjeta trae sus data-index y data-elegible, como en el navegador
+    const atributos = [...els.lotesContainer.innerHTML.matchAll(/class="lote-card[^"]*" data-index="(\d+)" data-elegible="(\d)"/g)];
+    els.lotesContainer._cards = els.lotesContainer._cards || Array.from({ length: n }, (_, i) => {
+      const c = new El('card'); c.click = () => c.disparar('click');
+      c.dataset = { index: atributos[i] ? atributos[i][1] : String(i), elegible: atributos[i] ? atributos[i][2] : '1' };
+      return c;
     });
     return els.lotesContainer._cards;
   };
@@ -75,12 +80,24 @@ function crearPagina({ evento, fetchFn, buscar = '?id=Evt1' }) {
     document: { getElementById: (id) => { if (!els[id]) { problemas.push('getElementById con id inexistente: ' + id); return null; } return els[id]; }, querySelectorAll: () => [] },
     window: ventana, URLSearchParams, URL, console: { error() {}, log() {}, warn() {} }, setTimeout, Promise,
     alert: (m) => alertas.push(m),
+    dibujarPie: () => {}, // el pie comun se prueba aparte (23-pie-publico.js)
+    cargarLogosDelPie: () => {},
+    dibujarCabecera: () => {}, // la cabecera comun se prueba aparte (33-cabecera-publica.js)
     db: {}, doc: (db, col, id) => ({ col, id }),
-    getDoc: async () => ({ exists: () => true, id: 'Evt1', data: () => evento }),
+    getDoc: async (ref) => {
+      if (ref && ref.col === 'configuracion') {
+        if (config instanceof Error) throw config;
+        return { exists: () => config !== undefined, data: () => config };
+      }
+      return { exists: () => true, id: 'Evt1', data: () => evento };
+    },
     fetch: (...a) => contexto._fetch(...a), _fetch: fetchFn,
   };
   vm.createContext(contexto);
-  const js = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*$/m, '');
+  // Los modulos compartidos (escaparHtml, htmlDeImagenEvento) se cargan sin sus "export", como en las otras pruebas
+  const compartido = (archivo) => fs.readFileSync(require('path').join(__dirname, '..', 'shared', archivo), 'utf8').replace(/^export /gm, '');
+  vm.runInContext(compartido('ventas-utils.js') + ';' + compartido('imagen-evento.js') + ';' + compartido('formas-de-pago.js') + ';' + compartido('evento-datos.js') + ';' + compartido('comision.js') + ';' + compartido('lotes.js') + ';' + compartido('estado-evento.js'), contexto);
+  const js = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1].replace(/^\s*import .*$/gm, '');
   vm.runInContext(js, contexto);
   return { els, ubicacion, ventana, alertas, contexto };
 }
@@ -205,6 +222,70 @@ const enviar = async (pagina) => { await pagina.els.formCompra.disparar('submit'
     const p = crearPagina({ evento: EVENTO, fetchFn: respuesta(400, { ok: false, error: { codigo: 'X', mensaje: '<img src=x onerror=alert(1)>', errores: [{ campo: 'correo', mensaje: '<b>hola</b>' }] } }) });
     await irAlPaso2(p); await completar(p); await enviar(p);
     verificar('H los mensajes del servidor se escriben como texto (nunca como HTML)', p.els.errorCorreo.escrituraHtml === 0 && p.els.errorCompra.escrituraHtml === 0 && p.els.errorCorreo.textContent === '<b>hola</b>');
+  }
+
+  // ---------- Secciones "Sobre el evento" y "Dónde es" (cambio pagina-de-compra-mejorada) ----------
+  {
+    const p = crearPagina({ evento: { ...EVENTO, detalle: '<b>x</b>' }, fetchFn: respuesta(200, { ok: true }) });
+    await tick(); await tick();
+    verificar('V1 el afiche lleva el nombre y el lugar, y el detalle va en su propia sección',
+      p.els.eventoContainer.innerHTML.includes('Fiesta del Rio') && p.els.eventoContainer.innerHTML.includes('Costanera') && !p.els.eventoContainer.innerHTML.includes('No te lo pierdas'));
+    verificar('V2 "Sobre el evento" y "Dónde es" se muestran con el evento cargado', !p.els.sobreEventoContainer.oculto && !p.els.dondeEsContainer.oculto);
+    verificar('V3 sin detalle se lee "¡No te lo pierdas!" y "Dónde es" nombra el lugar', p.els.detalleEvento.innerHTML.includes('No te lo pierdas') && p.els.lugarEvento.innerHTML.includes('Costanera'));
+    verificar('V4 sin ubicación no hay cuadro de mapa', !p.els.lugarEvento.innerHTML.includes('mapaEvento'));
+  }
+  // ---------- Costo de servicio (vista previa; el servidor recalcula) ----------
+  {
+    const CONFIG = { categorias: [{ id: 'cat-1', nombre: 'Estándar', porcentaje: 8 }] };
+    const conCategoria = { ...EVENTO, comisionCategoriaId: 'cat-1' };
+    const p = crearPagina({ evento: conCategoria, config: CONFIG, fetchFn: respuesta(200, {}) });
+    await irAlPaso2(p, { cantidad: 2 });
+    verificar('S1 con 8%: 2 entradas de 5000 muestran entradas $10.000, costo de servicio $800 y total $10.800',
+      !p.els.filasServicio.oculto && p.els.resumenEntradas.textContent === '$' + (10000).toLocaleString() && p.els.resumenServicio.textContent === '$800' && p.els.totalMostrado.textContent === '$' + (10800).toLocaleString() && p.els.etiquetaServicio.textContent.includes('8%'),
+      [p.els.resumenEntradas.textContent, p.els.resumenServicio.textContent, p.els.totalMostrado.textContent, p.els.etiquetaServicio.textContent].join(' | '));
+    verificar('S2 con la lectura bien no se muestra el aviso de "se suma al pagar"', p.els.avisoServicio.oculto);
+
+    const sin = crearPagina({ evento: EVENTO, config: CONFIG, fetchFn: respuesta(200, {}) });
+    await irAlPaso2(sin, { cantidad: 2 });
+    verificar('S3 evento sin categoría: solo el total, sin filas de costo de servicio', sin.els.filasServicio.oculto && sin.els.totalMostrado.textContent === '$' + (10000).toLocaleString());
+
+    const noExiste = crearPagina({ evento: { ...EVENTO, comisionCategoriaId: 'cat-9' }, config: CONFIG, fetchFn: respuesta(200, {}) });
+    await irAlPaso2(noExiste, { cantidad: 2 });
+    verificar('S4 categoría que ya no existe: 0%, solo el total', noExiste.els.filasServicio.oculto && noExiste.els.totalMostrado.textContent === '$' + (10000).toLocaleString());
+
+    const falla = crearPagina({ evento: conCategoria, config: new Error('sin permiso'), fetchFn: respuesta(200, {}) });
+    await irAlPaso2(falla, { cantidad: 2 });
+    verificar('S5 si no se puede leer el porcentaje: solo el total y el aviso de que se suma al pagar', falla.els.filasServicio.oculto && !falla.els.avisoServicio.oculto && falla.els.totalMostrado.textContent === '$' + (10000).toLocaleString());
+
+    const pedidos = [];
+    const envia = crearPagina({ evento: conCategoria, config: CONFIG, fetchFn: async (url, op) => { pedidos.push(JSON.parse(op.body)); return { ok: true, status: 200, json: async () => ({ ok: true, urlPago: 'https://www.mercadopago.com.ar/x' }) }; } });
+    await irAlPaso2(envia, { cantidad: 2 });
+    await completar(envia);
+    await enviar(envia);
+    verificar('S6 el pedido al servidor NO lleva monto ni porcentaje', pedidos.length === 1 && Object.keys(pedidos[0]).sort().join() === 'apellido,cantidad,correo,eventoId,loteIndex,loteNombre,nombre', pedidos[0] && Object.keys(pedidos[0]).sort().join());
+  }
+  {
+    const html0 = html.replace(/<!--[\s\S]*?-->/g, '');
+    const orden = ['id="eventoContainer"', 'id="step1"', 'id="step2"', 'id="sobreEventoContainer"', 'id="dondeEsContainer"', 'id="loadingContainer"'].map((t) => html0.indexOf(t));
+    verificar('V5 el orden de la página es afiche, entradas, datos, sobre el evento y dónde es', orden.every((n, i) => n > -1 && (i === 0 || n > orden[i - 1])), orden.join(','));
+    verificar('V6 la página usa la cabecera común (su link al Centro de ayuda lleva el origen, ver la prueba 33)', /<header id="cabecera"/.test(html0) && /dibujarCabecera\(document\.getElementById\('cabecera'\), 'evento'\)/.test(html0));
+  }
+
+  {
+    // Lotes por fechas (cambio ajustes-tras-vista-previa): uno que todavía no empezó no se puede elegir
+    const conFechas = { ...EVENTO, lotes: [
+      { nombre: 'Preventa <b>2</b>', tipo: 'fechas', desde: '2099-01-01', hasta: '2099-02-01', precio: 5000, disponibles: 10 },
+      { nombre: 'Campo', tipo: 'siempre', precio: 8000, disponibles: 10 },
+    ] };
+    const pg = crearPagina({ evento: conFechas, fetchFn: respuesta(200, { ok: true }) });
+    await tick(); await tick();
+    const html = pg.els.lotesContainer.innerHTML;
+    verificar('L1 el lote que todavía no empezó dice desde cuándo y no se puede elegir', /Disponible desde el 01\/01/.test(html) && /data-index="0" data-elegible="0"/.test(html));
+    verificar('L2 el sector "siempre disponible" se puede elegir', /data-index="1" data-elegible="1"/.test(html));
+    verificar('L3 los nombres de los lotes se escapan', /Preventa &lt;b&gt;2&lt;\/b&gt;/.test(html) && !/<b>2<\/b>/.test(html));
+    await pg.els.lotesContainer.querySelectorAll('.lote-card')[0].click();
+    await pg.els.btnContinuarPaso1.disparar('click');
+    verificar('L4 tocar el lote que no empezó no lo elige: se sigue con "Campo"', /Campo/.test(pg.els.resumenLote.textContent), pg.els.resumenLote.textContent);
   }
 
   verificar('Z durante toda la prueba el JavaScript solo uso ids que existen en el HTML', problemas.length === 0, problemas.join(' | '));

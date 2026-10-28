@@ -78,6 +78,10 @@ function armarRespuesta(ventaId, venta, evento) {
     monto: venta.monto_total,
     moneda: venta.moneda || 'ARS',
   };
+  // Solo las ventas con costo de servicio llevan el desglose; las anteriores quedan con la forma de siempre
+  if (typeof venta.costo_servicio === 'number' && venta.costo_servicio > 0) {
+    respuesta.costoServicio = venta.costo_servicio;
+  }
   // Los codigos de entrada SOLO existen en la respuesta si el pago esta confirmado
   if (confirmada) {
     respuesta.metodoPago = venta.metodo_pago || null;
