@@ -109,6 +109,8 @@ function abrirPaginaVentas(ventas) {
     window: ventana, localStorage: { getItem: () => 'Evt1' }, console: { error() {}, log() {} }, URLSearchParams,
     alert() { problemas.push('se llamo a alert'); },
     db: {}, collection: () => ({}), where: () => ({}), query: () => ({}),
+    // shared/consulta-ventas.js: acá responde en el momento (la consulta real espera el perfil)
+    consultaDeVentas: () => ({ then: (f) => f({}) }),
     onSnapshot: (q, ok) => { ok({ forEach: (f) => ventas.forEach((v) => { const { id, ...resto } = v; f({ id, data: () => resto }); }) }); return () => {}; },
   };
   vm.createContext(contexto);

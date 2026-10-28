@@ -16,14 +16,21 @@ correo** nuevo, con su clave guardada en Vercel. Opciones:
 
 | Opción | Qué es | A favor | En contra |
 |---|---|---|---|
-| **A. Resend** (recomendada) | Servicio de correo con API simple; se llama desde las funciones de `api/` con `fetch` (sin librerías nuevas) | 3.000 correos/mes gratis; muy fácil; buenos resultados de entrega | Para mandar desde "@evently..." hay que verificar un dominio propio; sin dominio, solo envía de prueba |
-| B. Gmail con contraseña de aplicación | Mandar desde una cuenta de Gmail con `nodemailer` | Gratis; no necesita dominio | Librería nueva; límite de ~500 por día; cae más en Spam; si Google bloquea la cuenta, se corta todo |
+| A. Resend | Servicio de correo con API simple; se llama desde las funciones de `api/` con `fetch` (sin librerías nuevas) | 3.000 correos/mes gratis; muy fácil; buenos resultados de entrega | Para mandar desde "@evently..." hay que verificar un dominio propio; sin dominio, solo envía de prueba |
+| **B. Gmail con contraseña de aplicación (ELEGIDA el 28/10)** | Mandar desde una cuenta de Gmail con `nodemailer` | Gratis; no necesita dominio | Librería nueva; límite de ~500 por día; cae más en Spam; si Google bloquea la cuenta, se corta todo |
 | C. Brevo | Servicio de correo y de campañas | 300 por día gratis; trae lista de suscriptores y baja automática para las novedades | Más configuración; panel aparte |
 
 Recordatorios: una **tarea programada de Vercel (cron)** que corre una vez por día (lo que permite el plan gratis), busca
 los eventos que son en 7 días o ese mismo día y manda los correos.
 
-## What Changes (con la opción A)
+## Decisión (28/10)
+
+La persona eligió **Gmail** (gratis, unos 500 correos por día) con una contraseña de aplicación y la librería `nodemailer`
+en las funciones de `api/`. Queda **a futuro** migrar a un servicio pago (Resend, Brevo o Google Workspace) cuando haya más
+volumen: el envío se arma en un solo archivo (`server/correos.js`) para que cambiar de servicio sea cambiar solo esa parte.
+Variables de entorno nuevas (las carga la persona en Vercel): `GMAIL_USUARIO` y `GMAIL_CLAVE_APLICACION`.
+
+## What Changes
 
 - **Registro del comprador** con Firebase Authentication (correo y contraseña, y opcional "Entrar con Google"), rol
   `cliente` en `usuarios`. Antes de pagar se pide iniciar sesión o registrarse; el nombre y el correo salen de la cuenta y se
@@ -40,7 +47,7 @@ los eventos que son en 7 días o ese mismo día y manda los correos.
 
 ## Pasos de la persona (cuando se elija)
 
-1. Crear la cuenta del servicio elegido y, si es Resend, verificar un dominio (o usar el modo de prueba para la presentación).
+1. Crear (o usar) una cuenta de Gmail para Evently, activar la verificación en dos pasos y generar una contraseña de aplicación.
 2. Cargar la clave en Vercel (variable de entorno) — Claude no toca las variables.
 3. Activar "Entrar con Google" en la consola de Firebase si se quiere.
 

@@ -43,7 +43,7 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 - [x] 20. Pie del sitio: enlaces legales centrados y fijos (no desaparecen al entrar a uno), logo de Evently a la izquierda, © 2026.
 - [x] 21. Banners de las secciones del sitio con lugar para imagen (la persona pasa las imágenes después).
 - [x] 22. Términos y condiciones y política de privacidad adecuados a Evently (datos personales, consumidor, pagos).
-- [ ] 23. Comprador registrado y correos: registro antes de comprar, entrada en PDF por correo, aviso de otros eventos, recordatorio a una semana y el día del evento. Necesita un servicio de correo nuevo (decidir con la persona). Plan listo: `openspec/changes/comprador-registrado-y-correos/` (espera la elección del servicio de correo).
+- [ ] 23. Comprador registrado y correos: registro antes de comprar, entrada en PDF por correo, aviso de otros eventos, recordatorio a una semana y el día del evento. Necesita un servicio de correo nuevo (decidir con la persona). Plan listo: `openspec/changes/comprador-registrado-y-correos/` (la persona eligió Gmail gratis, 500/día; migrar a un servicio pago más adelante).
 
 ## Pasos de la persona para el miércoles
 
@@ -55,8 +55,8 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 
 ## Seguridad pendiente
 
-- La regla de `ventas` deja que cualquier cuenta de organización lea las ventas de TODAS las organizaciones (nombres y
-  correos de compradores). Arreglo: guardar `organizacionId` en cada venta (server/ventas.js) y limitar la regla.
+- [x] La regla de `ventas` deja que cualquier cuenta de organización lea las ventas de TODAS las organizaciones. Código hecho
+  en `openspec/changes/seguridad-ventas-por-organizacion/`; faltan los pasos de la persona: merge, herramienta y publicar la regla.
 
 ## Bugs conocidos (cada uno necesita su propio change)
 

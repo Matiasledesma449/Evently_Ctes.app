@@ -74,6 +74,7 @@
         import { cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen } from "../shared/ventas-utils.js";
         import { nombreParaMostrar, claveDeFormaDePago } from "../shared/formas-de-pago.js";
         import { porcentajesDelEvento, dibujarPanelPorcentajes } from "../shared/porcentajes.js";
+        import { consultaDeVentas } from "../shared/consulta-ventas.js";
 
         const panelPorcentajes = document.getElementById('panelPorcentajes');
         const pesos = (n) => '$' + Math.round(n).toLocaleString('es-AR');
@@ -119,13 +120,14 @@
                 console.error("Error al escuchar evento:", error);
             });
 
-            onSnapshot(query(collection(db, "ventas"), where("eventoId", "==", eventoId)), (querySnapshot) => {
+            // Una organización pide solo sus ventas (shared/consulta-ventas.js)
+            consultaDeVentas(where("eventoId", "==", eventoId)).then((consulta) => onSnapshot(consulta, (querySnapshot) => {
                 ventas = [];
                 querySnapshot.forEach((d) => ventas.push({ id: d.id, ...d.data() }));
                 refrescar();
             }, (error) => {
                 console.error("Error al escuchar ventas:", error);
-            });
+            }));
         }
     </script>
 

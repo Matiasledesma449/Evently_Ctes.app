@@ -373,6 +373,7 @@
         import { addDoc, collection, serverTimestamp, doc, getDoc, getDocs, query, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { pasarAUnica } from "../shared/forma-de-venta.js";
+        import { consultaDeVentas } from "../shared/consulta-ventas.js";
         import { confirmar } from "../shared/ui-utils.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
         import { TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, armarDetalle } from "../shared/evento-datos.js";
@@ -772,7 +773,7 @@
                 aviso.textContent = 'Revisando si los lotes tienen ventas…';
                 aviso.classList.remove('hidden');
                 try {
-                    const snapVentas = await getDocs(query(collection(db, 'ventas'), where('eventoId', '==', id)));
+                    const snapVentas = await getDocs(await consultaDeVentas(where('eventoId', '==', id)));
                     resultadoUnica = pasarAUnica(lotes, snapVentas.docs.map((d) => d.data()));
                 } catch (error) {
                     console.error('No se pudieron revisar las ventas del evento:', error);
@@ -899,7 +900,7 @@
             // Pasar a entrada única quitando lotes: se vuelven a revisar las ventas justo antes de guardar,
             // por si alguien empezó a pagar en uno de esos lotes desde que se abrió la página
             if (evento.ventaSimple === true && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length > 1) {
-                const snapVentas = await getDocs(query(collection(db, 'ventas'), where('eventoId', '==', eventoEditado.id)));
+                const snapVentas = await getDocs(await consultaDeVentas(where('eventoId', '==', eventoEditado.id)));
                 resultadoUnica = pasarAUnica(eventoEditado.lotes, snapVentas.docs.map((d) => d.data()));
                 if (!resultadoUnica.sePuede) throw new Error(`Mientras editabas, ${resultadoUnica.conVentas.map((n) => `"${n}"`).join(', ')} tuvo ventas: ya no se puede pasar a entrada única. Recargá la página.`);
             }

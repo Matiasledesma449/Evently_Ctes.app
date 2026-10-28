@@ -198,6 +198,7 @@
         import { eventosParaVer } from "../shared/organizaciones.js";
         import { porcentajesDelEvento, dibujarPanelPorcentajes } from "../shared/porcentajes.js";
         import { descargarCsv, fechaHora, nombreDeArchivo, pesos } from "../shared/exportar.js";
+        import { consultaDeVentas } from "../shared/consulta-ventas.js";
 
         // Estado: `eventos` y `ventas` son SOLO los del evento elegido (o los de todos los eventos de la persona)
         let eventos = [];
@@ -271,7 +272,8 @@
                     repartirDatos();
                 });
                 onSnapshot(collection(db, "eventos"), (snapshot) => { eventosDeBase = aLista(snapshot); cargados.eventos = true; repartirDatos(); });
-                onSnapshot(collection(db, "ventas"), (snapshot) => { ventasDeBase = aLista(snapshot); cargados.ventas = true; repartirDatos(); });
+                // Una organización pide solo sus ventas (shared/consulta-ventas.js)
+                consultaDeVentas().then((consulta) => onSnapshot(consulta, (snapshot) => { ventasDeBase = aLista(snapshot); cargados.ventas = true; repartirDatos(); }));
             } else {
                 onSnapshot(doc(db, "eventos", eventoId), (docSnap) => {
                     eventoNoExiste = !docSnap.exists();
@@ -279,7 +281,7 @@
                     cargados.eventos = true;
                     repartirDatos();
                 });
-                onSnapshot(query(collection(db, "ventas"), where("eventoId", "==", eventoId)), (snapshot) => { ventasDeBase = aLista(snapshot); cargados.ventas = true; repartirDatos(); });
+                consultaDeVentas(where("eventoId", "==", eventoId)).then((consulta) => onSnapshot(consulta, (snapshot) => { ventasDeBase = aLista(snapshot); cargados.ventas = true; repartirDatos(); }));
             }
         }
 

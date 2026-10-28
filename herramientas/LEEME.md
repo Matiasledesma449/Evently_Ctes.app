@@ -41,3 +41,24 @@ node herramientas/limpiar-datos.js --solo ventas --borrar
 - Al terminar, cuántos documentos borró de cada colección.
 
 Lo borrado no se puede recuperar.
+
+## Completar la organización de las ventas (`completar-organizacion-de-ventas.js`)
+
+Le pone a cada venta la organización de su evento (`organizacionId`). Hace falta **una vez**, antes de publicar la regla de
+Firestore que deja que cada organización lea solo sus ventas (ver `openspec/changes/seguridad-ventas-por-organizacion/`).
+Las ventas nuevas ya lo traen del servidor. Se puede volver a correr cuando quieras (por ejemplo, si a un evento le
+cambiás la organización): solo corrige lo que no coincide.
+
+Solo cambia el campo `organizacionId` de `ventas`: no borra nada ni toca otras colecciones.
+
+```bash
+# 1. La misma clave de cuenta de servicio de arriba
+export GOOGLE_APPLICATION_CREDENTIALS="<ruta a tu clave>.json"     # Git Bash
+# $env:GOOGLE_APPLICATION_CREDENTIALS="<ruta a tu clave>.json"     # PowerShell
+
+# 2. Vista previa: cuántas ventas completaría o corregiría, sin escribir nada
+node herramientas/completar-organizacion-de-ventas.js
+
+# 3. Aplicar (pide escribir exactamente: COMPLETAR ORGANIZACIONES)
+node herramientas/completar-organizacion-de-ventas.js --aplicar
+```

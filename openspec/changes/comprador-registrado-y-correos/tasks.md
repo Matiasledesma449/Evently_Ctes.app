@@ -1,6 +1,7 @@
 # Tasks (se empiezan cuando la persona elija el servicio de correo)
 
-- [ ] 0.1 La persona elige el servicio de correo (A recomendada) y carga la clave en Vercel.
+- [x] 0.1 La persona eligió Gmail (gratis, 500/día); migración a un servicio pago, más adelante.
+- [ ] 0.2 La persona crea la contraseña de aplicación de Gmail y la carga en Vercel (`GMAIL_USUARIO`, `GMAIL_CLAVE_APLICACION`).
 - [ ] 1.1 Registro e inicio de sesión del comprador (Firebase Auth, rol `cliente`) y casilla de novedades.
 - [ ] 1.2 `evento.html` pide sesión antes de pagar; `api/crear-pago` usa los datos de la cuenta y el correo como pagador.
 - [ ] 2.1 `server/correos.js` (armado de los correos, con pruebas simuladas) y envío de la confirmación desde el webhook.

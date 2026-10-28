@@ -162,6 +162,7 @@
         import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro, ingresoDeVenta, textoDeMontoDeVenta } from "../shared/ventas-utils.js";
         import { nombreParaMostrar, claveDeFormaDePago, opcionesDeFiltroDePago } from "../shared/formas-de-pago.js";
         import { descargarCsv, descargarPdf, fechaHora, nombreDeArchivo, pesos } from "../shared/exportar.js";
+        import { consultaDeVentas } from "../shared/consulta-ventas.js";
 
         // Elementos
         const tablaBody = document.getElementById('tablaVentasBody');
@@ -172,6 +173,7 @@
         const btnAplicarFiltros = document.getElementById('btnAplicarFiltros');
 
         let ventasUnsubscribe = null;
+        let pedidoDeVentas = 0;
         let eventoSeleccionadoId = null;
         let filtroEstado = 'todos';
         let todasLasVentas = [];
@@ -261,8 +263,9 @@
                 return;
             }
 
-            const q = query(collection(db, "ventas"), where("eventoId", "==", eventoId));
-            ventasUnsubscribe = onSnapshot(q, (snapshot) => {
+            // Una organización pide solo sus ventas (shared/consulta-ventas.js)
+            const pedido = ++pedidoDeVentas; // si se cambia de evento antes de que llegue la consulta, esta se descarta
+            consultaDeVentas(where("eventoId", "==", eventoId)).then((q) => { if (pedido !== pedidoDeVentas) return; ventasUnsubscribe = onSnapshot(q, (snapshot) => {
                 const ventas = [];
                 snapshot.forEach(doc => {
                     ventas.push({ id: doc.id, ...doc.data() });
@@ -276,7 +279,7 @@
             }, (error) => {
                 console.error('Error al escuchar ventas:', error);
                 tablaBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Error al cargar ventas</td></tr>`;
-            });
+            }); });
         }
 
         // El desplegable ofrece siempre Transferencia, Débito y Crédito (y "Otros" solo si hay ventas de otro método).
