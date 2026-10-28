@@ -57,11 +57,8 @@
                 </div>
             </div>
 
-            <!-- Tarjetas: las dibuja el JavaScript y arrancan en "—", para que nada salte cuando llegan los datos -->
-            <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
-
-            <!-- Porcentajes (pedido 17): los dibuja shared/porcentajes.js -->
-            <div id="panelPorcentajes" class="mt-6"></div>
+            <!-- Resumen en gráficos: lo dibuja shared/resumen-visual.js (las tarjetas con todas las cifras están en Reportes) -->
+            <div id="resumenVisual"></div>
         </main>
     </div>
 
@@ -71,24 +68,18 @@
     <script type="module" src="../shared/selector-evento.js"></script>
     <script type="module">
         import { onSnapshot, query, collection, where, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen } from "../shared/ventas-utils.js";
         import { nombreParaMostrar, claveDeFormaDePago } from "../shared/formas-de-pago.js";
-        import { porcentajesDelEvento, dibujarPanelPorcentajes } from "../shared/porcentajes.js";
+        import { datosDelResumen, dibujarResumenVisual } from "../shared/resumen-visual.js";
+        import { lugarCorto } from "../shared/evento-datos.js";
         import { consultaDeVentas } from "../shared/consulta-ventas.js";
 
-        const panelPorcentajes = document.getElementById('panelPorcentajes');
+        const resumenVisual = document.getElementById('resumenVisual');
         const pesos = (n) => '$' + Math.round(n).toLocaleString('es-AR');
 
-        const kpiContainer = document.getElementById('kpiContainer');
         const tituloDashboard = document.getElementById('tituloDashboard');
         const subtituloEvento = document.getElementById('subtituloEvento');
 
-        // Las tarjetas las dibuja shared/ventas-utils.js, igual que en Reportes
-        function dibujar(cifras) {
-            kpiContainer.innerHTML = htmlDeTarjetasResumen(tarjetasDeResumen(cifras, nombreParaMostrar));
-        }
-        dibujar(null); // al abrir: las mismas tarjetas con "—"
-        dibujarPanelPorcentajes(panelPorcentajes, null);
+        dibujarResumenVisual(resumenVisual, null); // al abrir: "Cargando…" 
 
         // El evento de la dirección o, si no hay, el último que se recordó
         const eventoId = new URLSearchParams(window.location.search).get('id') || localStorage.getItem('eventoId') || '';
@@ -99,8 +90,7 @@
         // Solo se dibujan cifras cuando llegaron el evento Y sus ventas (así no aparece un 0 que después cambia)
         function refrescar() {
             if (!eventoActual || !ventas) return;
-            dibujar(cifrasDelEvento([eventoActual], ventas, claveDeFormaDePago));
-            dibujarPanelPorcentajes(panelPorcentajes, porcentajesDelEvento([eventoActual], ventas, { claveDe: claveDeFormaDePago, nombreDe: nombreParaMostrar, dinero: pesos }));
+            dibujarResumenVisual(resumenVisual, datosDelResumen(eventoActual, ventas, { claveDe: claveDeFormaDePago, nombreDe: nombreParaMostrar }), { dinero: pesos });
         }
 
         if (!eventoId) {
@@ -114,7 +104,7 @@
                 }
                 eventoActual = { id: docSnap.id, ...docSnap.data() };
                 tituloDashboard.textContent = `Resumen - ${eventoActual.nombre || 'Sin nombre'}`;
-                subtituloEvento.textContent = [eventoActual.fecha, eventoActual.lugar].filter(Boolean).join(' - ');
+                subtituloEvento.textContent = [eventoActual.fecha, lugarCorto(eventoActual.lugar)].filter(Boolean).join(' - ');
                 refrescar();
             }, (error) => {
                 console.error("Error al escuchar evento:", error);

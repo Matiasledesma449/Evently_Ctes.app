@@ -194,3 +194,23 @@ body.franja-organizacion main #selectorEvento > label,
 body.franja-organizacion main #selectorEvento > select {
     display: none;
 }
+
+/* En computadora, la barra "Estás viendo" arranca donde termina el menú: el menú ocupa toda la altura y la línea de la
+   barra no lo cruza (pedido de la persona). Solo el contenido baja 40 px. */
+@media (min-width: 1024px) {
+    body.franja-organizacion #franjaOrganizacion { left: 256px; }
+    body.franja-organizacion.sidebar-colapsado #franjaOrganizacion { left: 76px; }
+    body.menu-listo #franjaOrganizacion { transition: left 0.25s ease; }
+    /* El botón para achicar el menú asoma sobre la barra: va por encima para que se vea y se pueda tocar entero */
+    body.franja-organizacion #btnToggleSidebar { z-index: 75; }
+    body.franja-organizacion > .flex.min-h-screen,
+    body.franja-organizacion > .flex.h-screen {
+        margin-top: 0;
+        height: 100dvh !important;
+    }
+    body.franja-organizacion > .flex.min-h-screen > main,
+    body.franja-organizacion > .flex.h-screen > main {
+        margin-top: 40px;
+        height: calc(100dvh - 40px) !important;
+    }
+}

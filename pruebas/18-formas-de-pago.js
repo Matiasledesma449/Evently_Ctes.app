@@ -43,7 +43,7 @@ for (const pantalla of ['admin/ventas.html', 'admin/reportes.html', 'admin/dashb
 }
 verificar('T5 Ventas y Reportes no muestran metodo_pago sin pasar por nombreParaMostrar', !/escaparHtml\(v\.metodo_pago \|\|/.test(leer('admin/ventas.html') + leer('admin/reportes.html')));
 verificar('T6 los desplegables ofrecen la lista fija (opcionesDeFiltroDePago) y filtran por claveDeFormaDePago', ['admin/ventas.html', 'admin/reportes.html'].every((f) => /opcionesDeFiltroDePago\(ventas\)/.test(leer(f)) && /claveDeFormaDePago/.test(leer(f)) && /<option value="\$\{escaparHtml\(m\)\}">/.test(leer(f))));
-verificar('T7 Dashboard y Reportes pasan nombreParaMostrar a las tarjetas', /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/dashboard.html')) && /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/reportes.html')));
+verificar('T7 Reportes pasa nombreParaMostrar a las tarjetas y el Resumen a sus gráficos', /nombreDe: nombreParaMostrar/.test(leer('admin/dashboard.html')) && /tarjetasDeResumen\(cifras, nombreParaMostrar\)/.test(leer('admin/reportes.html')));
 
 // ---------- Secciones del PDF de Reportes (tarea 3.1) ----------
 const TODAS = ['resumen', 'lotes', 'detalle', 'metodos', 'indicadores'];

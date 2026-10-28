@@ -67,13 +67,7 @@
                     </select>
                 </div>
                 <div class="ml-auto">
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Secciones del PDF</p>
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2" id="seccionesPdf">
-                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="resumen" checked class="accent-violet-600"> Resumen</label>
-                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="lotes" checked class="accent-violet-600"> Lotes</label>
-                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="detalle" checked class="accent-violet-600"> Detalle</label>
-                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="metodos" checked class="accent-violet-600"> Métodos de pago</label>
-                        <label class="flex items-center gap-1 text-sm text-gray-700"><input type="checkbox" value="indicadores" checked class="accent-violet-600"> Indicadores</label>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <button id="btnExportarPDF" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition">Descargar PDF</button>
                         <button id="btnExportarCSV" class="px-4 py-2 border border-violet-600 text-violet-600 rounded-full text-sm font-medium hover:bg-violet-50 transition" title="Todas las compras confirmadas de lo elegido, para abrir con Excel">Descargar CSV</button>
                     </div>
@@ -97,8 +91,6 @@
             <!-- Contenido de pestañas -->
             <div id="resumen" class="tab-content active">
                 <div id="kpiContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
-                <!-- Porcentajes (pedido 17): los dibuja shared/porcentajes.js -->
-                <div id="panelPorcentajes" class="mt-6"></div>
             </div>
 
             <div id="desglose" class="tab-content">
@@ -196,7 +188,6 @@
         import { soloConfirmadas, resumenDeVentas, escaparHtml, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, ventasDeEventos, metodosDePago, seccionesDelPdf, nombreDeArchivoDeReporte, ingresoDeVenta, costoServicioDeVenta } from "../shared/ventas-utils.js";
         import { nombreParaMostrar, claveDeFormaDePago, opcionesDeFiltroDePago } from "../shared/formas-de-pago.js";
         import { eventosParaVer } from "../shared/organizaciones.js";
-        import { porcentajesDelEvento, dibujarPanelPorcentajes } from "../shared/porcentajes.js";
         import { descargarCsv, fechaHora, nombreDeArchivo, pesos } from "../shared/exportar.js";
         import { consultaDeVentas } from "../shared/consulta-ventas.js";
 
@@ -399,12 +390,8 @@
         function exportarPDF() {
             const avisoPdf = document.getElementById('avisoPdf');
             avisoPdf.textContent = '';
-            const elegidas = Array.from(document.querySelectorAll('#seccionesPdf input:checked')).map(i => i.value);
-            const secciones = seccionesDelPdf(elegidas);
-            if (secciones.length === 0) {
-                avisoPdf.textContent = 'Marcá al menos una sección para armar el PDF.';
-                return;
-            }
+            // El PDF lleva siempre todas las secciones (ya no se eligen con casillas)
+            const secciones = seccionesDelPdf(['resumen', 'lotes', 'detalle', 'metodos', 'indicadores']);
             const tituloDe = (clave) => { // "1. Resumen general", numerado sin saltos según lo elegido
                 const s = secciones.find(x => x.clave === clave);
                 return s ? `${s.numero}. ${s.titulo}` : '';
@@ -730,18 +717,6 @@
         // ------------------------------------------------------------
         function renderResumen(ventasFiltradas) {
             dibujarTarjetas(cifrasActuales(ventasFiltradas));
-            // Porcentajes: con el lote y el método elegidos; "Estado de las compras" cuenta también pendientes y rechazadas
-            const lote = loteFilter.value;
-            const metodo = metodoFilter.value;
-            let delPanel = ventas.filter((v) => (lote === 'todos' || v.loteNombre === lote) && (metodo === 'todos' || claveDeFormaDePago(v.metodo_pago) === metodo));
-            // Con "Todos los eventos", dos eventos pueden tener un lote "General": se muestran como "Evento · Lote"
-            if (EN_TODOS) {
-                const nombreDeEvento = new Map(eventos.map((ev) => [ev.id, ev.nombre || 'Sin nombre']));
-                delPanel = delPanel.map((v) => ({ ...v, loteNombre: [nombreDeEvento.get(v.eventoId) || 'Evento', v.loteNombre || 'Sin lote'].join(' · ') })); // el panel lo dibuja con textContent
-            }
-            const eventosElegidos = eventos.map((ev) => ({ ...ev, lotes: (Array.isArray(ev.lotes) ? ev.lotes : []).filter((l) => lote === 'todos' || l.nombre === lote) }));
-            dibujarPanelPorcentajes(document.getElementById('panelPorcentajes'),
-                porcentajesDelEvento(eventosElegidos, delPanel, { claveDe: claveDeFormaDePago, nombreDe: nombreParaMostrar, dinero: pesos }));
         }
 
         // --- Descargar CSV (pedido 17): una fila por compra confirmada de lo elegido (evento, lote y método) ---
