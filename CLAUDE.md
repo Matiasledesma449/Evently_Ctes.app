@@ -6,8 +6,8 @@ Plataforma web de venta de entradas para eventos. Tiene un sitio público para c
 - `public/`: sitio del usuario final (inicio, evento, confirmación, soporte, validación de entradas).
 - `admin/`: panel Admin y SuperAdmin (login, eventos, ventas, reportes, mensajes, soporte, escáner QR).
 - `shared/`: código común (`firebase-init.js`, `menu-admin.js` y `menu-rol.js` del menú del panel, `ventas-utils.js`, `ui-utils.js`, `i18n.js`, estilos).
-- `validador.html`: validación de entradas por QR, en la raíz.
-- `api/`: funciones serverless (Vercel): `crear-pago.js`, `mp-webhook.js`, `venta.js` y `crear-admin.js` (el superadmin crea la cuenta del admin de una organización; el proyecto de Firebase no deja crear cuentas desde la página).
+- `validador.html`: validación de entradas por QR, en la raíz. Valida el servidor (`api/validador.js` → `server/validador.js`): "Escáner" del panel arma un enlace `validador.html#clave=...` firmado (organización y vencimiento a 7 días); cada código se marca usado en una transacción. El navegador no lee ni escribe `ventas`.
+- `api/`: funciones serverless (Vercel): `crear-pago.js`, `mp-webhook.js`, `venta.js` `crear-admin.js` y `validador.js` (entradas en la puerta) (el superadmin crea la cuenta del admin de una organización; el proyecto de Firebase no deja crear cuentas desde la página).
 - `server/`: lógica de los pagos que usan las funciones de `api/` (configuración, Mercado Pago, firma del webhook, Firestore con `firebase-admin`, validaciones).
 - `pruebas/`: pruebas simuladas (pagos y funciones puras del panel): `node pruebas/ejecutar-todas.js`.
 - `herramientas/`: `limpiar-datos.js` vacía los datos de prueba; la corre solo la persona, con su clave fuera del repo (ver `herramientas/LEEME.md`). Claude no la ejecuta.

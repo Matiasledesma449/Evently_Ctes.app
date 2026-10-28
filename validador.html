@@ -57,6 +57,12 @@
         <button id="btnReiniciar" class="btn-retry hidden" onclick="reiniciarEscaneo()">
             Escanear otra entrada
         </button>
+        <!-- Si la cámara no lee el QR (pantalla rota, poca luz): se escribe el código que figura abajo del QR -->
+        <form id="formCodigoManual" class="mt-4 flex gap-2">
+            <label for="codigoManual" class="sr-only">Código de la entrada</label>
+            <input id="codigoManual" type="text" autocomplete="off" autocapitalize="characters" maxlength="80" placeholder="O escribí el código (ENT-...)" class="flex-1 min-w-0 border border-gray-300 rounded-full px-4 py-2 text-sm font-mono focus:ring-2 focus:ring-violet-500 outline-none">
+            <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-full text-sm font-semibold">Validar</button>
+        </form>
 
         <!-- Indicador de carga (cuando se valida en Firebase) -->
         <div id="loading" class="text-center text-gray-500 mt-2">
@@ -64,10 +70,9 @@
         </div>
     </div>
 
-    <!-- ============ FIREBASE ============ -->
-    <script type="module" src="../shared/firebase-init.js"></script>
+    <!-- La validación la hace el servidor (/api/validador): el navegador no lee ni escribe la base de datos.
+         El enlace trae una clave (#clave=...) que arma el panel en "Escáner"; vale unos días y se recuerda en este equipo. -->
     <script type="module">
-        import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // Elementos DOM
         const video = document.getElementById('video');
@@ -162,86 +167,104 @@
             requestAnimationFrame(verificarBrillo);
         }
 
-        // ============ VALIDACIÓN REAL CON FIRESTORE ============
+        // ============ CLAVE DEL ENLACE ============
+        // Viene en la dirección (#clave=...). Se guarda en este equipo para que recargar la página no la pierda.
+        let claveValidador = '';
+        try {
+            const enLaDireccion = new URLSearchParams(location.hash.slice(1)).get('clave') || '';
+            if (enLaDireccion) {
+                localStorage.setItem('claveValidador', enLaDireccion);
+                history.replaceState(null, '', location.pathname); // la clave no queda a la vista en la barra
+            }
+            claveValidador = enLaDireccion || localStorage.getItem('claveValidador') || '';
+        } catch (e) { /* sin almacenamiento: se usa solo la de la dirección */ }
+        // Si pegan un enlace nuevo en esta misma pestaña (solo cambia lo que va después de #), se vuelve a leer
+        window.addEventListener('hashchange', () => location.reload());
+
+        // Arma el cartel del resultado con textContent (lo que llega nunca se interpreta como HTML)
+        function mostrarResultado(tipo, icono, titulo, lineas = [], insignias = []) {
+            resultado.className = `result-box ${tipo}`;
+            resultado.replaceChildren();
+            const i = document.createElement('span');
+            i.className = 'material-symbols-outlined text-4xl';
+            i.textContent = icono;
+            const t = document.createElement('p');
+            t.className = 'font-bold text-lg';
+            t.textContent = titulo;
+            resultado.append(i, t);
+            lineas.filter(Boolean).forEach((l) => {
+                const p = document.createElement('p');
+                p.className = 'text-sm';
+                p.textContent = l;
+                resultado.append(p);
+            });
+            insignias.filter(Boolean).forEach((texto) => {
+                const b = document.createElement('span');
+                b.className = 'badge mx-0.5';
+                b.textContent = texto;
+                resultado.append(b);
+            });
+        }
+
+        function sinClave() {
+            scanning = false;
+            mostrarResultado('error', 'link_off', 'Falta el enlace del validador',
+                ['Pedile al organizador el enlace del validador (panel → Escáner) y abrilo en este celular.']);
+        }
+
+        // Vibra distinto si la entrada vale o no (si el celular lo permite)
+        const vibrar = (patron) => { try { if (navigator.vibrate) navigator.vibrate(patron); } catch (e) { /* sin vibración */ } };
+
+        // ============ VALIDACIÓN EN EL SERVIDOR ============
         async function procesarQR(qrData) {
-            // Mostrar loading
+            if (!claveValidador) { sinClave(); return; }
             loadingDiv.style.display = 'block';
-            resultado.className = 'result-box info';
-            resultado.innerHTML = '⏳ Validando entrada...';
-
+            mostrarResultado('info', 'hourglass_top', 'Validando entrada...');
+            const codigo = String(qrData || '').trim().slice(0, 100);
             try {
-                // 1. Buscar el código en todas las ventas (colección "ventas")
-                const ventasRef = collection(db, 'ventas');
-                const q = query(ventasRef, where('entradas', 'array-contains', { codigo: qrData, usado: false }));
-                const querySnapshot = await getDocs(q);
-
-                let ventaEncontrada = null;
-                let entradaEncontrada = null;
-                let docId = null;
-
-                // Recorrer resultados (puede haber más de una, pero tomamos la primera)
-                for (const docSnap of querySnapshot.docs) {
-                    const data = docSnap.data();
-                    const entradas = data.entradas || [];
-                    const index = entradas.findIndex(e => e.codigo === qrData && e.usado === false);
-                    if (index !== -1) {
-                        ventaEncontrada = data;
-                        entradaEncontrada = entradas[index];
-                        docId = docSnap.id;
-                        break;
-                    }
-                }
-
-                if (!ventaEncontrada || !entradaEncontrada) {
-                    // No encontrado o ya usado
-                    resultado.className = 'result-box error';
-                    resultado.innerHTML = `
-                        <span class="material-symbols-outlined text-3xl">error</span><br>
-                        <span class="font-bold text-lg">❌ Entrada inválida o ya utilizada</span><br>
-                        <span class="text-sm">${qrData}</span>
-                    `;
-                    btnReiniciar.classList.remove('hidden');
-                    loadingDiv.style.display = 'none';
-                    return;
-                }
-
-                // 2. Marcar como usado en Firestore
-                const docRef = doc(db, 'ventas', docId);
-                const entradasActualizadas = ventaEncontrada.entradas.map(e => {
-                    if (e.codigo === qrData) {
-                        return { ...e, usado: true };
-                    }
-                    return e;
+                const respuesta = await fetch('/api/validador', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accion: 'validar', clave: claveValidador, codigo }),
                 });
-
-                await updateDoc(docRef, { entradas: entradasActualizadas });
-
-                // 3. Éxito
-                resultado.className = 'result-box success';
-                resultado.innerHTML = `
-                    <span class="material-symbols-outlined text-3xl">check_circle</span><br>
-                    <span class="font-bold text-lg">✅ Entrada válida</span><br>
-                    <span class="text-sm">${qrData}</span><br>
-                    <span class="badge">Evento: ${ventaEncontrada.eventoNombre || 'N/A'}</span>
-                    <span class="badge">Lote: ${ventaEncontrada.loteNombre || 'N/A'}</span>
-                `;
-                btnReiniciar.classList.remove('hidden');
-
-                // (Opcional) Detener la cámara para ahorrar batería
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                    video.srcObject = null;
+                let datos = null;
+                try { datos = await respuesta.json(); } catch (e) { datos = null; }
+                const insignias = datos ? [datos.evento && `Evento: ${datos.evento}`, datos.lote && `Lote: ${datos.lote}`, datos.numero && `Entrada ${datos.numero}`] : [];
+                if (respuesta.ok && datos && datos.ok === true) {
+                    vibrar(120);
+                    mostrarResultado('success', 'check_circle', '✅ Entrada válida: puede pasar', [datos.comprador && `A nombre de: ${datos.comprador}`], insignias);
+                } else {
+                    vibrar([80, 60, 80, 60, 200]);
+                    const err = (datos && datos.error) || {};
+                    if (err.codigo === 'ENLACE_VENCIDO' || err.codigo === 'ENLACE_INVALIDO') {
+                        try { localStorage.removeItem('claveValidador'); } catch (e) { /* sin almacenamiento */ }
+                        claveValidador = '';
+                    }
+                    const usada = err.codigo === 'YA_USADA';
+                    const cuando = usada && datos.usadaEn ? `Se usó el ${new Date(datos.usadaEn).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.` : '';
+                    mostrarResultado('error', usada ? 'block' : 'error', usada ? '⛔ Entrada ya utilizada' : '❌ Entrada no válida',
+                        [err.mensaje || 'No se pudo validar. Probá de nuevo.', cuando, usada && datos.comprador ? `A nombre de: ${datos.comprador}` : ''], usada ? insignias : []);
                 }
-
             } catch (error) {
                 console.error('Error al validar:', error);
-                resultado.className = 'result-box error';
-                resultado.innerHTML = '❌ Error al conectar con el servidor. Intenta de nuevo.';
-                btnReiniciar.classList.remove('hidden');
+                mostrarResultado('error', 'wifi_off', 'Sin conexión', ['No se pudo conectar con el servidor. Revisá la señal y probá de nuevo.']);
             } finally {
                 loadingDiv.style.display = 'none';
+                btnReiniciar.classList.remove('hidden');
             }
         }
+
+        // Código escrito a mano (el mismo control que el QR, en el servidor)
+        document.getElementById('formCodigoManual').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const campo = document.getElementById('codigoManual');
+            const codigo = campo.value.trim();
+            if (!codigo) return;
+            scanning = false;
+            campo.value = '';
+            // Los códigos actuales son ENT- y 24 letras/números en minúscula: si se escribieron en mayúscula se corrigen
+            procesarQR(/^ent-[0-9a-f]{24}$/i.test(codigo) ? 'ENT-' + codigo.slice(4).toLowerCase() : codigo);
+        });
 
         // ============ REINICIAR ESCANEO ============
         function reiniciarEscaneo() {
@@ -253,6 +276,7 @@
                 Apunta la cámara al código QR
             `;
             mensajeLuz.classList.add('hidden');
+            if (!claveValidador) { sinClave(); return; }
             // Si la cámara se detuvo, reiniciar
             if (!video.srcObject) {
                 iniciarCamara();
@@ -284,6 +308,7 @@
 
         // ============ INICIALIZAR ============
         window.onload = () => {
+            if (!claveValidador) { sinClave(); return; }
             // Cargar jsQR (si no está cargado desde CDN, pero lo tenemos en el <head>)
             if (typeof jsQR === 'undefined') {
                 // Cargar dinámicamente
