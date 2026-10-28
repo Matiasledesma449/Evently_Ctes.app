@@ -66,7 +66,13 @@
                     <option value="todos">Todos los métodos</option>
                 </select>
                 <button id="btnAplicarFiltros" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-1 rounded-full text-sm transition">Aplicar filtros</button>
+                <!-- Descargas (pedido 17): lo que se ve con los filtros, en el momento en que se descarga -->
+                <div class="ml-auto flex gap-2">
+                    <button id="btnDescargarCsv" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-1 rounded-full text-sm font-medium transition">Descargar CSV</button>
+                    <button id="btnDescargarPdf" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-1 rounded-full text-sm font-medium transition">Descargar PDF</button>
+                </div>
             </div>
+            <p id="avisoDescarga" class="text-xs text-red-600 -mt-2 mb-3 min-h-[1rem]" aria-live="polite"></p>
 
             <!-- Resumen de ventas: las tarjetas cambian según el filtro (las arma el JavaScript) -->
             <div class="mb-6">
@@ -155,6 +161,7 @@
         import { collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { escaparHtml, textoDelMotivo, etiquetaDeEstado, claseDeEstado, nombreDelComprador, avisosDeVenta, filtrarVentas, metodosDePago, tarjetasDelFiltro, ingresoDeVenta, textoDeMontoDeVenta } from "../shared/ventas-utils.js";
         import { nombreParaMostrar, claveDeFormaDePago, opcionesDeFiltroDePago } from "../shared/formas-de-pago.js";
+        import { descargarCsv, descargarPdf, fechaHora, nombreDeArchivo, pesos } from "../shared/exportar.js";
 
         // Elementos
         const tablaBody = document.getElementById('tablaVentasBody');
@@ -168,6 +175,64 @@
         let eventoSeleccionadoId = null;
         let filtroEstado = 'todos';
         let todasLasVentas = [];
+        let ventasEnPantalla = []; // la lista filtrada que se ve (la usan las descargas)
+
+        // ---------- Descargas (pedido 17) ----------
+        // Las ventas llegan en tiempo real: lo descargado es la foto del momento, y el archivo lo dice.
+        const avisoDescarga = document.getElementById('avisoDescarga');
+        const NOMBRE_FILTRO = { todos: 'Todas', confirmada: 'Confirmadas', pendiente: 'Pendientes', rechazada: 'Rechazadas' };
+        function nombreDelEvento() {
+            const opcion = document.getElementById('selectorEventoSelect')?.selectedOptions[0];
+            return opcion && opcion.value ? opcion.textContent.trim() : 'Evento';
+        }
+        function textoDeFiltros() {
+            const metodo = filtroMetodo.value === 'todos' ? 'Todos los métodos' : filtroMetodo.value;
+            return `Evento: ${nombreDelEvento()} · Estado: ${NOMBRE_FILTRO[filtroEstado] || filtroEstado} · Pago: ${metodo} · Datos al ${fechaHora(new Date())} (las ventas se actualizan en tiempo real)`;
+        }
+        function filaDeVenta(v) {
+            return [fechaHora(v.fecha), nombreDelComprador(v) || '', v.correo || '', v.loteNombre || '', Number(v.cantidad) || 0,
+                nombreParaMostrar(v.metodo_pago) || '', ingresoDeVenta(v), etiquetaDeEstado(v.estado), v.estado === 'rechazada' ? textoDelMotivo(v.motivo) : ''];
+        }
+        const COLUMNAS = ['Fecha', 'Comprador', 'Correo', 'Lote', 'Entradas', 'Forma de pago', 'Importe', 'Estado', 'Motivo'];
+
+        document.getElementById('btnDescargarCsv').addEventListener('click', () => {
+            avisoDescarga.textContent = '';
+            if (!eventoSeleccionadoId) { avisoDescarga.textContent = 'Elegí un evento para descargar sus ventas.'; return; }
+            descargarCsv(nombreDeArchivo(['ventas', nombreDelEvento(), NOMBRE_FILTRO[filtroEstado]], 'csv'), [COLUMNAS, ...ventasEnPantalla.map(filaDeVenta)]);
+        });
+
+        document.getElementById('btnDescargarPdf').addEventListener('click', async (e) => {
+            avisoDescarga.textContent = '';
+            if (!eventoSeleccionadoId) { avisoDescarga.textContent = 'Elegí un evento para descargar sus ventas.'; return; }
+            const boton = e.currentTarget;
+            boton.disabled = true;
+            boton.textContent = 'Armando PDF…';
+            try {
+                await descargarPdf(nombreDeArchivo(['ventas', nombreDelEvento(), NOMBRE_FILTRO[filtroEstado]], 'pdf'), {
+                    titulo: `Ventas · ${nombreDelEvento()}`,
+                    subtitulo: `${ventasEnPantalla.length} ${ventasEnPantalla.length === 1 ? 'compra' : 'compras'} con los filtros elegidos`,
+                    filtros: textoDeFiltros(),
+                    bloques: [
+                        { titulo: 'Resumen', tarjetas: tarjetasDelFiltro(filtroEstado, ventasEnPantalla).map((t) => ({ titulo: t.titulo, valor: t.valor })) },
+                        {
+                            titulo: 'Detalle de las compras',
+                            tabla: {
+                                columnas: COLUMNAS, derecha: [4, 6],
+                                filas: ventasEnPantalla.map((v) => { const f = filaDeVenta(v); f[6] = pesos(f[6]); return f; }),
+                                total: ['Total', '', '', '', ventasEnPantalla.reduce((s, v) => s + (Number(v.cantidad) || 0), 0), '', pesos(ventasEnPantalla.reduce((s, v) => s + ingresoDeVenta(v), 0)), '', '']
+                            },
+                            nota: 'El importe es lo que vale la entrada (sin costo de servicio).'
+                        }
+                    ]
+                });
+            } catch (error) {
+                console.error('No se pudo armar el PDF:', error);
+                avisoDescarga.textContent = error.message || 'No se pudo armar el PDF. Probá de nuevo.';
+            } finally {
+                boton.disabled = false;
+                boton.textContent = 'Descargar PDF';
+            }
+        });
 
         // Cargar evento activo desde la URL o localStorage
         function inicializarVentas() {
@@ -227,6 +292,7 @@
         function aplicarFiltrosYRenderizar(ventas) {
             actualizarOpcionesDeMetodo(ventas);
             const filtradas = filtrarVentas(ventas, filtroEstado, filtroMetodo.value, claveDeFormaDePago);
+            ventasEnPantalla = filtradas;
             renderizarVentas(filtradas);
             actualizarResumen(filtradas);
         }

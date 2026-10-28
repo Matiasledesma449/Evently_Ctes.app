@@ -56,7 +56,7 @@ verificar('D3 sin datos muestra $0', U.textoDeMontoDeVenta(null) === '$0' && U.t
 // ---------- Reportes y Ventas: ya no suman monto_total para recaudar ----------
 const reportes = fs.readFileSync(path.join(RAIZ, 'admin', 'reportes.html'), 'utf8');
 verificar('P1 Reportes no suma monto_total en ninguna cifra de recaudación', !/monto_total/.test(reportes));
-verificar('P2 Reportes usa ingresoDeVenta (importado de ventas-utils)', /ingresoDeVenta\(v\)/.test(reportes) && /nombreDeArchivoDeReporte, ingresoDeVenta \}/.test(reportes));
+verificar('P2 Reportes usa ingresoDeVenta (importado de ventas-utils)', /ingresoDeVenta\(v\)/.test(reportes) && /nombreDeArchivoDeReporte, ingresoDeVenta(, \w+)* \} from "\.\.\/shared\/ventas-utils\.js"/.test(reportes));
 const ventasHtml = fs.readFileSync(path.join(RAIZ, 'admin', 'ventas.html'), 'utf8');
 verificar('P3 Ventas muestra el ingreso en la tabla y el desglose en el detalle', /ingresoDeVenta\(v\)/.test(ventasHtml) && /textoDeMontoDeVenta\(venta\)/.test(ventasHtml) && !/monto_total/.test(ventasHtml));
 const dashboard = fs.readFileSync(path.join(RAIZ, 'admin', 'dashboard.html'), 'utf8');

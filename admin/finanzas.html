@@ -51,7 +51,13 @@
                     <label class="text-xs text-gray-500">Evento
                         <select id="filtroEvento" class="campo block mt-1 max-w-[16rem]"><option value="todos">Todos</option></select>
                     </label>
+                    <!-- Descargas del balance (pedido 17) -->
+                    <div class="ml-auto self-end flex gap-2">
+                        <button type="button" id="balanceCsv" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar CSV</button>
+                        <button type="button" id="balancePdf" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar PDF</button>
+                    </div>
                 </div>
+                <p id="avisoBalance" class="text-xs text-red-600 -mt-3 mb-3 min-h-[1rem]" aria-live="polite"></p>
 
                 <!-- Totales del período elegido -->
                 <div id="tarjetasBalance" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5"></div>
@@ -91,8 +97,12 @@
                     </label>
                     <label id="campoDesde" class="hidden text-xs text-gray-500">Desde <input type="date" id="desdeLiquidacion" class="campo block mt-1"></label>
                     <label id="campoHasta" class="hidden text-xs text-gray-500">Hasta <input type="date" id="hastaLiquidacion" class="campo block mt-1"></label>
-                    <button type="button" id="exportarCsv" class="ml-auto border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar CSV</button>
+                    <div class="ml-auto flex gap-2">
+                        <button type="button" id="exportarCsv" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar CSV</button>
+                        <button type="button" id="exportarPdf" class="border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium">Descargar PDF</button>
+                    </div>
                 </div>
+                <p id="avisoLiquidacion" class="text-xs text-red-600 -mt-3 mb-3 min-h-[1rem]" aria-live="polite"></p>
                 <div id="tarjetasLiquidacion" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5"></div>
                 <div id="listaLiquidaciones" class="space-y-3"></div>
             </section>
@@ -104,6 +114,7 @@
         import { collection, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { PERIODOS, balancePorPeriodo, totales, liquidaciones, ventasEntre, periodoDe, msDeVenta } from "../shared/finanzas.js";
         import { dibujarBarras, dibujarRanking } from "../shared/grafico-barras.js";
+        import { descargarCsv, descargarPdf, nombreDeArchivo } from "../shared/exportar.js";
 
         let eventos = [];
         let ventas = [];
@@ -184,6 +195,7 @@
             return c;
         }
 
+        let ultimoBalance = null; // lo último que se dibujó en el balance (lo usan las descargas)
         function dibujarBalance() {
             const tipo = filtroPeriodo.value;
             const lista = ventasFiltradas();
@@ -220,6 +232,7 @@
 
             // Rankings de la ventana
             const liq = liquidaciones(enVentana, eventos, organizaciones);
+            ultimoBalance = { tipo, periodos, totales: t, liq };
             dibujarRanking(document.getElementById('rankingOrganizaciones'), liq.map((o) => ({ nombre: o.nombre, valor: o.aPagar + o.servicio })), { formato: pesos });
             const porEvento = liq.flatMap((o) => o.eventos).sort((a, b) => (b.aPagar + b.servicio) - (a.aPagar + a.servicio));
             dibujarRanking(document.getElementById('rankingEventos'), porEvento.map((e) => ({ nombre: e.nombre, valor: e.aPagar + e.servicio })), { formato: pesos });
@@ -303,25 +316,72 @@
         }
         [rango, document.getElementById('desdeLiquidacion'), document.getElementById('hastaLiquidacion')].forEach((c) => c.addEventListener('change', dibujarLiquidaciones));
 
-        // CSV de la liquidación (una fila por evento). Los textos se escapan para que una celda no se tome como fórmula.
-        // Los números van como números; los textos que empiezan como una fórmula (= + - @ tab o salto) se anteponen con '
-        const celda = (x) => {
-            if (typeof x === 'number') return String(x);
-            let s = String(x);
-            if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-            return '"' + s.replace(/"/g, '""') + '"';
-        };
+        // ---------------- Descargas (pedido 17): CSV y PDF del balance y de la liquidación ----------------
+        const textoElegido = (select) => (select.selectedOptions[0] ? select.selectedOptions[0].textContent.trim() : '');
+        function filtrosDelBalance() {
+            return `Período: ${textoElegido(filtroPeriodo)} · Organización: ${filtroOrganizacion.value === 'todas' ? 'Todas' : textoElegido(filtroOrganizacion)} · Evento: ${textoElegido(filtroEvento)}`;
+        }
+        async function conAviso(boton, aviso, tarea) {
+            aviso.textContent = '';
+            const texto = boton.textContent;
+            boton.disabled = true;
+            boton.textContent = 'Armando…';
+            try { await tarea(); } catch (error) {
+                console.error('No se pudo descargar:', error);
+                aviso.textContent = error.message || 'No se pudo descargar. Probá de nuevo.';
+            } finally { boton.disabled = false; boton.textContent = texto; }
+        }
+        const filaDePeriodo = (p, plata) => [p.etiqueta, plata(p.total), plata(p.aPagar), plata(p.servicio), p.entradas];
+        const COLUMNAS_BALANCE = ['Período', 'Total vendido', 'Para las productoras', 'Ganancia de Evently', 'Entradas'];
+
+        document.getElementById('balanceCsv').addEventListener('click', () => {
+            if (!ultimoBalance) return;
+            const redondo = (n) => Math.round(n);
+            descargarCsv(nombreDeArchivo(['balance', textoElegido(filtroPeriodo)], 'csv'), [COLUMNAS_BALANCE, ...ultimoBalance.periodos.map((p) => filaDePeriodo(p, redondo))]);
+        });
+        document.getElementById('balancePdf').addEventListener('click', (e) => conAviso(e.currentTarget, document.getElementById('avisoBalance'), async () => {
+            if (!ultimoBalance) return;
+            const { periodos, totales: t, liq } = ultimoBalance;
+            await descargarPdf(nombreDeArchivo(['balance', textoElegido(filtroPeriodo)], 'pdf'), {
+                titulo: 'Balance de ventas', subtitulo: 'Ventas confirmadas, agrupadas por período', filtros: filtrosDelBalance(),
+                bloques: [
+                    { titulo: 'Totales', tarjetas: [
+                        { titulo: 'Total vendido', valor: pesos(t.total) }, { titulo: 'Para las productoras', valor: pesos(t.aPagar) },
+                        { titulo: 'Ganancia de Evently', valor: pesos(t.servicio) }, { titulo: 'Entradas vendidas', valor: t.entradas.toLocaleString('es-AR') }] },
+                    { titulo: 'Por período', tabla: { columnas: COLUMNAS_BALANCE, derecha: [1, 2, 3, 4], filas: periodos.map((p) => filaDePeriodo(p, pesos)),
+                        total: ['Total', pesos(t.total), pesos(t.aPagar), pesos(t.servicio), t.entradas] } },
+                    { titulo: 'Por organización', tabla: { columnas: ['Organización', 'Total vendido', 'Participación'], derecha: [1, 2],
+                        filas: liq.map((o) => [o.nombre, pesos(o.aPagar + o.servicio), `${t.total > 0 ? (Math.round(((o.aPagar + o.servicio) / t.total) * 1000) / 10).toString().replace('.', ',') : 0}%`]) } }
+                ]
+            });
+        }));
+
+        // Liquidación: una fila por evento (CSV) o el detalle por organización (PDF)
         document.getElementById('exportarCsv').addEventListener('click', () => {
             const { r, liq } = liquidacionActual();
             const filas = [['Organización', 'Evento', 'Compras', 'Entradas', 'Ganancia de Evently', 'A pagar']];
             liq.forEach((o) => o.eventos.forEach((e) => filas.push([o.nombre, e.nombre, e.ventas, e.entradas, Math.round(e.servicio), Math.round(e.aPagar)])));
-            const csv = '﻿' + filas.map((f) => f.map(celda).join(';')).join('\r\n');
-            const enlace = document.createElement('a');
-            enlace.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-            enlace.download = `liquidacion-${r.texto.replace(/\s+/g, '-')}.csv`;
-            enlace.click();
-            setTimeout(() => URL.revokeObjectURL(enlace.href), 1000);
+            descargarCsv(nombreDeArchivo(['liquidacion', r.texto], 'csv'), filas);
         });
+        document.getElementById('exportarPdf').addEventListener('click', (e) => conAviso(e.currentTarget, document.getElementById('avisoLiquidacion'), async () => {
+            const { r, liq } = liquidacionActual();
+            const aPagar = liq.reduce((s, o) => s + o.aPagar, 0);
+            const servicio = liq.reduce((s, o) => s + o.servicio, 0);
+            await descargarPdf(nombreDeArchivo(['liquidacion', r.texto], 'pdf'), {
+                titulo: 'Liquidación a productoras', subtitulo: `Ventas confirmadas de ${r.texto}`,
+                filtros: `Período: ${textoElegido(rango)}${window.organizacionElegida && window.organizacionElegida() ? ' · Solo la organización elegida' : ' · Todas las organizaciones'}`,
+                bloques: [
+                    { titulo: 'Totales', tarjetas: [{ titulo: 'A pagar a productoras', valor: pesos(aPagar) }, { titulo: 'Ganancia de Evently', valor: pesos(servicio) },
+                        { titulo: 'Organizaciones con ventas', valor: String(liq.filter((o) => o.id).length) }] },
+                    ...liq.map((o) => ({
+                        titulo: o.nombre,
+                        tabla: { columnas: ['Evento', 'Compras', 'Entradas', 'Ganancia de Evently', 'A pagar'], derecha: [1, 2, 3, 4],
+                            filas: o.eventos.map((ev) => [ev.nombre, ev.ventas, ev.entradas, pesos(ev.servicio), pesos(ev.aPagar)]),
+                            total: ['Total', o.ventas, o.entradas, pesos(o.servicio), pesos(o.aPagar)] }
+                    }))
+                ]
+            });
+        }));
     </script>
     <script src="../shared/menu-rol.js"></script>
 </body>
