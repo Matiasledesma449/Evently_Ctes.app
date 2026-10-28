@@ -26,7 +26,7 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 - [x] 12. **Editar evento**: poder cambiar "¿Cómo se venden las entradas?" (entrada única ↔ con lotes) también al editar
   (hoy queda bloqueado). Cuidado: las ventas se confirman por la posición y el nombre del lote (server/confirmacion.js);
   si el evento ya tiene ventas, no se puede cambiar la estructura sin romperlas: explicarlo y ofrecer solo lo seguro.
-- [ ] 13. **Suspender, reactivar y eliminar eventos** (superadmin): "Suspender" (deja de verse y de venderse, se puede
+- [x] 13. **Suspender, reactivar y eliminar eventos** (superadmin): "Suspender" (deja de verse y de venderse, se puede
   editar), "Volver a activar", y "Eliminar" con un paso de confirmación (y, como en organizaciones, que se pueda recuperar).
   El servidor ya rechaza eventos con `activo === false` (server/compra.js).
 - [ ] 14. **Una sola sección para "ver" (nombre creativo, por ejemplo "Ojo de halcón" o "Vista")**: juntar en una sección

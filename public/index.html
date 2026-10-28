@@ -443,7 +443,7 @@
                 const querySnapshot = await getDocs(eventosPublicados);
                 const todos = querySnapshot.docs
                     .map(documento => ({ id: documento.id, ...documento.data() }))
-                    .filter(evento => evento.activo !== false);
+                    .filter(evento => evento.activo !== false && evento.eliminado !== true); // sin suspendidos ni eliminados
 
                 const hoy = inicioDelDia(new Date());
                 const eventos = todos

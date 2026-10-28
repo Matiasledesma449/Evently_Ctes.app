@@ -79,6 +79,8 @@
                         <option value="publicado">Publicados</option>
                         <option value="pendiente">Pendientes</option>
                         <option value="rechazada">Rechazados</option>
+                        <option value="suspendido">Suspendidos</option>
+                        <option value="eliminado">Eliminados</option>
                     </select>
                 </div>
             </div>
@@ -94,12 +96,13 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { onSnapshot, collection, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { onSnapshot, collection, doc, getDoc, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { situacionDelEvento, cambiosDeAccion, accionesDeEvento } from "../shared/estado-evento.js";
         import { htmlDeImagenEvento } from "../shared/imagen-evento.js";
         import { escaparHtml } from "../shared/ventas-utils.js";
         import { ultimoComentario } from "../shared/solicitudes-evento.js";
         import { eventosParaVer, organizacionDeEvento as organizacionDelEvento } from "../shared/organizaciones.js";
-        import { mostrarToast } from "../shared/ui-utils.js";
+        import { mostrarToast, confirmar } from "../shared/ui-utils.js";
 
         const contenidoContainer = document.getElementById('contenidoContainer');
         const searchInput = document.getElementById('searchInput');
@@ -142,6 +145,8 @@
                 const rolQueSeMira = window.rolEfectivo ? window.rolEfectivo(miUsuario.rol) : miUsuario.rol;
                 soySuperAdmin = rolQueSeMira === 'superadmin';
             }
+            // "Eliminados" es solo del superadmin real (si estaba elegido, el filtro vuelve a "Todos")
+            if (!(soySuperAdmin && superadminReal)) estadoFilter.querySelector('option[value="eliminado"]')?.remove();
 
             if (soySuperAdmin) {
                 // El superadmin ve los eventos de todas las organizaciones directamente
@@ -303,9 +308,13 @@
 
             let filtrados = [...lista];
 
-            // Filtro por tab/select
-            if (estado !== 'todos') {
-                filtrados = filtrados.filter(ev => (ev.estado || 'publicado') === estado);
+            // Filtro por tab/select. Los eliminados (recuperables) se ven solo con "Eliminados"
+            if (estado === 'eliminado') {
+                filtrados = filtrados.filter(ev => situacionDelEvento(ev) === 'eliminado');
+            } else {
+                filtrados = filtrados.filter(ev => situacionDelEvento(ev) !== 'eliminado');
+                if (estado === 'suspendido') filtrados = filtrados.filter(ev => situacionDelEvento(ev) === 'suspendido');
+                else if (estado !== 'todos') filtrados = filtrados.filter(ev => (ev.estado || 'publicado') === estado);
             }
 
             if (searchTerm) {
@@ -372,6 +381,24 @@
                             `;
                         }
 
+                        // Publicado pero suspendido o eliminado (pedido 13): insignia propia
+                        const situacion = estado === 'publicado' ? situacionDelEvento(evento) : 'activo';
+                        if (situacion === 'suspendido') { badgeClass = 'bg-amber-100 text-amber-800'; estadoTexto = 'Suspendido'; }
+                        if (situacion === 'eliminado') { badgeClass = 'bg-red-100 text-red-800'; estadoTexto = 'Eliminado'; botonHTML = ''; }
+
+                        // Acciones del superadmin real: suspender, volver a activar, eliminar y recuperar.
+                        // El id va escapado dentro de comillas dobles; los textos son fijos.
+                        const TEXTO_ACCION = { suspender: 'Suspender', activar: 'Volver a activar', eliminar: 'Eliminar', recuperar: 'Recuperar' };
+                        const CLASE_ACCION = {
+                            suspender: 'border-amber-500 text-amber-700 hover:bg-amber-50', activar: 'border-green-600 text-green-700 hover:bg-green-50',
+                            eliminar: 'border-red-500 text-red-600 hover:bg-red-50', recuperar: 'border-violet-600 text-violet-700 hover:bg-violet-50'
+                        };
+                        const accionesHTML = estado === 'publicado' && soySuperAdmin && superadminReal
+                            ? `<div class="mt-2 flex gap-2">${accionesDeEvento(evento).map(a => `
+                                    <button type="button" data-accion="${a}" data-id="${escaparHtml(evento.id)}" class="flex-1 border ${CLASE_ACCION[a]} px-3 py-2 rounded-full text-sm font-medium transition">${TEXTO_ACCION[a]}</button>`).join('')}
+                                </div>`
+                            : '';
+
                         // El superadmin ve de qué organización es cada evento
                         const organizacionHTML = soySuperAdmin
                             ? `<p class="text-sm text-violet-600 font-medium flex items-center gap-2 mb-2 truncate">
@@ -407,11 +434,12 @@
                                     </p>
                                     
                                     ${organizacionHTML}
-                                    ${estado === 'publicado' ? `
+                                    ${estado === 'publicado' && situacion !== 'eliminado' ? `
                                     <div class="mt-3 flex gap-2">
                                         <a href="../public/evento.html?id=${encodeURIComponent(evento.id)}" target="_blank" rel="noopener" class="flex-1 text-center border border-gray-300 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-full text-sm font-medium transition">Ver en Evently</a>
                                         ${soySuperAdmin && superadminReal ? `<a href="eventos.html?modo=directo&editar=${encodeURIComponent(evento.id)}" class="flex-1 text-center border border-violet-600 text-violet-700 hover:bg-violet-50 px-3 py-2 rounded-full text-sm font-medium transition">Editar</a>` : ''}
                                     </div>` : ''}
+                                    ${accionesHTML}
                                     ${motivoHTML}
                                     ${comentarioHTML}
 
@@ -425,6 +453,31 @@
                 </div>
             `;
         }
+
+        // Suspender, volver a activar, eliminar (con confirmación) y recuperar. Nada se borra de la base.
+        const CONFIRMACIONES = {
+            suspender: { titulo: 'Suspender evento', texto: 'El evento deja de verse en Evently y no se pueden comprar entradas. Lo podés seguir editando y volver a activar cuando quieras.', ok: 'Suspender' },
+            eliminar: { titulo: 'Eliminar evento', texto: 'El evento deja de verse en Evently y en las listas del panel. Las ventas no se borran. Lo podés recuperar desde el filtro "Eliminados".', ok: 'Eliminar' },
+        };
+        const AVISOS = { suspender: 'Evento suspendido.', activar: 'El evento volvió a estar a la venta.', eliminar: 'Evento eliminado. Lo podés recuperar desde "Eliminados".', recuperar: 'Evento recuperado. Quedó suspendido: activalo cuando quieras.' };
+        contenidoContainer.addEventListener('click', async (e) => {
+            const boton = e.target.closest('button[data-accion]');
+            if (!boton || !superadminReal) return;
+            const accion = boton.dataset.accion;
+            const cambios = cambiosDeAccion(accion);
+            if (!cambios) return;
+            const pregunta = CONFIRMACIONES[accion];
+            if (pregunta && !(await confirmar(pregunta.texto, { titulo: pregunta.titulo, textoOk: pregunta.ok }))) return;
+            boton.disabled = true;
+            try {
+                await updateDoc(doc(db, 'eventos', boton.dataset.id), { ...cambios, fechaCambioDeEstado: serverTimestamp() });
+                mostrarToast(AVISOS[accion], 'success');
+            } catch (error) {
+                console.error('No se pudo cambiar el estado del evento:', error);
+                mostrarToast('No se pudo cambiar el estado del evento. Probá de nuevo.', 'error');
+                boton.disabled = false;
+            }
+        });
 
         searchInput.addEventListener('input', renderizarVista);
         organizacionFilter.addEventListener('change', renderizarVista);

@@ -37,7 +37,7 @@ function calcularCompra(evento, pedido, config = null, hoy = null) {
   if (!evento) {
     return error(404, 'EVENTO_NO_ENCONTRADO', 'No encontramos ese evento.');
   }
-  if (evento.estado !== 'publicado' || evento.activo === false) {
+  if (evento.estado !== 'publicado' || evento.activo === false || evento.eliminado === true) {
     return error(409, 'EVENTO_NO_DISPONIBLE', 'Este evento no está disponible para la venta.');
   }
 

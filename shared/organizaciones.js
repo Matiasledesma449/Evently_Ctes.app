@@ -18,7 +18,9 @@ export function eventosDeOrganizacion(eventos, organizacionId) {
 // Qué eventos se muestran según el rol con el que se mira:
 // superadmin (sin "Ver como organización") → todos, o los de la organización elegida en la franja rosa;
 // vista de organización → los de la organización elegida (ninguno si no eligió); organización → los de la suya.
-export function eventosParaVer({ eventos, rolEfectivo, rolReal, organizacionId, organizacionElegida } = {}) {
+// Los eventos eliminados (pedido 13, recuperables) no aparecen en ninguna lista.
+export function eventosParaVer({ eventos: todos, rolEfectivo, rolReal, organizacionId, organizacionElegida } = {}) {
+    const eventos = lista(todos).filter((ev) => ev.eliminado !== true);
     const real = rolReal || rolEfectivo;
     if (rolEfectivo === 'superadmin') return texto(organizacionElegida) ? eventosDeOrganizacion(eventos, organizacionElegida) : lista(eventos);
     if (real === 'superadmin') return eventosDeOrganizacion(eventos, organizacionElegida);

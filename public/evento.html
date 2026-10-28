@@ -138,6 +138,7 @@
         import { dibujarPie, cargarLogosDelPie } from "../shared/pie-publico.js";
         import { dibujarCabecera } from "../shared/cabecera-publica.js";
         import { categoriaDeComision, desgloseDeCompra } from "../shared/comision.js";
+        import { seVendeEnElSitio } from "../shared/estado-evento.js";
 
         cargarLogosDelPie(dibujarPie(document.getElementById('pie'), 'evento'));
         dibujarCabecera(document.getElementById('cabecera'), 'evento');
@@ -229,6 +230,11 @@
                 const docSnap = await getDoc(docRef);
                 if (!docSnap.exists()) {
                     container.innerHTML = `<p class="text-red-500">Evento no encontrado.</p>`;
+                    return;
+                }
+                // Suspendido o eliminado por el superadmin (pedido 13): no se muestra ni se vende
+                if (!seVendeEnElSitio(docSnap.data())) {
+                    container.innerHTML = `<p class="text-gray-600">Este evento no está disponible por el momento.</p>`;
                     return;
                 }
                 eventoActual = { id: docSnap.id, ...docSnap.data() };
