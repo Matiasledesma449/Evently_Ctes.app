@@ -18,6 +18,9 @@ const selectCategoria = document.getElementById('categoriaEvento');
 let organizaciones = [];
 let categorias = [];
 let elegidosAlEditar = null; // { organizacionId, comisionCategoriaId } del evento que se edita (las listas llegan después)
+// Organización que llega desde Eventos (eventos.html?modo=directo&organizacion=<id>); al editar manda la del evento
+const parametros = new URLSearchParams(window.location.search);
+const organizacionDeLaDireccion = parametros.get('editar') ? '' : (parametros.get('organizacion') || '');
 
 panelServicio.classList.remove('hidden');
 bloqueSuperadmin.classList.remove('hidden');
@@ -32,7 +35,7 @@ onSnapshot(collection(db, 'organizaciones'), (snap) => {
     const elegida = selectOrganizacion.value;
     selectOrganizacion.replaceChildren(new Option(organizaciones.length ? 'Elegí la organización' : 'No hay organizaciones: creá una en "Organizaciones"', ''));
     organizaciones.forEach((o) => selectOrganizacion.add(new Option(o.nombre, o.id)));
-    const buscada = elegida || (elegidosAlEditar && elegidosAlEditar.organizacionId) || '';
+    const buscada = elegida || (elegidosAlEditar && elegidosAlEditar.organizacionId) || organizacionDeLaDireccion;
     selectOrganizacion.value = organizaciones.some((o) => o.id === buscada) ? buscada : '';
 }, (error) => {
     console.error('No se pudieron leer las organizaciones:', error);

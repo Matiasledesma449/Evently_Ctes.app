@@ -68,6 +68,11 @@
                         <option value="todas">Todas las organizaciones</option>
                     </select>
 
+                    <!-- Crear evento para la organización elegida en el filtro (solo superadmin) -->
+                    <a href="eventos.html?modo=directo" id="btnCrearEventoOrganizacion" class="hidden bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-1 shadow-sm">
+                        <span class="material-symbols-outlined text-sm">add</span> Crear evento
+                    </a>
+
                     <!-- Filtros ajustados -->
                     <select id="estadoFilter" class="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
                         <option value="todos">Todos</option>
@@ -249,6 +254,10 @@
         // ✅ Vista del superadmin: todos los eventos, con la organización de cada uno
         function renderizarEventosDelSuperadmin() {
             let lista = eventos;
+            // "Crear evento" lleva a Crear evento con la organización del filtro ya elegida
+            const btnCrear = document.getElementById('btnCrearEventoOrganizacion');
+            btnCrear.classList.toggle('hidden', !superadminReal || organizacionFilter.value === 'todas');
+            btnCrear.href = `eventos.html?modo=directo&organizacion=${encodeURIComponent(organizacionFilter.value)}`;
             if (organizacionFilter.value !== 'todas') {
                 lista = lista.filter(ev => organizacionDeEvento(ev)?.id === organizacionFilter.value);
             }

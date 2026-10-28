@@ -16,7 +16,7 @@ Lista de pedidos que todavía no tienen change de OpenSpec. La usa el trabajo no
 
 Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 
-- [ ] 10. **Crear evento desde Eventos**: en la lista de Eventos del superadmin, cuando el filtro tiene una organización elegida,
+- [x] 10. **Crear evento desde Eventos**: en la lista de Eventos del superadmin, cuando el filtro tiene una organización elegida,
   un botón "Crear evento" que lleva a Crear evento con esa organización ya elegida.
 - [ ] 11. **Organización elegida en TODO el panel (franja rosa)**: al elegir una organización, en todas las páginas (Resumen,
   Reportes, Ventas, Escáner, Finanzas, Eventos) se ve una franja de color rosa: "Estás viendo: <organización>", con un
