@@ -51,51 +51,6 @@
 
         <!-- Contenido principal -->
         <main class="flex-1 min-h-0 overflow-y-auto p-6 pb-24 lg:pb-6">
-            <!-- Pestañas del superadmin (solo en ?modo=directo): Crear evento y Solicitudes -->
-            <div id="pestanasSuperadmin" class="hidden max-w-6xl mx-auto mb-6 inline-flex rounded-lg border border-gray-200 bg-white p-1" role="tablist" aria-label="Crear evento o ver solicitudes">
-                <button type="button" id="pestanaCrear" data-pestana="crear" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Crear evento</button>
-                <button type="button" id="pestanaSolicitudes" data-pestana="solicitudes" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center gap-2">
-                    Solicitudes <span id="pendientesSolicitudes" class="hidden bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span>
-                </button>
-            </div>
-
-            <!-- SECCIÓN: Solicitudes de eventos (solo superadmin; la maneja aprobaciones.js) -->
-            <div id="panelSolicitudes" class="hidden max-w-6xl mx-auto">
-                <div id="seccion-solicitudes" class="mb-8 hidden">
-                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
-                        <div class="flex items-center">
-                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-violet-600">notifications_active</span>
-                                Solicitudes de eventos
-                            </h2>
-                            <span id="contador-solicitudes" class="bg-violet-600 text-white text-sm font-semibold px-3 py-1 rounded-full ml-3 shadow-sm">0</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-                                <input id="buscarSolicitud" type="search" placeholder="Buscar solicitud..." class="w-full sm:w-56 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
-                            </div>
-                            <select id="filtroOrganizacionSolicitud" aria-label="Filtrar por organización" class="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
-                                <option value="todas">Todas las organizaciones</option>
-                            </select>
-                            <select id="filtroPeriodoSolicitud" aria-label="Filtrar por período" class="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
-                                <option value="7">Últimos 7 días</option>
-                                <option value="30" selected>Últimos 30 días</option>
-                                <option value="todos">Todo el período</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div id="filtros-estado-solicitudes" class="inline-flex rounded-lg border border-gray-200 bg-white p-1 mb-4" role="tablist" aria-label="Filtrar solicitudes por estado">
-                        <button type="button" data-estado-solicitud="pendiente" class="px-3 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white" aria-pressed="true">Pendientes</button>
-                        <button type="button" data-estado-solicitud="aprobada" class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100" aria-pressed="false">Aceptados</button>
-                        <button type="button" data-estado-solicitud="rechazada" class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100" aria-pressed="false">Rechazados</button>
-                    </div>
-                    <div id="grid-solicitudes" class="space-y-5">
-                        <p class="text-gray-500 col-span-full text-center py-8" id="mensaje-vacio">Cargando solicitudes...</p>
-                    </div>
-                </div>
-            </div>
-
             <div id="panelCrear" class="max-w-4xl mx-auto">
                 <h1 id="tituloFormulario" class="text-2xl font-bold text-gray-800 mb-2">Solicitar evento</h1>
                 <p id="descripcionFormulario" class="text-gray-500 mb-6">Completa el formulario para solicitar un nuevo evento. Nuestro equipo evaluará la solicitud y se pondrá en contacto contigo.</p>
@@ -178,7 +133,7 @@
                         </div>
                         <input type="hidden" id="imagenUrl" name="imagen" value="" />
                         <p id="mensajeImagen" role="status" class="hidden text-sm mt-2"></p>
-                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP); se achica sola. Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
+                        <p class="text-xs text-gray-400 mt-1">Elegí una foto (JPG, PNG o WebP); se achica sola. Lo ideal es una imagen horizontal, tipo banner, de 1600 × 670 px: así se ve nítida en las tarjetas. Es opcional: sin foto, el evento se ve con un fondo violeta y su inicial.</p>
                     </div>
 
                     <div class="space-y-4">
@@ -280,6 +235,10 @@
                         <button type="reset" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition font-medium">
                             Limpiar
                         </button>
+                        <!-- Solo al revisar una solicitud: guarda los cambios y la deja pendiente -->
+                        <button type="submit" id="btnGuardarSolicitud" class="hidden px-6 py-2 border border-violet-600 text-violet-700 hover:bg-violet-50 rounded-full transition font-medium">
+                            Guardar sin publicar
+                        </button>
                         <button type="submit" id="btnEnviar" class="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-full transition font-medium flex items-center gap-2 justify-center">
                             <span class="material-symbols-outlined text-sm">send</span> <span id="textoBotonEnviar">Enviar solicitud</span>
                         </button>
@@ -292,94 +251,10 @@
     </div>
 
 
-    <!-- Modal: confirmación de aprobación o rechazo de una solicitud -->
-    <div id="modalConfirmacion" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 px-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 id="modalConfirmacionTitulo" class="text-xl font-bold text-gray-900 mb-2">Confirmar Acción</h3>
-            <p id="modalConfirmacionMensaje" class="text-gray-600 mb-4 text-sm">¿Estás seguro?</p>
-            <div id="contenedorMotivoConfirmacion" class="hidden mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del rechazo (Opcional)</label>
-                <textarea id="inputMotivoConfirmacion" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-600 focus:border-violet-600 outline-none" placeholder="Ej: Faltan detalles..."></textarea>
-            </div>
-            <div class="flex justify-end space-x-3 mt-6">
-                <button id="btnCancelarModalConfirmacion" class="px-5 py-2 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition">Cancelar</button>
-                <button id="btnConfirmarModalConfirmacion" class="px-5 py-2 text-white font-medium rounded-lg transition shadow-md min-w-[120px] bg-violet-600 hover:bg-violet-700">Confirmar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: editar únicamente solicitudes pendientes -->
-    <div id="modalEditarSolicitud" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] px-4 py-6">
-        <section class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="tituloEditarSolicitud">
-            <div class="flex items-start justify-between gap-4 mb-5">
-                <div>
-                    <h2 id="tituloEditarSolicitud" class="text-xl font-bold text-gray-900">Editar solicitud</h2>
-                    <p class="text-sm text-gray-500 mt-1">Los cambios se guardan en la solicitud pendiente.</p>
-                </div>
-                <button id="btnCerrarModalEditar" type="button" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar edición">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <form id="formEditarSolicitud" class="space-y-4">
-                <div>
-                    <label for="editarNombreSolicitud" class="block text-sm font-medium text-gray-700 mb-1">Nombre del evento</label>
-                    <input id="editarNombreSolicitud" maxlength="150" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label for="editarFechaSolicitud" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-                        <input id="editarFechaSolicitud" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
-                    </div>
-                    <div>
-                        <label for="editarLugarSolicitud" class="block text-sm font-medium text-gray-700 mb-1">Lugar</label>
-                        <input id="editarLugarSolicitud" maxlength="200" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
-                    </div>
-                </div>
-                <div>
-                    <div class="flex items-center justify-between gap-3 mb-2">
-                        <h3 class="text-sm font-semibold text-gray-800">Lotes</h3>
-                        <button id="btnAgregarLoteEdicion" type="button" class="text-sm font-medium text-violet-700 hover:text-violet-900">+ Agregar lote</button>
-                    </div>
-                    <div id="lotesEdicionContainer" class="space-y-3"></div>
-                </div>
-                <p id="errorEditarSolicitud" class="hidden text-sm text-red-600" role="alert"></p>
-                <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
-                    <button id="btnCancelarEdicion" type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cancelar</button>
-                    <button id="btnGuardarEdicion" type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700">Guardar cambios</button>
-                </div>
-            </form>
-        </section>
-    </div>
-
-    <!-- Modal: comentar una solicitud (el comentario lo ve la organización en su lista de eventos) -->
-    <div id="modalComentarSolicitud" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] px-4 py-6">
-        <section class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="tituloComentarSolicitud">
-            <div class="flex items-start justify-between gap-4 mb-4">
-                <div class="min-w-0">
-                    <h2 id="tituloComentarSolicitud" class="text-xl font-bold text-gray-900">Comentarios</h2>
-                    <p id="subtituloComentarSolicitud" class="text-sm text-gray-500 mt-1 truncate"></p>
-                </div>
-                <button id="btnCerrarModalComentar" type="button" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar comentarios">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div id="historialComentarios" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
-            <form id="formComentarSolicitud" class="space-y-3">
-                <label for="textoComentarSolicitud" class="block text-sm font-medium text-gray-700">Escribir un comentario para la organización</label>
-                <textarea id="textoComentarSolicitud" rows="3" maxlength="500" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Falta la hora de fin."></textarea>
-                <p id="errorComentarSolicitud" class="hidden text-sm text-red-600" role="alert"></p>
-                <div class="flex justify-end gap-2">
-                    <button id="btnCancelarComentar" type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cerrar</button>
-                    <button id="btnGuardarComentar" type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700">Guardar comentario</button>
-                </div>
-            </form>
-        </section>
-    </div>
-
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { addDoc, collection, serverTimestamp, doc, getDoc, getDocs, query, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { addDoc, collection, serverTimestamp, doc, getDoc, getDocs, query, where, runTransaction, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { pasarAUnica } from "../shared/forma-de-venta.js";
         import { consultaDeVentas } from "../shared/consulta-ventas.js";
@@ -414,37 +289,20 @@
             document.getElementById('tituloFormulario').textContent = 'Crear evento';
             document.getElementById('descripcionFormulario').textContent = 'Publicá un evento directamente en Evently, sin crear una solicitud.';
             document.getElementById('textoBotonEnviar').textContent = 'Publicar evento';
-            iniciarPestanasSuperadmin();
-        }
-
-        // ============ PESTAÑAS DEL SUPERADMIN: CREAR EVENTO / SOLICITUDES ============
-        // aprobaciones.js maneja la sección de solicitudes (y comprueba por su cuenta que sea superadmin)
-        function iniciarPestanasSuperadmin() {
-            const pestanas = document.getElementById('pestanasSuperadmin');
-            const panelCrear = document.getElementById('panelCrear');
-            const panelSolicitudes = document.getElementById('panelSolicitudes');
-            const botones = pestanas.querySelectorAll('[data-pestana]');
-            pestanas.classList.remove('hidden');
-
-            function mostrar(cual) {
-                const verSolicitudes = cual === 'solicitudes';
-                panelCrear.classList.toggle('hidden', verSolicitudes);
-                panelSolicitudes.classList.toggle('hidden', !verSolicitudes);
-                botones.forEach((boton) => {
-                    const activa = boton.dataset.pestana === cual;
-                    boton.setAttribute('aria-selected', String(activa));
-                    boton.className = 'px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 '
-                        + (activa ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-100');
-                });
-                history.replaceState(null, '', verSolicitudes ? '#solicitudes' : location.pathname + location.search);
-            }
-
-            botones.forEach((boton) => boton.addEventListener('click', () => mostrar(boton.dataset.pestana)));
-            mostrar(location.hash === '#solicitudes' ? 'solicitudes' : 'crear');
-            import('./aprobaciones.js');
         }
 
         let loteIndex = 1;
+
+        // ============ FECHAS: DESDE HOY EN ADELANTE ============
+        // Todos los calendarios del formulario arrancan en hoy. Un campo que ya trae una fecha pasada (al editar un
+        // evento) la conserva: el control final está en validarDias y validarFechasDeLote, al guardar.
+        function aplicarMinimoDeFechas() {
+            const hoy = hoyEnArgentina();
+            form.querySelectorAll('input[type="date"]').forEach((campo) => {
+                if (campo.value && campo.value < hoy) campo.removeAttribute('min');
+                else campo.min = hoy;
+            });
+        }
 
         // ============ AGREGAR LOTE (con scroll correcto) ============
         function agregarLote() {
@@ -479,6 +337,7 @@
             lotesContainer.insertAdjacentHTML('beforeend', template);
             loteIndex++;
             asignarEventosEliminar();
+            aplicarMinimoDeFechas();
 
             // Scroll suave DENTRO del main
             const main = document.querySelector('main');
@@ -576,6 +435,7 @@
             item.append(cabecera, grilla);
             diasContainer.appendChild(item);
             numerarDias();
+            aplicarMinimoDeFechas();
         }
 
         function numerarDias() {
@@ -597,6 +457,7 @@
 
         document.getElementById('agregarDia').addEventListener('click', agregarDia);
         reiniciarDias();
+        aplicarMinimoDeFechas();
 
         // ============ DETALLE ============
         TIPOS_DE_EVENTO.forEach(tipo => selectTipo.appendChild(new Option(tipo, tipo)));
@@ -607,9 +468,11 @@
         // ============ IMAGEN ============
         // La foto no se sube a ningún servicio: se achica y queda guardada dentro del propio evento (campo "imagen").
         const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
-        const MAXIMO_BYTES = 200 * 1024;           // lo que se guarda en el evento
+        // Hasta 480 KB y 1920 px de lado mayor: se ve nítida en pantallas grandes y entra holgada en el documento del evento
+        // (Firestore deja 1 MB por documento; shared/imagen-evento.js acepta hasta 700.000 caracteres)
+        const MAXIMO_BYTES = 480 * 1024;           // lo que se guarda en el evento
         const ENTRADA_MAXIMA = 15 * 1024 * 1024;   // la foto original, antes de achicarla
-        const PASOS_DE_ACHICADO = [[1200, 0.8], [1200, 0.7], [1000, 0.7], [1000, 0.6], [800, 0.6], [640, 0.6]]; // [lado mayor en px, calidad]
+        const PASOS_DE_ACHICADO = [[1920, 0.88], [1920, 0.8], [1600, 0.82], [1600, 0.72], [1280, 0.75], [1280, 0.65], [1024, 0.65], [800, 0.6]]; // [lado mayor en px, calidad]
         const mensajeImagen = document.getElementById('mensajeImagen');
         let imagenPreparando = false;
         let versionImagen = 0;                     // cada vez que se elige un archivo sube; un resultado viejo se descarta
@@ -635,7 +498,7 @@
             });
         }
 
-        // Achica la foto en pasos hasta que pese 200 KB o menos. Devuelve la foto como texto (data:image/jpeg;base64,...)
+        // Achica la foto en pasos hasta que pese 480 KB o menos. Devuelve la foto como texto (data:image/jpeg;base64,...)
         async function prepararFoto(file) {
             let bitmap;
             try {
@@ -650,6 +513,7 @@
                     canvas.width = Math.max(1, Math.round(bitmap.width * escala));
                     canvas.height = Math.max(1, Math.round(bitmap.height * escala));
                     const dibujo = canvas.getContext('2d');
+                    dibujo.imageSmoothingQuality = 'high'; // achicado más prolijo (menos pixelado)
                     dibujo.fillStyle = '#ffffff'; // los PNG con transparencia quedan sobre blanco, no negro
                     dibujo.fillRect(0, 0, canvas.width, canvas.height);
                     dibujo.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
@@ -722,16 +586,8 @@
 
         function lotesDelFormulario() { return [...lotesContainer.querySelectorAll('.lote-item')]; }
 
-        async function cargarEventoParaEditar(id) {
-            const snap = await getDoc(doc(db, 'eventos', id));
-            if (!snap.exists()) throw new Error('No encontramos ese evento.');
-            const ev = snap.data();
-            eventoEditado = { id, ...ev };
-            document.title = 'Evently - Editar evento';
-            document.getElementById('tituloFormulario').textContent = 'Editar evento';
-            document.getElementById('descripcionFormulario').textContent = 'Corregí lo que haga falta y guardá. Los lotes que ya existen no se pueden borrar ni cambiar de nombre (pueden tener ventas).';
-            textoBotonEnviar.textContent = 'Guardar cambios';
-
+        // Nombre, días, lugar, foto, detalle y descripción de un evento o de una solicitud
+        function llenarDatosDelEvento(ev) {
             document.getElementById('nombre').value = ev.nombre || '';
             // Días
             const dias = Array.isArray(ev.dias) && ev.dias.length > 0 ? ev.dias : [{ fecha: '', horaInicio: '', horaFin: '' }];
@@ -762,6 +618,19 @@
             document.getElementById('detalleRequisitos').value = detalle.requisitos || '';
             document.getElementById('detalleEdad').value = detalle.edad || '';
             document.getElementById('descripcion').value = ev.descripcion || '';
+        }
+
+        async function cargarEventoParaEditar(id) {
+            const snap = await getDoc(doc(db, 'eventos', id));
+            if (!snap.exists()) throw new Error('No encontramos ese evento.');
+            const ev = snap.data();
+            eventoEditado = { id, ...ev };
+            document.title = 'Evently - Editar evento';
+            document.getElementById('tituloFormulario').textContent = 'Editar evento';
+            document.getElementById('descripcionFormulario').textContent = 'Corregí lo que haga falta y guardá. Los lotes que ya existen no se pueden borrar ni cambiar de nombre (pueden tener ventas).';
+            textoBotonEnviar.textContent = 'Guardar cambios';
+
+            llenarDatosDelEvento(ev);
             // Venta: entrada única o lotes. Se cargan las dos formas para poder cambiar de una a la otra sin perder lo
             // vendido: los lotes que ya existen quedan con su nombre y posición (el servidor confirma las ventas así).
             const lotes = Array.isArray(ev.lotes) ? ev.lotes : [];
@@ -826,6 +695,7 @@
                 });
             }
             mostrarModoDeVenta();
+            aplicarMinimoDeFechas();
             modoAlCargar = modoDeVenta();
             // Organización y costo de servicio del evento
             (await superadmin).elegirDatosDelEvento({ organizacionId: ev.organizacionId, comisionCategoriaId: ev.comisionCategoriaId });
@@ -894,6 +764,104 @@
             }
         }
 
+        // ============ REVISAR UNA SOLICITUD (superadmin): eventos.html?modo=directo&solicitud=<id> ============
+        // La solicitud de una organización se abre en este mismo formulario: el superadmin corrige lo que haga falta,
+        // elige la categoría de costo de servicio y la publica (o la guarda sin publicar). Todavía no tiene ventas:
+        // los lotes se pueden cambiar, quitar o renombrar.
+        const solicitudAEditar = modoDirecto && !idAEditar ? new URLSearchParams(window.location.search).get('solicitud') : null;
+        let solicitudRevisada = null;
+
+        async function cargarSolicitudParaRevisar(id) {
+            btnEnviar.disabled = true;
+            document.getElementById('btnGuardarSolicitud').disabled = true;
+            const snap = await getDoc(doc(db, 'solicitudes_eventos', id));
+            if (!snap.exists()) throw new Error('No encontramos esa solicitud.');
+            const sol = snap.data();
+            if ((sol.estado || 'pendiente') !== 'pendiente') throw new Error('Esta solicitud ya fue revisada (publicada o rechazada).');
+            solicitudRevisada = { id, ...sol };
+            document.title = 'Evently - Revisar solicitud';
+            document.getElementById('tituloFormulario').textContent = 'Revisar solicitud';
+            document.getElementById('descripcionFormulario').textContent = 'Corregí lo que haga falta, elegí la categoría de costo de servicio y publicala. Si todavía no está lista, guardala sin publicar: sigue pendiente.';
+            textoBotonEnviar.textContent = 'Publicar evento';
+            document.getElementById('btnGuardarSolicitud').classList.remove('hidden');
+            llenarDatosDelEvento(sol);
+            const lotes = Array.isArray(sol.lotes) ? sol.lotes : [];
+            if (sol.ventaSimple === true && lotes[0]) {
+                form.querySelector('input[name="modoVenta"][value="unica"]').checked = true;
+                document.getElementById('unicaPrecio').value = lotes[0].precio || '';
+                document.getElementById('unicaCantidad').value = lotes[0].disponibles || '';
+                document.getElementById('unicaHasta').value = lotes[0].hasta || '';
+            } else if (lotes.length) {
+                form.querySelector('input[name="modoVenta"][value="lotes"]').checked = true;
+                lotesContainer.replaceChildren();
+                loteIndex = 0;
+                lotes.forEach((l) => {
+                    agregarLote();
+                    const item = lotesContainer.lastElementChild;
+                    item.querySelector('input[name="lote_nombre[]"]').value = l.nombre || '';
+                    item.querySelector('input[name="lote_precio[]"]').value = l.precio || '';
+                    item.querySelector('input[name="lote_disponibles[]"]').value = l.disponibles || '';
+                    const tipo = item.querySelector('select[name="lote_tipo[]"]');
+                    tipo.value = l.tipo === 'fechas' || (!l.tipo && (l.desde || l.hasta)) ? 'fechas' : 'siempre';
+                    item.querySelector('input[name="lote_desde[]"]').value = l.desde || '';
+                    item.querySelector('input[name="lote_hasta[]"]').value = l.hasta || '';
+                    item.querySelectorAll('[data-fecha-lote]').forEach((c) => c.classList.toggle('hidden', tipo.value === 'siempre'));
+                });
+            }
+            mostrarModoDeVenta();
+            aplicarMinimoDeFechas();
+            // Si la solicitud no tiene organización (la cuenta se vinculó después), se toma la de la cuenta que la envió
+            let organizacionId = sol.organizacionId || '';
+            if (!organizacionId && sol.creadoPor) {
+                try {
+                    const cuenta = await getDoc(doc(db, 'usuarios', sol.creadoPor));
+                    organizacionId = (cuenta.exists() && cuenta.data().organizacionId) || '';
+                } catch (error) { console.error('No se pudo leer la cuenta que envió la solicitud:', error); }
+            }
+            (await superadmin).elegirDatosDelEvento({ organizacionId, comisionCategoriaId: sol.comisionCategoriaId });
+            btnEnviar.disabled = false;
+            document.getElementById('btnGuardarSolicitud').disabled = false;
+            const main = document.querySelector('main');
+            if (main) main.scrollTo({ top: 0 });
+        }
+
+        // Publica la solicitud (crea el evento con el mismo id y la marca aprobada) o guarda los cambios sin publicar.
+        // En una transacción: si mientras tanto otra persona la publicó o la rechazó, no se pisa nada.
+        async function guardarSolicitud(evento, publicar) {
+            const refSolicitud = doc(db, 'solicitudes_eventos', solicitudRevisada.id);
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(refSolicitud);
+                if (!snap.exists() || (snap.data().estado || 'pendiente') !== 'pendiente') throw new Error('Esta solicitud ya fue revisada por otra persona. Volvé a Eventos.');
+                const original = snap.data();
+                // Quién la pidió y cuándo se conservan; el resto sale del formulario
+                const { estado, creadoPor, correo, fechaPublicacion, fechaSolicitud, ...datos } = evento;
+                const conCategoria = { ...datos, comisionCategoriaId: datos.comisionCategoriaId || '' };
+                if (!publicar) {
+                    tx.update(refSolicitud, { ...conCategoria, ...(datos.ubicacion ? {} : { ubicacion: deleteField() }), fechaEdicion: serverTimestamp() });
+                    return;
+                }
+                tx.set(doc(db, 'eventos', solicitudRevisada.id), {
+                    ...conCategoria,
+                    estado: 'publicado',
+                    creadoPor: original.creadoPor || '',
+                    correo: original.correo || '',
+                    ...(original.fechaSolicitud ? { fechaSolicitud: original.fechaSolicitud } : {}),
+                    fechaPublicacion: serverTimestamp()
+                });
+                tx.update(refSolicitud, { estado: 'aprobada', fechaAprobacion: serverTimestamp() });
+            });
+        }
+
+        if (solicitudAEditar) {
+            cargarSolicitudParaRevisar(solicitudAEditar).catch((error) => {
+                console.error('No se pudo cargar la solicitud:', error);
+                mensajeResultado.className = 'mt-6 p-4 bg-red-100 text-red-700 rounded-xl border border-red-200';
+                mensajeResultado.textContent = error.message || 'No se pudo cargar la solicitud.';
+                mensajeResultado.classList.remove('hidden');
+                btnEnviar.disabled = true;
+            });
+        }
+
         if (idAEditar) {
             cargarEventoParaEditar(idAEditar).catch((error) => {
                 console.error('No se pudo cargar el evento para editar:', error);
@@ -940,8 +908,13 @@
         // ============ ENVÍO ============
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            // Al revisar una solicitud hay dos botones: "Publicar evento" y "Guardar sin publicar"
+            const sinPublicar = Boolean(solicitudRevisada && e.submitter && e.submitter.id === 'btnGuardarSolicitud');
+            // Llegó con ?solicitud= pero todavía no se cargó (o no se pudo): no se envía nada
+            if (solicitudAEditar && !solicitudRevisada) return;
             mensajeResultado.classList.add('hidden');
             btnEnviar.disabled = true;
+            document.getElementById('btnGuardarSolicitud').disabled = true;
             textoBotonEnviar.textContent = 'Enviando...';
 
             try {
@@ -953,7 +926,10 @@
 
                 if (!nombre || !lugar) throw new Error('Nombre y lugar son obligatorios.');
 
-                const problemaDias = validarDias(leerDias());
+                // No se aceptan días que ya pasaron; al editar un evento, los que ya tenía guardados sí
+                const hoy = hoyEnArgentina();
+                const diasGuardados = eventoEditado && Array.isArray(eventoEditado.dias) ? eventoEditado.dias.map((d) => d && d.fecha).filter(Boolean) : [];
+                const problemaDias = validarDias(leerDias(), { hoy, permitidas: diasGuardados });
                 if (problemaDias) throw new Error(problemaDias);
                 const dias = normalizarDias(leerDias());
                 const fecha = fechaDeTexto(dias);
@@ -975,14 +951,17 @@
                     const cantidadUnica = parseInt(document.getElementById('unicaCantidad').value, 10);
                     if (!(precioUnico > 0) || !(cantidadUnica > 0)) throw new Error('Poné el precio y la cantidad de entradas.');
                     const hastaElegido = document.getElementById('unicaHasta').value;
-                    if (hastaElegido && hastaElegido < hoyEnArgentina()) throw new Error('"Se vende hasta" no puede ser una fecha que ya pasó.');
+                    const hastaGuardado = eventoEditado && eventoEditado.lotes && eventoEditado.lotes[0] ? eventoEditado.lotes[0].hasta : '';
+                    if (hastaElegido && hastaElegido < hoy && hastaElegido !== hastaGuardado) throw new Error('"Se vende hasta" no puede ser una fecha que ya pasó.');
                 }
                 // Solo los de la lista de lotes: los días usan el mismo estilo de tarjeta (.lote-item)
                 const loteItems = ventaSimple ? [] : lotesContainer.querySelectorAll('.lote-item');
                 const lotes = [];
                 let lotesValidos = true;
                 let problemaDeLotes = '';
-                loteItems.forEach(item => {
+                // Las fechas que ya tenía cada lote (al editar un evento o revisar una solicitud) se pueden conservar
+                const lotesGuardados = (eventoEditado || solicitudRevisada || {}).lotes || [];
+                loteItems.forEach((item, posicion) => {
                     const nombreLote = item.querySelector('input[name="lote_nombre[]"]').value.trim();
                     const precio = parseFloat(item.querySelector('input[name="lote_precio[]"]').value);
                     const disponibles = parseInt(item.querySelector('input[name="lote_disponibles[]"]').value);
@@ -992,7 +971,7 @@
                     if (!nombreLote || isNaN(precio) || precio <= 0 || isNaN(disponibles) || disponibles <= 0) {
                         lotesValidos = false; return;
                     }
-                    const problemaFechas = validarFechasDeLote({ tipo, desde, hasta });
+                    const problemaFechas = validarFechasDeLote({ tipo, desde, hasta }, { hoy, original: lotesGuardados[posicion] || null });
                     if (problemaFechas && !problemaDeLotes) problemaDeLotes = `${nombreLote}: ${problemaFechas}`;
                     const lote = { nombre: nombreLote, precio, disponibles, vendidas: 0, tipo, desde, hasta };
                     lotes.push({ ...lote, vigencia: textoDeVigencia(lote) });
@@ -1001,7 +980,8 @@
                 if (ventaSimple) {
                     const hastaUnica = document.getElementById('unicaHasta').value;
                     // Al editar, el único lote conserva su nombre (las ventas se confirman por nombre y posición)
-                    const loteActual = eventoEditado && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length >= 1 ? eventoEditado.lotes[0] : null;
+                    const conLotes = eventoEditado || solicitudRevisada;
+                    const loteActual = conLotes && Array.isArray(conLotes.lotes) && conLotes.lotes.length >= 1 ? conLotes.lotes[0] : null;
                     lotes.push({
                         nombre: loteActual ? (loteActual.nombre || '') : 'Entrada general', precio: parseFloat(document.getElementById('unicaPrecio').value),
                         disponibles: parseInt(document.getElementById('unicaCantidad').value, 10), vendidas: 0,
@@ -1041,6 +1021,14 @@
                         : { fechaSolicitud: serverTimestamp() })
                 };
 
+                if (solicitudRevisada) {
+                    await guardarSolicitud(evento, !sinPublicar);
+                    mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';
+                    mensajeResultado.textContent = sinPublicar ? 'Cambios guardados: la solicitud sigue pendiente. Volviendo a Solicitudes...' : '¡Evento publicado! Volviendo a Eventos...';
+                    mensajeResultado.classList.remove('hidden');
+                    setTimeout(() => { window.location.href = sinPublicar ? 'eventos-seleccion.html#solicitudes' : 'eventos-seleccion.html'; }, 800);
+                    return;
+                }
                 if (eventoEditado) {
                     if (!(await confirmarIdentidad())) {
                         btnEnviar.disabled = false;
@@ -1085,6 +1073,7 @@
                 
                 btnEnviar.disabled = false;
                 textoBotonEnviar.textContent = eventoEditado ? 'Guardar cambios' : (modoDirecto ? 'Publicar evento' : 'Enviar solicitud');
+                document.getElementById('btnGuardarSolicitud').disabled = false;
             }
         });
 

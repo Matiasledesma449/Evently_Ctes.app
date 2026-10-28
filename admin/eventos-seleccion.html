@@ -39,12 +39,54 @@
         <!-- Contenido principal -->
         <main class="flex-1 p-6 pb-24 lg:pb-6 overflow-y-auto">
 
-            <!-- Pestañas de la sección Eventos del superadmin: Eventos y Organizaciones -->
-            <nav id="pestanasEventos" class="hidden inline-flex rounded-lg border border-gray-200 bg-white p-1 gap-1 mb-6" aria-label="Eventos u organizaciones">
-                <a href="eventos-seleccion.html" aria-current="page" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Eventos</a>
+            <!-- Pestañas de la sección Eventos del superadmin: Eventos, Solicitudes (de las organizaciones) y Organizaciones -->
+            <nav id="pestanasEventos" class="hidden inline-flex flex-wrap rounded-lg border border-gray-200 bg-white p-1 gap-1 mb-6" aria-label="Eventos, solicitudes u organizaciones">
+                <a href="eventos-seleccion.html" id="pestanaEventos" aria-current="page" class="px-4 py-2 rounded-md text-sm font-medium bg-violet-600 text-white">Eventos</a>
+                <a href="eventos-seleccion.html#solicitudes" id="pestanaSolicitudes" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center gap-2">
+                    Solicitudes <span id="pendientesSolicitudes" class="hidden bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 items-center justify-center">0</span>
+                </a>
                 <a href="organizaciones.html" class="px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">Organizaciones</a>
             </nav>
 
+            <!-- SECCIÓN: Solicitudes de eventos (solo superadmin; la maneja aprobaciones.js) -->
+            <div id="panelSolicitudes" class="hidden">
+                <div id="seccion-solicitudes" class="mb-8 hidden">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                        <div class="flex items-center">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-violet-600">notifications_active</span>
+                                Solicitudes de eventos
+                            </h2>
+                            <span id="contador-solicitudes" class="bg-violet-600 text-white text-sm font-semibold px-3 py-1 rounded-full ml-3 shadow-sm">0</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                                <input id="buscarSolicitud" type="search" placeholder="Buscar solicitud..." class="w-full sm:w-56 pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none">
+                            </div>
+                            <select id="filtroOrganizacionSolicitud" aria-label="Filtrar por organización" class="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
+                                <option value="todas">Todas las organizaciones</option>
+                            </select>
+                            <select id="filtroPeriodoSolicitud" aria-label="Filtrar por período" class="border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-violet-500 outline-none">
+                                <option value="7">Últimos 7 días</option>
+                                <option value="30" selected>Últimos 30 días</option>
+                                <option value="todos">Todo el período</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="filtros-estado-solicitudes" class="inline-flex rounded-lg border border-gray-200 bg-white p-1 mb-4" role="tablist" aria-label="Filtrar solicitudes por estado">
+                        <button type="button" data-estado-solicitud="pendiente" class="px-3 py-1.5 rounded-md text-sm font-medium bg-violet-600 text-white" aria-pressed="true">Pendientes</button>
+                        <button type="button" data-estado-solicitud="aprobada" class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100" aria-pressed="false">Aceptados</button>
+                        <button type="button" data-estado-solicitud="rechazada" class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100" aria-pressed="false">Rechazados</button>
+                    </div>
+                    <div id="grid-solicitudes" class="space-y-5">
+                        <p class="text-gray-500 col-span-full text-center py-8" id="mensaje-vacio">Cargando solicitudes...</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="panelEventos">
             <!-- Header -->
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
                 <div>
@@ -89,8 +131,51 @@
             <div id="contenidoContainer">
                 <p class="text-center text-gray-400 py-12">Cargando...</p>
             </div>
+            </div>
         </main>
     </div>
+
+    <!-- Modal: confirmación de aprobación o rechazo de una solicitud -->
+    <div id="modalConfirmacion" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 id="modalConfirmacionTitulo" class="text-xl font-bold text-gray-900 mb-2">Confirmar Acción</h3>
+            <p id="modalConfirmacionMensaje" class="text-gray-600 mb-4 text-sm">¿Estás seguro?</p>
+            <div id="contenedorMotivoConfirmacion" class="hidden mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo del rechazo (Opcional)</label>
+                <textarea id="inputMotivoConfirmacion" rows="3" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-600 focus:border-violet-600 outline-none" placeholder="Ej: Faltan detalles..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button id="btnCancelarModalConfirmacion" class="px-5 py-2 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition">Cancelar</button>
+                <button id="btnConfirmarModalConfirmacion" class="px-5 py-2 text-white font-medium rounded-lg transition shadow-md min-w-[120px] bg-violet-600 hover:bg-violet-700">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: comentar una solicitud (el comentario lo ve la organización en su lista de eventos) -->
+    <div id="modalComentarSolicitud" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[60] px-4 py-6">
+        <section class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="tituloComentarSolicitud">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="min-w-0">
+                    <h2 id="tituloComentarSolicitud" class="text-xl font-bold text-gray-900">Comentarios</h2>
+                    <p id="subtituloComentarSolicitud" class="text-sm text-gray-500 mt-1 truncate"></p>
+                </div>
+                <button id="btnCerrarModalComentar" type="button" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Cerrar comentarios">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div id="historialComentarios" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
+            <form id="formComentarSolicitud" class="space-y-3">
+                <label for="textoComentarSolicitud" class="block text-sm font-medium text-gray-700">Escribir un comentario para la organización</label>
+                <textarea id="textoComentarSolicitud" rows="3" maxlength="500" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none" placeholder="Ej: Falta la hora de fin."></textarea>
+                <p id="errorComentarSolicitud" class="hidden text-sm text-red-600" role="alert"></p>
+                <div class="flex justify-end gap-2">
+                    <button id="btnCancelarComentar" type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cerrar</button>
+                    <button id="btnGuardarComentar" type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700">Guardar comentario</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
 
 
     <!-- Firebase y lógica -->
@@ -153,8 +238,12 @@
                 tituloPagina.textContent = 'Eventos';
                 subtituloPagina.textContent = 'Todos los eventos de todas las organizaciones';
                 filtrosContainer.classList.remove('hidden');
-                // La organización se elige en la franja rosa de arriba (shared/menu-admin.js); el filtro queda oculto
+                // La organización se elige arriba, en "Estás viendo" (shared/menu-admin.js); el filtro queda oculto
                 document.getElementById('pestanasEventos').classList.remove('hidden');
+                if (superadminReal) {
+                    iniciarPestanas();
+                    import('./aprobaciones.js'); // la pestaña Solicitudes (comprueba por su cuenta que sea superadmin)
+                }
                 cargarOrganizaciones();
             } else if (superadminReal) {
                 // "Ver como organización": los eventos de la organización elegida en la barra violeta, sin categorías ni filtro
@@ -176,6 +265,28 @@
                 cargarEventos();
             }
         });
+
+        // =====================================================
+        // PESTAÑAS DEL SUPERADMIN: EVENTOS / SOLICITUDES (con #solicitudes en la dirección)
+        // =====================================================
+        function iniciarPestanas() {
+            const enlaces = { eventos: document.getElementById('pestanaEventos'), solicitudes: document.getElementById('pestanaSolicitudes') };
+            const mostrar = () => {
+                const cual = location.hash === '#solicitudes' ? 'solicitudes' : 'eventos';
+                document.getElementById('panelEventos').classList.toggle('hidden', cual !== 'eventos');
+                document.getElementById('panelSolicitudes').classList.toggle('hidden', cual !== 'solicitudes');
+                Object.entries(enlaces).forEach(([clave, a]) => {
+                    const activa = clave === cual;
+                    if (activa) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+                    a.className = 'px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 ' + (activa ? 'bg-violet-600 text-white' : 'text-gray-600 hover:bg-gray-100');
+                });
+            };
+            // "Eventos" vuelve a la lista sin recargar la página
+            enlaces.eventos.addEventListener('click', (e) => { e.preventDefault(); history.pushState(null, '', location.pathname + location.search); mostrar(); });
+            window.addEventListener('hashchange', mostrar);
+            window.addEventListener('popstate', mostrar);
+            mostrar();
+        }
 
         // =====================================================
         // SUPERADMIN: EVENTOS DE TODAS LAS ORGANIZACIONES
@@ -362,11 +473,11 @@
                                 </a>
                             `;
                         } else if (estado === 'pendiente' && evento.esSolicitud && soySuperAdmin && superadminReal) {
-                            // Solicitud de una organización: el superadmin la revisa en Crear evento → Solicitudes
+                            // Solicitud de una organización: el superadmin la revisa en la pestaña Solicitudes
                             badgeClass = 'bg-yellow-100 text-yellow-800';
                             estadoTexto = 'Solicitud pendiente';
                             botonHTML = `
-                                <a href="eventos.html?modo=directo#solicitudes" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
+                                <a href="#solicitudes" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-1 w-full justify-center">
                                     <span class="material-symbols-outlined text-sm">fact_check</span> Revisar solicitud
                                 </a>
                             `;

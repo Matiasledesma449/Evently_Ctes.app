@@ -45,7 +45,7 @@
         try { return (localStorage.getItem('vistaOrganizacionId') || '').trim(); } catch (e) { return ''; }
     };
 
-    // Franja rosa "Estás viendo": el superadmin real elige una organización y todo el panel la usa
+    // Barra "Estás viendo" (antes franja rosa): el superadmin real elige una organización y todo el panel la usa
     // (lista de Eventos, selector de evento, Reportes y Finanzas). '' = todas las organizaciones.
     const PAGINAS_CON_FRANJA = ['eventos-seleccion', 'dashboard', 'ventas', 'reportes', 'escaner', 'finanzas'];
     const franjaActiva = rol === 'superadmin' && !vistaActiva && PAGINAS_CON_FRANJA.includes(pagina);
@@ -70,14 +70,14 @@
 
     // Secciones del menú, en orden. `rol` indica a quién se muestra; sin `rol` es para todos.
     const SECCIONES = [
-        { clave: 'eventos-seleccion', href: 'eventos-seleccion.html', icono: 'apps', texto: 'Eventos', corto: 'Eventos' },
+        { clave: 'eventos-seleccion', href: 'eventos-seleccion.html', icono: 'apps', texto: 'Eventos', corto: 'Eventos', badge: 'badge-solicitudes-eventos' },
         {
             clave: 'dashboard', id: 'linkPanelPrincipal', idMovil: 'linkPanelPrincipalMobile',
             href: eventoId ? `dashboard.html?id=${encodeURIComponent(eventoId)}` : 'dashboard.html',
             icono: 'dashboard', texto: 'Resumen', corto: 'Resumen'
         },
         { clave: 'eventos', rol: 'organizacion', soloOrg: true, href: 'eventos.html', icono: 'add_circle', texto: 'Solicitar evento', corto: 'Solicitar', anchoMovil: 82 },
-        { clave: 'eventos', rol: 'superadmin', href: 'eventos.html?modo=directo', icono: 'add_circle', texto: 'Crear evento', corto: 'Crear evento', anchoMovil: 82, badge: 'badge-solicitudes-eventos' },
+        { clave: 'eventos', rol: 'superadmin', href: 'eventos.html?modo=directo', icono: 'add_circle', texto: 'Crear evento', corto: 'Crear evento', anchoMovil: 82 },
         { clave: 'reportes', href: 'reportes.html', icono: 'bar_chart', texto: 'Reportes', corto: 'Reportes' },
         { clave: 'ventas', href: 'ventas.html', icono: 'payments', texto: 'Ventas', corto: 'Ventas' },
         { clave: 'finanzas', rol: 'superadmin', href: 'finanzas.html', icono: 'account_balance', texto: 'Finanzas', corto: 'Finanzas' },
@@ -225,16 +225,17 @@
         else window.addEventListener('firebase-ready', llenarSelectorVista, { once: true });
     }
 
-    // ---- Franja rosa "Estás viendo: <organización>" (superadmin real) ----
+    // ---- Barra de filtros "Estás viendo: <organización>" (superadmin real). Antes era una franja rosa. ----
     // Todo el HTML es texto fijo; los nombres de organizaciones van con new Option (textContent).
     // El selector de evento de la página (shared/selector-evento.js) se muda a #franjaOrganizacionEvento.
     if (franjaActiva) {
         document.body.classList.add('franja-organizacion');
         document.body.insertAdjacentHTML('afterbegin', `
-    <div id="franjaOrganizacion" role="region" aria-label="Organización que se mira" class="fixed top-0 inset-x-0 z-[70] h-[76px] sm:h-10 bg-pink-100 border-b border-pink-300 text-pink-900 text-sm flex flex-wrap sm:flex-nowrap content-center items-center justify-center gap-x-4 gap-y-1 px-3">
+    <div id="franjaOrganizacion" role="region" aria-label="Organización que se mira" class="fixed top-0 inset-x-0 z-[70] h-[76px] sm:h-10 bg-white/95 backdrop-blur border-b border-gray-200 text-gray-600 text-xs flex flex-wrap sm:flex-nowrap content-center items-center justify-center sm:justify-end gap-x-4 gap-y-1 px-3 sm:px-6">
         <label for="selectorOrganizacionElegida" class="flex items-center gap-2 min-w-0">
-            <span class="font-semibold flex-shrink-0">Estás viendo:</span>
-            <select id="selectorOrganizacionElegida" class="min-w-0 max-w-[60vw] sm:max-w-[16rem] bg-white border border-pink-300 text-pink-900 rounded-full px-2 py-0.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-pink-400">
+            <span class="material-symbols-outlined text-base text-violet-600 flex-shrink-0" aria-hidden="true">filter_alt</span>
+            <span class="font-medium flex-shrink-0">Estás viendo:</span>
+            <select id="selectorOrganizacionElegida" class="min-w-0 max-w-[60vw] sm:max-w-[16rem] bg-white border border-gray-200 text-gray-800 rounded-lg px-2.5 py-1 text-xs font-semibold outline-none focus:ring-2 focus:ring-violet-500 hover:border-violet-300">
                 <option value="">Todas las organizaciones</option>
             </select>
         </label>

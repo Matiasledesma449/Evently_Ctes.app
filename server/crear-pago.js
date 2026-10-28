@@ -3,9 +3,9 @@
 // asi la funcion de Vercel (api/crear-pago.js) solo tiene que enviar la respuesta.
 // Las dependencias se pueden reemplazar (`deps`) para probar sin red ni base de datos.
 
-const { requerir, VARIABLES, siteUrl, ConfigError } = require('./config');
+const { requerir, VARIABLES, siteUrl, ConfigError, MAX_ENTRADAS_POR_COMPRA } = require('./config');
 const { validarPedido } = require('./validaciones');
-const { leerEvento, leerConfiguracionComision, calcularCompra } = require('./compra');
+const { leerEvento, leerConfiguracionComision, calcularCompra, leerEntradasDeLaPersona, mensajeDeTope } = require('./compra');
 const { crearVentaPendiente, guardarPreferencia, marcarRechazada } = require('./ventas');
 const { armarPreferencia, crearPreferencia, MercadoPagoError } = require('./mercadopago');
 const { obtenerDb } = require('./firestore');
@@ -46,6 +46,13 @@ async function crearPago(cuerpoPedido, deps = {}) {
       const error = { codigo: calculo.codigo, mensaje: calculo.mensaje };
       if (calculo.disponibles !== undefined) error.disponibles = calculo.disponibles;
       return fallo(calculo.status, error);
+    }
+
+    // 3b) Tope por persona (contra la reventa): con el mismo correo no se pueden tener más de 10 entradas del evento,
+    // sumando las compras confirmadas y los pagos que siguen en curso
+    const yaTiene = await leerEntradasDeLaPersona(db, pedido.eventoId, pedido.correo, ahora);
+    if (yaTiene + pedido.cantidad > MAX_ENTRADAS_POR_COMPRA) {
+      return fallo(409, { codigo: 'TOPE_POR_PERSONA', mensaje: mensajeDeTope(yaTiene, MAX_ENTRADAS_POR_COMPRA) });
     }
 
     // 4) Venta pendiente (su id sera la referencia del pago)

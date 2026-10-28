@@ -32,7 +32,23 @@ function crearDbFalsa(inicial = {}) {
   });
 
   const db = {
-    collection: (col) => ({ doc: (id) => ref(col, id || 'auto' + Math.random().toString(36).slice(2, 12)) }),
+    collection: (col) => {
+      // Consulta con where de igualdad encadenados (lo único que usa el servidor)
+      const consulta = (filtros) => ({
+        where: (campo, op, valor) => {
+          if (op !== '==') throw new Error('La base falsa solo entiende ==');
+          return consulta([...filtros, [campo, valor]]);
+        },
+        async get() {
+          if (estado.fallarAlLeer) throw estado.fallarAlLeer;
+          const docs = Object.keys(datos[col] || {})
+            .filter((id) => filtros.every(([c, v]) => datos[col][id][c] === v))
+            .map((id) => instantanea(col, id));
+          return { docs, size: docs.length, empty: docs.length === 0 };
+        },
+      });
+      return { doc: (id) => ref(col, id || 'auto' + Math.random().toString(36).slice(2, 12)), ...consulta([]) };
+    },
     async runTransaction(fn) {
       for (let intento = 0; intento < 6; intento++) {
         estado.transacciones++;

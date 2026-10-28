@@ -97,4 +97,29 @@ function calcularCompra(evento, pedido, config = null, hoy = null) {
   };
 }
 
-module.exports = { leerEvento, leerConfiguracionComision, calcularCompra };
+// Cuántas entradas tiene ya una persona en un evento: las de sus compras confirmadas y las de sus pagos en curso
+// que todavía no vencieron. Sirve para el tope de entradas por persona (contra la reventa).
+function entradasDeLaPersona(ventas, ahora = new Date()) {
+  return (Array.isArray(ventas) ? ventas : []).reduce((total, v) => {
+    if (!v || typeof v !== 'object') return total;
+    const vence = v.venceEn && typeof v.venceEn.toDate === 'function' ? v.venceEn.toDate()
+      : v.venceEn && v.venceEn.fecha instanceof Date ? v.venceEn.fecha : null;
+    const cuenta = v.estado === 'confirmada' || (v.estado === 'pendiente' && (!vence || vence > ahora));
+    return cuenta ? total + Math.max(0, Math.trunc(aNumero(v.cantidad))) : total;
+  }, 0);
+}
+
+// Lee las ventas de ese correo en ese evento (el correo ya viene en minúsculas de validarPedido)
+async function leerEntradasDeLaPersona(db, eventoId, correo, ahora = new Date()) {
+  const snap = await db.collection('ventas').where('eventoId', '==', eventoId).where('correo', '==', correo).get();
+  return entradasDeLaPersona(snap.docs.map((d) => d.data()), ahora);
+}
+
+// El aviso cuando la compra pasaría el tope por persona
+function mensajeDeTope(yaTiene, maximo) {
+  if (yaTiene >= maximo) return `Ya tenés ${yaTiene} entradas para este evento con este correo: es el máximo por persona.`;
+  const quedan = maximo - yaTiene;
+  return `Se pueden comprar hasta ${maximo} entradas por persona para este evento. Con este correo ya tenés ${yaTiene}: podés sumar ${quedan} más.`;
+}
+
+module.exports = { leerEvento, leerConfiguracionComision, calcularCompra, entradasDeLaPersona, leerEntradasDeLaPersona, mensajeDeTope };

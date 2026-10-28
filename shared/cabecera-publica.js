@@ -1,13 +1,17 @@
 // Cabecera común del sitio del comprador (cambio ajustes-tras-vista-previa).
-// El logo siempre lleva al inicio; a la derecha "Eventos" y "Centro de ayuda" (la página actual se marca en violeta).
-// Todo es texto fijo de este archivo: no entra ningún dato de afuera. Los links son relativos a public/.
+// El logo siempre lleva al inicio; a la derecha "Inicio" y "Eventos" (la lista de eventos del inicio). La página actual
+// se marca en violeta. El Centro de ayuda está en el pie. Todo es texto fijo de este archivo: no entra ningún dato de afuera.
+// Los links son relativos a public/.
 
 export const ENLACES_DE_CABECERA = [
-    { id: 'inicio', texto: 'Eventos', href: 'index.html' },
-    { id: 'soporte', texto: 'Centro de ayuda', href: 'soporte.html' }
+    { id: 'inicio', texto: 'Inicio', href: 'index.html' },
+    { id: 'eventos', texto: 'Eventos', href: 'index.html#eventos' }
 ];
 
-// Llena un <header> vacío. `paginaActual`: 'inicio', 'evento', 'soporte', 'terminos', 'privacidad' o 'arrepentimiento'.
+// Qué link se marca en cada página: en el inicio "Inicio", en un evento "Eventos"; en las demás, ninguno
+const MARCADO = { inicio: 'inicio', evento: 'eventos' };
+
+// Llena un <header> vacío. `paginaActual`: 'inicio', 'evento', 'soporte', 'confirmacion', 'terminos', 'privacidad' o 'arrepentimiento'.
 export function dibujarCabecera(elemento, paginaActual) {
     if (!elemento) return;
     elemento.className = 'bg-white/95 backdrop-blur border-b border-[#e7e3f0] sticky top-0 z-50';
@@ -27,12 +31,9 @@ export function dibujarCabecera(elemento, paginaActual) {
     nav.setAttribute('aria-label', 'Principal');
     ENLACES_DE_CABECERA.forEach((e) => {
         const a = document.createElement('a');
-        // Desde el inicio y el evento, el Centro de ayuda recuerda de dónde vino la persona (se guarda con la consulta)
-        a.href = e.id === 'soporte' && (paginaActual === 'inicio' || paginaActual === 'evento')
-            ? `soporte.html?origen=public/${paginaActual === 'inicio' ? 'index' : 'evento'}.html`
-            : e.href;
+        a.href = e.href;
         a.textContent = e.texto;
-        const actual = e.id === paginaActual;
+        const actual = e.id === MARCADO[paginaActual];
         a.className = 'px-3 py-2 rounded-full transition-colors ' + (actual ? 'bg-[#ede9fe] text-[#6d28d9]' : 'text-[#374151] hover:text-[#6d28d9] hover:bg-[#f6f5fa]');
         if (actual) a.setAttribute('aria-current', 'page');
         nav.appendChild(a);

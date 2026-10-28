@@ -40,7 +40,8 @@ export function normalizarDias(dias) {
 }
 
 // Devuelve el primer problema en español, o '' si los días están bien. Se le pasa lo que escribió la persona, sin limpiar.
-export function validarDias(dias) {
+// Con `hoy` ('AAAA-MM-DD') no acepta días que ya pasaron, salvo los de `permitidas` (al editar, los que ya tenía guardados).
+export function validarDias(dias, { hoy = '', permitidas = [] } = {}) {
     if (!Array.isArray(dias) || dias.length === 0) return 'Agregá al menos un día.';
     const vistas = new Set();
     for (let i = 0; i < dias.length; i++) {
@@ -49,6 +50,7 @@ export function validarDias(dias) {
         if (!leerFecha(dia.fecha)) return `La fecha es obligatoria (día ${numero}).`;
         const clave = dia.fecha.trim();
         if (vistas.has(clave)) return `El día ${numero} repite una fecha ya cargada.`;
+        if (leerFecha(hoy) && clave < hoy && !permitidas.includes(clave)) return `El día ${numero} ya pasó: elegí hoy o un día que venga.`;
         vistas.add(clave);
         if (!horaValida(dia.horaInicio)) return `Completá la hora de inicio (día ${numero}).`;
         if (!horaValida(dia.horaFin)) return `Completá la hora de fin (día ${numero}).`;
@@ -132,4 +134,27 @@ export function armarUbicacion(lat, lng) {
 export function ubicacionDeEvento(evento) {
     const u = evento && typeof evento.ubicacion === 'object' ? evento.ubicacion : null;
     return u ? armarUbicacion(u.lat, u.lng) : null;
+}
+
+// El lugar en corto, para las tarjetas: las direcciones que completa el mapa son larguísimas
+// ("Zavod, 10, Lamadrid, Barrio Arazaty, Seccional 2°, Corrientes, Departamento Capital, Corrientes, 3400, Argentina").
+// Queda el nombre del lugar, la calle con su número y la ciudad: "Zavod, Lamadrid 10, Corrientes".
+// Un lugar escrito a mano y corto ("Complejo Municipal, Saladas") queda igual.
+export function lugarCorto(lugar) {
+    const partes = String(typeof lugar === 'string' ? lugar : '').split(',').map((p) => p.trim()).filter(Boolean);
+    if (partes.length <= 3) return partes.join(', ');
+    const sobra = (p) => /^argentina$/i.test(p) || /^[A-Z]?\d{4}[A-Z]{0,3}$/i.test(p) || /^(barrio|seccional|departamento|partido|municipio|provincia|circunscripci)/i.test(p);
+    const numero = (p) => /^\d+[a-z]?$/i.test(p);
+    const resultado = [];
+    let i = 0;
+    if (numero(partes[0]) && partes[1]) { resultado.push(`${partes[1]} ${partes[0]}`); i = 2; }
+    else {
+        resultado.push(partes[0]);
+        i = 1;
+        if (numero(partes[1] || '') && partes[2]) { resultado.push(`${partes[2]} ${partes[1]}`); i = 3; }
+        else if (!sobra(partes[1])) { resultado.push(partes[1]); i = 2; } // la calle sin número
+    }
+    const ciudad = partes.slice(i).find((p) => !sobra(p) && !numero(p) && !resultado.includes(p));
+    if (ciudad) resultado.push(ciudad);
+    return resultado.join(', ');
 }

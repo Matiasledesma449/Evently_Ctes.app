@@ -28,11 +28,11 @@ const partes = (h) => { const c = h.hijos[0]; return { logo: c.hijos[0], links: 
 
 const ini = partes(dibujar('inicio'));
 verificar('C1 el logo dice Evently y lleva al inicio', ini.logo.tag === 'a' && ini.logo._texto === 'Evently' && ini.logo.href === 'index.html');
-verificar('C2 hay dos links: Eventos y Centro de ayuda', ini.links.map((a) => a._texto).join('|') === 'Eventos|Centro de ayuda');
-verificar('C3 en el inicio, "Eventos" se marca como la página actual', ini.links[0].atributos['aria-current'] === 'page' && !ini.links[1].atributos['aria-current']);
-verificar('C4 desde el inicio y el evento el Centro de ayuda lleva el origen', ini.links[1].href === 'soporte.html?origen=public/index.html' && partes(dibujar('evento')).links[1].href === 'soporte.html?origen=public/evento.html');
-const sop = partes(dibujar('soporte'));
-verificar('C5 en el Centro de ayuda se marca ese link y no lleva origen', sop.links[1].atributos['aria-current'] === 'page' && sop.links[1].href === 'soporte.html');
+verificar('C2 hay dos links: Inicio y Eventos (el Centro de ayuda está en el pie)', ini.links.map((a) => a._texto).join('|') === 'Inicio|Eventos');
+verificar('C3 en el inicio, "Inicio" se marca como la página actual', ini.links[0].atributos['aria-current'] === 'page' && !ini.links[1].atributos['aria-current']);
+const ev = partes(dibujar('evento'));
+verificar('C4 "Eventos" lleva a la lista de eventos del inicio y se marca en la página de un evento', ev.links[1].href === 'index.html#eventos' && ev.links[1].atributos['aria-current'] === 'page' && !ev.links[0].atributos['aria-current']);
+verificar('C5 en el Centro de ayuda ningún link se marca', partes(dibujar('soporte')).links.every((a) => !a.atributos['aria-current']));
 verificar('C6 en las páginas legales ningún link se marca como actual', partes(dibujar('terminos')).links.every((a) => !a.atributos['aria-current']));
 const h = dibujar('evento'); C.dibujarCabecera(h, 'evento');
 verificar('C7 volver a dibujar no duplica la cabecera', h.hijos.length === 1);
