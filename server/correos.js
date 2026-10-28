@@ -8,6 +8,8 @@
 
 const { siteUrl } = require('./config');
 const { FieldValue } = require('./firestore');
+// Arriba (y no dentro de una función) para que Vercel incluya nodemailer en la función del webhook
+const nodemailer = require('nodemailer');
 
 // Texto seguro para meter dentro del HTML del correo (los nombres los escriben compradores y organizadores)
 function escapar(valor) {
@@ -86,7 +88,7 @@ async function enviarCorreo({ para, asunto, html, texto }, { transporte = null, 
   if (!transporte && (!usuario || !clave)) return { enviado: false, motivo: 'sin_configurar' };
   if (typeof para !== 'string' || !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(para.trim())) return { enviado: false, motivo: 'correo_invalido' };
   try {
-    const t = transporte || require('nodemailer').createTransport({
+    const t = transporte || nodemailer.createTransport({
       service: 'gmail', auth: { user: usuario, pass: clave },
       // Tiempos cortos: si Gmail tarda, se abandona el envío y el webhook le contesta igual a Mercado Pago
       connectionTimeout: 6000, greetingTimeout: 6000, socketTimeout: 8000,

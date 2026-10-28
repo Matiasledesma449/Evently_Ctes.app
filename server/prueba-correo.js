@@ -5,6 +5,8 @@
 
 const { ConfigError, siteUrl } = require('./config');
 const { correoDeConfirmacion, enviarCorreo } = require('./correos');
+// Arriba (y no dentro de una función) para que Vercel incluya firebase-admin/auth en la función
+const adminAuth = require('firebase-admin/auth');
 
 const error = (status, codigo, mensaje) => ({ status, cuerpo: { ok: false, error: { codigo, mensaje } } });
 
@@ -17,7 +19,7 @@ function tokenDe(headers) {
 function dependenciasReales() {
   const { obtenerDb } = require('./firestore');
   const db = obtenerDb(); // también inicia la app de firebase-admin
-  const { getAuth } = require('firebase-admin/auth');
+  const { getAuth } = adminAuth;
   return { db, auth: getAuth(), enviar: enviarCorreo };
 }
 
@@ -27,7 +29,8 @@ async function mandarCorreoDePrueba({ headers }, deps = null) {
     try {
       d = deps || dependenciasReales();
     } catch (e) {
-      console.error(e instanceof ConfigError ? e.message : 'No se pudo iniciar Firebase en correo-de-prueba');
+      // Se registra el tipo de error (nunca valores de las variables) para poder diagnosticarlo
+      console.error(e instanceof ConfigError ? e.message : 'No se pudo iniciar Firebase en correo-de-prueba', { codigo: e && (e.code || e.name), mensaje: e && String(e.message || '').slice(0, 160) });
       return error(500, 'CONFIGURACION', 'El servidor no tiene configurado Firebase (en la vista previa suele faltar).');
     }
     const token = tokenDe(headers);

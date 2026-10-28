@@ -45,6 +45,11 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
 - [x] 22. Términos y condiciones y política de privacidad adecuados a Evently (datos personales, consumidor, pagos).
 - [ ] 23. Comprador registrado y correos: registro antes de comprar, entrada en PDF por correo, aviso de otros eventos, recordatorio a una semana y el día del evento. Necesita un servicio de correo nuevo (decidir con la persona). Plan listo: `openspec/changes/comprador-registrado-y-correos/` (la persona eligió Gmail gratis, 500/día; migrar a un servicio pago más adelante).
 
+## Recuperado del PR #4 (notas que no entraron a main)
+
+- [ ] 8. Menú del panel (admin y superadmin): el logo de Evently es un botón que vuelve al inicio y se ve también con el menú achicado (solo íconos); el menú se puede achicar y agrandar; las secciones se ven en un tamaño que entre todo en la pantalla, pero se mantiene el scroll por si se agregan más.
+- [x] 9. Exportar a CSV (Excel), además del PDF, en Ventas y Reportes; el archivo dice de qué evento es. (Hecho con el pedido 17.)
+
 ## Pasos de la persona para el miércoles
 
 - "Agregar admin" en la vista previa dice "El servidor no está configurado para crear cuentas": la vista previa no tiene las
