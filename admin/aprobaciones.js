@@ -9,6 +9,7 @@
     import { crearImagenEvento } from "../shared/imagen-evento.js";
     import { eventosDeOrganizacion } from "../shared/organizaciones.js";
     import { armarComentario, comentariosDeSolicitud, ultimoComentario, enlacesDeContacto } from "../shared/solicitudes-evento.js";
+    import { resumenDeDias, detalleParaMostrar } from "../shared/evento-datos.js";
     import {
         collection, query, where, onSnapshot, doc, updateDoc, setDoc,
         serverTimestamp, getDoc, getDocs, deleteField, arrayUnion
@@ -218,6 +219,14 @@
         titulo.textContent = solicitud.nombre || 'Sin título';
         titulo.title = solicitud.nombre || '';
 
+        // De qué organización es (pedido de la persona: que se vea en la tarjeta, no solo en el título del grupo)
+        const lineaOrganizacion = document.createElement('p');
+        lineaOrganizacion.className = 'text-sm font-semibold text-violet-700 truncate mt-1 flex items-center gap-1';
+        const iconoOrg = document.createElement('span');
+        iconoOrg.className = 'material-symbols-outlined text-[16px]';
+        iconoOrg.textContent = 'corporate_fare';
+        lineaOrganizacion.append(iconoOrg, document.createTextNode(solicitud.nombreOrganizacion || 'Sin organización'));
+
         const detalle = document.createElement('p');
         detalle.className = 'text-sm text-gray-600 truncate mt-1';
         detalle.textContent = `${fechaCorta} · ${solicitud.lugar || 'Lugar sin definir'}`;
@@ -231,6 +240,22 @@
 
         const contacto = document.createElement('div');
         contacto.className = 'flex flex-wrap gap-2 mt-3';
+        // Ver todo el detalle (y desde ahí editar, publicar o rechazar)
+        const verDetalle = document.createElement('button');
+        verDetalle.type = 'button';
+        verDetalle.className = 'px-3 py-1.5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-50 text-xs font-semibold';
+        verDetalle.textContent = 'Ver detalle';
+        verDetalle.addEventListener('click', () => abrirDetalle(solicitud, cardElement));
+        contacto.appendChild(verDetalle);
+        if (pendiente) {
+            const editar = document.createElement('button');
+            editar.type = 'button';
+            editar.className = 'px-3 py-1.5 rounded-lg border border-violet-600 text-violet-700 hover:bg-violet-50 text-xs font-semibold';
+            editar.textContent = 'Editar';
+            editar.addEventListener('click', () => abrirModalEdicion(solicitud));
+            contacto.appendChild(editar);
+        }
+
         const comentar = document.createElement('button');
         comentar.type = 'button';
         comentar.className = 'px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold flex items-center gap-1';
@@ -273,10 +298,134 @@
             acciones.append(rechazar, publicar);
         }
 
-        body.append(titulo, detalle, comentarioVisible, contacto, acciones);
+        body.append(titulo, lineaOrganizacion, detalle, comentarioVisible, contacto, acciones);
         cardElement.append(imagenFrame, body);
 
         contenedor.appendChild(cardElement);
+    }
+
+    // ==========================================
+    // 3a. DETALLE COMPLETO DE UNA SOLICITUD (ver, contactar, editar, publicar o rechazar)
+    // ==========================================
+    function crearEl(tag, clase, texto) {
+        const e = document.createElement(tag);
+        if (clase) e.className = clase;
+        if (texto !== undefined) e.textContent = texto;
+        return e;
+    }
+
+    function abrirDetalle(solicitud, cardElement) {
+        const pendiente = (solicitud.estado || 'pendiente') === 'pendiente';
+        const cuenta = organizacionPorSolicitud.get(solicitud.id);
+        const fondo = crearEl('div', 'fixed inset-0 z-[90] bg-black/50 flex items-center justify-center p-4');
+        const caja = crearEl('div', 'bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto');
+        caja.setAttribute('role', 'dialog');
+        caja.setAttribute('aria-modal', 'true');
+        const cerrar = () => fondo.remove();
+        fondo.addEventListener('click', (e) => { if (e.target === fondo) cerrar(); });
+        fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+
+        const portada = crearEl('div', 'relative h-44 bg-violet-50');
+        portada.appendChild(crearImagenEvento(solicitud, document, { clases: 'h-44' }));
+        const x = crearEl('button', 'absolute top-3 right-3 bg-white/90 rounded-full w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-white');
+        x.type = 'button';
+        x.setAttribute('aria-label', 'Cerrar');
+        x.appendChild(crearEl('span', 'material-symbols-outlined', 'close'));
+        x.addEventListener('click', cerrar);
+        portada.appendChild(x);
+
+        const cuerpo = crearEl('div', 'p-6 space-y-5');
+        const cabeza = crearEl('div');
+        cabeza.append(crearEl('h2', 'text-2xl font-bold text-gray-900', solicitud.nombre || 'Sin título'),
+            crearEl('p', 'text-sm font-semibold text-violet-700 mt-1', `Organización: ${solicitud.nombreOrganizacion || nombresDeOrganizacion.get(solicitud.organizacionId) || 'Sin organización'}`));
+        cuerpo.appendChild(cabeza);
+
+        // Contacto directo con la organización
+        const contacto = crearEl('section', 'bg-violet-50 border border-violet-100 rounded-xl p-4');
+        contacto.appendChild(crearEl('h3', 'text-sm font-bold text-gray-800 mb-2', 'Contacto de la organización'));
+        const correo = solicitud.correo || cuenta?.email || '';
+        const telefono = cuenta?.telefono || '';
+        [['Cuenta', cuenta?.nombre || ''], ['Correo', correo], ['Teléfono', telefono ? String(telefono) : 'No cargado']].forEach(([k, v]) => {
+            if (!v) return;
+            const fila = crearEl('p', 'text-sm text-gray-700');
+            fila.append(crearEl('span', 'text-gray-500', `${k}: `), document.createTextNode(v));
+            contacto.appendChild(fila);
+        });
+        const enlaces = enlacesDeContacto({ correo, telefono, nombreEvento: solicitud.nombre });
+        const botonesContacto = crearEl('div', 'flex flex-wrap gap-2 mt-3');
+        [['mail', 'Escribir por correo', enlaces.correo], ['chat', 'WhatsApp', enlaces.whatsapp]].forEach(([icono, texto, href]) => {
+            if (!href) return;
+            const a = crearEl('a', 'inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-violet-200 text-violet-700 hover:bg-violet-100 text-sm font-semibold');
+            a.href = href;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.append(crearEl('span', 'material-symbols-outlined text-base', icono), document.createTextNode(texto));
+            botonesContacto.appendChild(a);
+        });
+        if (botonesContacto.children.length) contacto.appendChild(botonesContacto);
+        cuerpo.appendChild(contacto);
+
+        // Cuándo y dónde
+        const datos = crearEl('section', 'grid grid-cols-1 sm:grid-cols-2 gap-4');
+        const dias = resumenDeDias(solicitud);
+        const cuando = crearEl('div');
+        cuando.appendChild(crearEl('h3', 'text-xs font-semibold text-gray-500 uppercase', 'Cuándo'));
+        (dias.length ? dias : ['Sin fecha']).forEach((d) => cuando.appendChild(crearEl('p', 'text-sm text-gray-800', d)));
+        const donde = crearEl('div');
+        donde.append(crearEl('h3', 'text-xs font-semibold text-gray-500 uppercase', 'Dónde'), crearEl('p', 'text-sm text-gray-800', solicitud.lugar || 'Sin lugar'));
+        datos.append(cuando, donde);
+        cuerpo.appendChild(datos);
+
+        // Detalle de la actividad y descripción
+        const detalle = detalleParaMostrar(solicitud);
+        const filasDetalle = Array.isArray(detalle) ? detalle : Object.entries(detalle || {});
+        if (filasDetalle.length) {
+            const sec = crearEl('section');
+            sec.appendChild(crearEl('h3', 'text-xs font-semibold text-gray-500 uppercase mb-1', 'Sobre el evento'));
+            filasDetalle.forEach((f) => {
+                const [k, v] = Array.isArray(f) ? f : [f.titulo || f.etiqueta || '', f.texto || f.valor || ''];
+                if (!v) return;
+                const p = crearEl('p', 'text-sm text-gray-800 whitespace-pre-line');
+                p.append(crearEl('span', 'text-gray-500', k ? `${k}: ` : ''), document.createTextNode(v));
+                sec.appendChild(p);
+            });
+            cuerpo.appendChild(sec);
+        }
+
+        // Entradas
+        const lotes = Array.isArray(solicitud.lotes) ? solicitud.lotes : [];
+        const secLotes = crearEl('section');
+        secLotes.appendChild(crearEl('h3', 'text-xs font-semibold text-gray-500 uppercase mb-1', solicitud.ventaSimple ? 'Entrada' : 'Lotes'));
+        if (!lotes.length) secLotes.appendChild(crearEl('p', 'text-sm text-gray-400', 'Sin lotes cargados.'));
+        lotes.forEach((l) => {
+            const fila = crearEl('div', 'flex justify-between gap-3 text-sm border-b border-gray-100 py-1.5');
+            fila.append(crearEl('span', 'text-gray-800', `${l.nombre || 'Lote'}${l.vigencia ? ` · ${l.vigencia}` : ''}`),
+                crearEl('span', 'font-semibold text-gray-900 whitespace-nowrap', `$${Number(l.precio || 0).toLocaleString('es-AR')} · ${Number(l.disponibles || 0)} lugares`));
+            secLotes.appendChild(fila);
+        });
+        cuerpo.appendChild(secLotes);
+
+        // Acciones
+        const acciones = crearEl('div', 'flex flex-wrap justify-end gap-2 pt-2 border-t border-gray-100');
+        const boton = (texto, clase, alHacer) => {
+            const b = crearEl('button', `px-4 py-2 rounded-lg text-sm font-semibold ${clase}`, texto);
+            b.type = 'button';
+            b.addEventListener('click', () => { cerrar(); alHacer(); });
+            return b;
+        };
+        acciones.appendChild(boton('Comentar', 'border border-gray-300 text-gray-700 hover:bg-gray-50', () => abrirModalComentarios(solicitud.id)));
+        if (pendiente) {
+            acciones.append(
+                boton('Editar', 'border border-violet-600 text-violet-700 hover:bg-violet-50', () => abrirModalEdicion(solicitud)),
+                boton('Rechazar', 'bg-gray-100 hover:bg-gray-200 text-gray-700', () => abrirModal('rechazar', cardElement)),
+                boton('Publicar', 'bg-violet-600 hover:bg-violet-700 text-white', () => abrirModal('publicar', cardElement)));
+        }
+        cuerpo.appendChild(acciones);
+
+        caja.append(portada, cuerpo);
+        fondo.appendChild(caja);
+        document.body.appendChild(fondo);
+        x.focus();
     }
 
     function crearFilaLoteEdicion(lote = {}) {

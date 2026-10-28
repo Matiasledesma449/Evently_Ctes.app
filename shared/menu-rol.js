@@ -94,6 +94,7 @@ function initRoles() {
             const esAdmin = (window.rolEfectivo ? window.rolEfectivo(rol) : rol) === 'superadmin';
             aplicarRolVisual(rol);
             actualizarBadgeConsultasPublicas(esAdmin);
+            actualizarBadgeSolicitudesDeEventos(esAdmin);
 
             // Iniciar contadores de notificaciones
             escucharNoLeidos(user.uid, esAdmin);
@@ -147,6 +148,24 @@ function actualizarBadgeConsultasPublicas(esAdmin) {
         });
     }, error => {
         console.error('No se pudo cargar el contador de consultas públicas:', error);
+    });
+}
+
+// Solicitudes de eventos sin revisar (superadmin): número rojo en "Crear evento"
+function actualizarBadgeSolicitudesDeEventos(esAdmin) {
+    if (!esAdmin) return;
+    const badges = [...document.querySelectorAll('.badge-solicitudes-eventos')];
+    if (badges.length === 0) return;
+    onSnapshot(query(collection(db, 'solicitudes_eventos'), where('estado', '==', 'pendiente')), snapshot => {
+        const cantidad = snapshot.size;
+        badges.forEach(badge => {
+            badge.textContent = cantidad > 99 ? '99+' : String(cantidad);
+            badge.classList.toggle('hidden', cantidad === 0);
+            if (cantidad > 0) badge.classList.add('flex');
+            else badge.classList.remove('flex');
+        });
+    }, error => {
+        console.error('No se pudo cargar el contador de solicitudes de eventos:', error);
     });
 }
 

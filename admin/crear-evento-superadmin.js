@@ -4,6 +4,7 @@
 // Lo carga eventos.html solo en modo directo. Las categorías se guardan en configuracion/comisiones (no se borran).
 import { collection, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { validarCategoria, categoriasOrdenadas, nuevoIdDeCategoria, textoDePorcentaje } from "../shared/categorias-comision.js";
+import { confirmar } from "../shared/ui-utils.js";
 
 const DOC_COMISIONES = () => doc(db, 'configuracion', 'comisiones');
 
@@ -78,6 +79,10 @@ function crearCampoCategoria(valor, etiqueta, clases, extra = {}) {
 // Una fila por categoría, armada con textContent/value (el nombre lo escribe una persona)
 function dibujarCategorias() {
     listaCategorias.replaceChildren();
+    const resumen = document.getElementById('resumenCategorias');
+    if (resumen) resumen.textContent = categorias.length
+        ? `${categorias.length} ${categorias.length === 1 ? 'categoría' : 'categorías'}: ${categorias.map((c) => `${c.nombre} ${textoDePorcentaje(c.porcentaje)}`).join(' · ')}. Tocá para editar o eliminar.`
+        : 'Sin categorías: todos los eventos cobran 0%. Tocá para crear una.';
     if (categorias.length === 0) {
         const vacio = document.createElement('p');
         vacio.className = 'text-sm text-gray-400';
@@ -95,7 +100,12 @@ function dibujarCategorias() {
         guardar.textContent = 'Guardar';
         guardar.className = 'border border-violet-600 text-violet-700 hover:bg-violet-50 px-4 py-2 rounded-lg text-sm font-medium transition';
         guardar.addEventListener('click', () => guardarCategoria(cat.id, nombre.value, porcentaje.value, guardar));
-        fila.append(nombre, porcentaje, guardar);
+        const eliminar = document.createElement('button');
+        eliminar.type = 'button';
+        eliminar.textContent = 'Eliminar';
+        eliminar.className = 'border border-red-500 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition';
+        eliminar.addEventListener('click', () => eliminarCategoria(cat, eliminar));
+        fila.append(nombre, porcentaje, guardar, eliminar);
         listaCategorias.appendChild(fila);
     });
 }
@@ -115,6 +125,23 @@ async function guardarCategoria(id, nombre, porcentaje, boton) {
         console.error('No se pudo guardar la categoría:', error);
         avisoServicio('No se pudo guardar. Probá de nuevo.', true);
     } finally {
+        boton.disabled = false;
+    }
+}
+
+// Eliminar una categoría: los eventos que la usaban pasan a no cobrar costo de servicio (0%) en las compras nuevas.
+// El nombre de la categoría va escapado porque confirmar() arma su ventana con HTML.
+async function eliminarCategoria(cat, boton) {
+    const nombreSeguro = String(cat.nombre).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const ok = await confirmar(`Vas a eliminar la categoría "${nombreSeguro}". Los eventos que la usan van a dejar de cobrar costo de servicio (0%) en las compras nuevas, hasta que les elijas otra. Las compras ya hechas no cambian.`, { titulo: 'Eliminar categoría', textoOk: 'Eliminar' });
+    if (!ok) return;
+    boton.disabled = true;
+    try {
+        await escribirCategorias(categorias.filter((c) => c.id !== cat.id));
+        avisoServicio(`Categoría eliminada: ${cat.nombre}.`, false);
+    } catch (error) {
+        console.error('No se pudo eliminar la categoría:', error);
+        avisoServicio('No se pudo eliminar. Probá de nuevo.', true);
         boton.disabled = false;
     }
 }
