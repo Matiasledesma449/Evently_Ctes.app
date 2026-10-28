@@ -9,5 +9,8 @@
   "dependencies": {
     "firebase-admin": "^14.5.0",
     "nodemailer": "10.2.1"
+  },
+  "overrides": {
+    "jwks-rsa": "3.2.2"
   }
 }
