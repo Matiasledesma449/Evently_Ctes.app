@@ -37,6 +37,10 @@ function calcularCompra(evento, pedido, config = null, hoy = null) {
   if (!evento) {
     return error(404, 'EVENTO_NO_ENCONTRADO', 'No encontramos ese evento.');
   }
+  // Suspendido (no eliminado): es temporal, se avisa con un mensaje amable
+  if (evento.estado === 'publicado' && evento.activo === false && evento.eliminado !== true) {
+    return error(409, 'EVENTO_NO_DISPONIBLE', 'Este evento está en mantenimiento por unos ajustes. En un rato vas a poder seguir comprando. ¡Gracias por la paciencia!');
+  }
   if (evento.estado !== 'publicado' || evento.activo === false || evento.eliminado === true) {
     return error(409, 'EVENTO_NO_DISPONIBLE', 'Este evento no está disponible para la venta.');
   }

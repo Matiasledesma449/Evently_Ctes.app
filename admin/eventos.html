@@ -370,7 +370,11 @@
     <!-- Firebase y lógica -->
     <script type="module" src="../shared/firebase-init.js"></script>
     <script type="module">
-        import { addDoc, collection, serverTimestamp, doc, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { addDoc, collection, serverTimestamp, doc, getDoc, getDocs, query, where, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { pasarAUnica } from "../shared/forma-de-venta.js";
+        import { confirmar } from "../shared/ui-utils.js";
+        import { escaparHtml } from "../shared/ventas-utils.js";
         import { TIPOS_DE_EVENTO, normalizarDias, validarDias, fechaDeTexto, armarDetalle } from "../shared/evento-datos.js";
         import { activarLugarConMapa } from "../shared/lugar-mapa.js";
         import { validarFechasDeLote, textoDeVigencia, diaMes, hoyEnArgentina } from "../shared/lotes.js";
@@ -703,6 +707,8 @@
         // (el servidor confirma cada venta por la posición y el nombre del lote); sí cambiar precio, fechas y cantidad.
         const idAEditar = modoDirecto ? new URLSearchParams(window.location.search).get('editar') : null;
         let eventoEditado = null;
+        let resultadoUnica = null; // si el evento con varios lotes puede pasar a entrada única (pasarAUnica)
+        let modoAlCargar = null;   // forma de venta elegida (para volver atrás si no se confirma el cambio)
 
         function lotesDelFormulario() { return [...lotesContainer.querySelectorAll('.lote-item')]; }
 
@@ -751,18 +757,36 @@
             const lotes = Array.isArray(ev.lotes) ? ev.lotes : [];
             const unicaRadio = form.querySelector('input[name="modoVenta"][value="unica"]');
             const lotesRadio = form.querySelector('input[name="modoVenta"][value="lotes"]');
-            if (lotes.length === 1) {
-                // Un solo lote: puede ser la entrada única (conserva el nombre del lote)
+            if (lotes.length >= 1) {
+                // La entrada única usa el primer lote (conserva su nombre, su posición y lo vendido)
                 document.getElementById('unicaPrecio').value = lotes[0].precio || '';
                 document.getElementById('unicaCantidad').value = lotes[0].disponibles || '';
                 if (Number(lotes[0].vendidas) > 0) document.getElementById('unicaCantidad').min = String(Number(lotes[0].vendidas));
                 document.getElementById('unicaHasta').value = lotes[0].hasta || '';
-            } else if (lotes.length > 1) {
-                // Varios lotes: pasar a entrada única obligaría a borrar lotes que pueden tener ventas
+            }
+            if (lotes.length > 1) {
+                // Varios lotes: se puede pasar a entrada única solo si los lotes que se quitan no tienen ventas
+                // (ni confirmadas ni con el pago en curso). Mientras se revisa, la opción queda bloqueada.
                 unicaRadio.disabled = true;
                 const aviso = document.getElementById('avisoModoVenta');
-                aviso.textContent = `Este evento tiene ${lotes.length} lotes. Para pasar a entrada única tendría que quedar uno solo, y los lotes que ya existen no se pueden borrar porque pueden tener ventas.`;
+                aviso.textContent = 'Revisando si los lotes tienen ventas…';
                 aviso.classList.remove('hidden');
+                try {
+                    const snapVentas = await getDocs(query(collection(db, 'ventas'), where('eventoId', '==', id)));
+                    resultadoUnica = pasarAUnica(lotes, snapVentas.docs.map((d) => d.data()));
+                } catch (error) {
+                    console.error('No se pudieron revisar las ventas del evento:', error);
+                    resultadoUnica = { sePuede: false, quitados: [], conVentas: [], sinDatos: true };
+                }
+                const primero = lotes[0].nombre || 'Lote 1';
+                if (resultadoUnica.sePuede) {
+                    unicaRadio.disabled = false;
+                    aviso.textContent = `Si pasás a entrada única, queda "${primero}" (con lo vendido) y se quitan ${resultadoUnica.quitados.map((n) => `"${n}"`).join(', ')}, que no tienen ventas.`;
+                } else if (resultadoUnica.sinDatos) {
+                    aviso.textContent = 'No se pudieron revisar las ventas del evento: por seguridad no se puede pasar a entrada única ahora. Probá recargar la página.';
+                } else {
+                    aviso.textContent = `No se puede pasar a entrada única: ${resultadoUnica.conVentas.map((n) => `"${n}"`).join(', ')} ${resultadoUnica.conVentas.length === 1 ? 'tiene' : 'tienen'} ventas (o pagos en curso) y se perderían. Solo se puede si los lotes que se quitan no vendieron nada.`;
+                }
             }
             if (ev.ventaSimple === true && lotes[0]) unicaRadio.checked = true; else lotesRadio.checked = true;
             {
@@ -792,10 +816,72 @@
                 });
             }
             mostrarModoDeVenta();
+            modoAlCargar = modoDeVenta();
             // Organización y costo de servicio del evento
             (await superadmin).elegirDatosDelEvento({ organizacionId: ev.organizacionId, comisionCategoriaId: ev.comisionCategoriaId });
             const main = document.querySelector('main');
             if (main) main.scrollTo({ top: 0 });
+        }
+
+        // Al editar, cambiar la forma de venta pide confirmación (en los dos sentidos). Nada se guarda hasta "Guardar cambios".
+        form.querySelectorAll('input[name="modoVenta"]').forEach((radio) => radio.addEventListener('change', async () => {
+            if (!eventoEditado || !modoAlCargar || modoDeVenta() === modoAlCargar) return;
+            // confirmar() arma su ventana con HTML: el nombre del lote (lo escribe una organización) va escapado
+            const primero = escaparHtml((eventoEditado.lotes && eventoEditado.lotes[0] && eventoEditado.lotes[0].nombre) || 'el primer lote');
+            const aUnica = modoDeVenta() === 'unica';
+            const texto = aUnica
+                ? `Vas a pasar a entrada única: queda "${primero}" con lo que ya se vendió${resultadoUnica && resultadoUnica.quitados.length ? ' y se quitan los demás lotes (no tienen ventas)' : ''}. Los cambios se guardan recién cuando toques "Guardar cambios".`
+                : `Vas a pasar a venta con lotes: la entrada actual queda como primer lote ("${primero}"), con lo que ya se vendió, y podés agregar lotes nuevos. Los cambios se guardan recién cuando toques "Guardar cambios".`;
+            const ok = await confirmar(texto, { titulo: 'Cambiar la forma de venta', textoOk: 'Sí, cambiar' });
+            if (!ok) {
+                form.querySelector(`input[name="modoVenta"][value="${modoAlCargar}"]`).checked = true;
+                mostrarModoDeVenta();
+                return;
+            }
+            modoAlCargar = modoDeVenta();
+        }));
+
+        // Antes de guardar un evento editado se pide la misma contraseña del login (por si quedó la sesión abierta).
+        // Devuelve la contraseña o null si se cancela. Todo el texto es fijo; la contraseña nunca se guarda.
+        function pedirContrasena() {
+            return new Promise((resolve) => {
+                const fondo = document.createElement('div');
+                fondo.className = 'fixed inset-0 z-[100000] bg-black/60 flex items-center justify-center p-4';
+                fondo.innerHTML = `
+                    <form class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" role="dialog" aria-modal="true" aria-labelledby="tituloClave">
+                        <h2 id="tituloClave" class="text-lg font-bold text-gray-900">Confirmá que sos vos</h2>
+                        <p class="text-sm text-gray-500 mt-1">Para guardar los cambios del evento, escribí la contraseña con la que entrás al panel.</p>
+                        <label class="block text-xs font-medium text-gray-500 mt-4">Contraseña
+                            <input type="password" required autocomplete="current-password" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 outline-none">
+                        </label>
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button type="button" data-cancelar class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50">Cancelar</button>
+                            <button type="submit" class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium">Confirmar y guardar</button>
+                        </div>
+                    </form>`;
+                const caja = fondo.querySelector('form');
+                const campo = fondo.querySelector('input');
+                const cerrar = (valor) => { fondo.remove(); resolve(valor); };
+                fondo.querySelector('[data-cancelar]').addEventListener('click', () => cerrar(null));
+                caja.addEventListener('submit', (e) => { e.preventDefault(); cerrar(campo.value); });
+                fondo.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(null); });
+                document.body.appendChild(fondo);
+                campo.focus();
+            });
+        }
+
+        async function confirmarIdentidad() {
+            const usuario = auth.currentUser;
+            if (!usuario || !usuario.email) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.');
+            const clave = await pedirContrasena();
+            if (clave === null) return false;
+            try {
+                await reauthenticateWithCredential(usuario, EmailAuthProvider.credential(usuario.email, clave));
+                return true;
+            } catch (error) {
+                if (error && error.code === 'auth/too-many-requests') throw new Error('Demasiados intentos. Esperá unos minutos y probá de nuevo.');
+                throw new Error('La contraseña no es correcta. Los cambios no se guardaron.');
+            }
         }
 
         if (idAEditar) {
@@ -810,12 +896,22 @@
         // Guarda los cambios de un evento con una transacción: conserva las vendidas de cada lote (las cambia el
         // servidor al confirmar ventas) y no deja dejar menos lugares que los vendidos.
         async function guardarEventoEditado(evento) {
+            // Pasar a entrada única quitando lotes: se vuelven a revisar las ventas justo antes de guardar,
+            // por si alguien empezó a pagar en uno de esos lotes desde que se abrió la página
+            if (evento.ventaSimple === true && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length > 1) {
+                const snapVentas = await getDocs(query(collection(db, 'ventas'), where('eventoId', '==', eventoEditado.id)));
+                resultadoUnica = pasarAUnica(eventoEditado.lotes, snapVentas.docs.map((d) => d.data()));
+                if (!resultadoUnica.sePuede) throw new Error(`Mientras editabas, ${resultadoUnica.conVentas.map((n) => `"${n}"`).join(', ')} tuvo ventas: ya no se puede pasar a entrada única. Recargá la página.`);
+            }
             await runTransaction(db, async (tx) => {
                 const ref = doc(db, 'eventos', eventoEditado.id);
                 const snap = await tx.get(ref);
                 if (!snap.exists()) throw new Error('El evento ya no existe.');
                 const viejos = Array.isArray(snap.data().lotes) ? snap.data().lotes : [];
-                if (evento.lotes.length < viejos.length) throw new Error('No se puede quitar un lote que ya existe.');
+                // Pasar a entrada única puede quitar los lotes de atrás, solo si no tienen ventas (se revisó al cargar)
+                const aUnica = evento.ventaSimple === true && evento.lotes.length === 1 && resultadoUnica && resultadoUnica.sePuede;
+                if (aUnica && viejos.slice(1).some((l) => Number(l && l.vendidas) > 0)) throw new Error('Uno de los lotes que se quitan ya tiene ventas: no se puede pasar a entrada única.');
+                if (evento.lotes.length < viejos.length && !aUnica) throw new Error('No se puede quitar un lote que ya existe.');
                 const lotes = evento.lotes.map((l, i) => {
                     const previo = viejos[i];
                     if (!previo) return l; // lote nuevo, al final
@@ -895,7 +991,7 @@
                 if (ventaSimple) {
                     const hastaUnica = document.getElementById('unicaHasta').value;
                     // Al editar, el único lote conserva su nombre (las ventas se confirman por nombre y posición)
-                    const loteActual = eventoEditado && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length === 1 ? eventoEditado.lotes[0] : null;
+                    const loteActual = eventoEditado && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length >= 1 ? eventoEditado.lotes[0] : null;
                     lotes.push({
                         nombre: loteActual ? (loteActual.nombre || '') : 'Entrada general', precio: parseFloat(document.getElementById('unicaPrecio').value),
                         disponibles: parseInt(document.getElementById('unicaCantidad').value, 10), vendidas: 0,
@@ -936,6 +1032,11 @@
                 };
 
                 if (eventoEditado) {
+                    if (!(await confirmarIdentidad())) {
+                        btnEnviar.disabled = false;
+                        textoBotonEnviar.textContent = 'Guardar cambios';
+                        return;
+                    }
                     await guardarEventoEditado(evento);
                     mensajeResultado.className = 'mt-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200';
                     mensajeResultado.textContent = 'Cambios guardados. Volviendo a Eventos...';
@@ -973,7 +1074,7 @@
                 mensajeResultado.classList.remove('hidden');
                 
                 btnEnviar.disabled = false;
-                textoBotonEnviar.textContent = modoDirecto ? 'Publicar evento' : 'Enviar solicitud';
+                textoBotonEnviar.textContent = eventoEditado ? 'Guardar cambios' : (modoDirecto ? 'Publicar evento' : 'Enviar solicitud');
             }
         });
 
