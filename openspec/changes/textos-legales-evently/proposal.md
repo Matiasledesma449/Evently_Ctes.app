@@ -21,9 +21,17 @@ contar qué hace Evently para proteger y garantizar los datos de los usuarios, a
 - Se saca el cartel "Borrador"; queda la fecha de actualización. Siguen marcados en amarillo los datos de la empresa
   (razón social, CUIT, domicilio, correo, plazo de guarda, jurisdicción), que no se inventan.
 
-## Pendientes que el texto ya promete
+## Corrección tras la revisión
+
+Lo que todavía no existe (correos, que cada organizador vea solo sus ventas) se escribe en futuro ("vamos a"); no se
+afirma que el navegador no pueda modificar ventas (el validador lo hace); la devolución por cancelación sigue la decide el
+organizador (como antes); la supresión conserva solo lo que la ley obligue.
+
+## Pendientes
 
 - La regla de Firestore de `ventas` todavía deja leer ventas de otras organizaciones (pendiente de seguridad).
 - Los correos de confirmación, entradas y recordatorios dependen del pedido 23 (servicio de correo).
+- La condición "al menos 24 horas antes" del arrepentimiento (de antes, también en `arrepentimiento.html` y en las
+  preguntas frecuentes) no figura en la Ley 24.240 ni en la Res. 424/2020: revisarla con un abogado.
 - No se pudo confirmar en el Código Civil y Comercial si los eventos con fecha fija quedan fuera del arrepentimiento; el
   texto no lo afirma. Conviene que lo revise un abogado.
