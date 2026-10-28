@@ -212,6 +212,8 @@
                                 <span><span class="block font-semibold text-gray-800">Con lotes</span><span class="block text-xs text-gray-500">Preventas por fecha o sectores (Campo, Platea, VIP).</span></span>
                             </label>
                         </div>
+                        <!-- Al editar: por qué no se puede pasar a entrada única (lo escribe el JavaScript con textContent) -->
+                        <p id="avisoModoVenta" class="hidden mt-2 text-xs text-gray-500"></p>
                     </fieldset>
 
                     <!-- Entrada única -->
@@ -744,15 +746,26 @@
             document.getElementById('detalleRequisitos').value = detalle.requisitos || '';
             document.getElementById('detalleEdad').value = detalle.edad || '';
             document.getElementById('descripcion').value = ev.descripcion || '';
-            // Venta: entrada única o lotes (al editar no se cambia de una forma a la otra)
+            // Venta: entrada única o lotes. Se cargan las dos formas para poder cambiar de una a la otra sin perder lo
+            // vendido: los lotes que ya existen quedan con su nombre y posición (el servidor confirma las ventas así).
             const lotes = Array.isArray(ev.lotes) ? ev.lotes : [];
-            if (ev.ventaSimple === true && lotes[0]) {
-                form.querySelector('input[name="modoVenta"][value="unica"]').checked = true;
+            const unicaRadio = form.querySelector('input[name="modoVenta"][value="unica"]');
+            const lotesRadio = form.querySelector('input[name="modoVenta"][value="lotes"]');
+            if (lotes.length === 1) {
+                // Un solo lote: puede ser la entrada única (conserva el nombre del lote)
                 document.getElementById('unicaPrecio').value = lotes[0].precio || '';
                 document.getElementById('unicaCantidad').value = lotes[0].disponibles || '';
                 if (Number(lotes[0].vendidas) > 0) document.getElementById('unicaCantidad').min = String(Number(lotes[0].vendidas));
                 document.getElementById('unicaHasta').value = lotes[0].hasta || '';
-            } else {
+            } else if (lotes.length > 1) {
+                // Varios lotes: pasar a entrada única obligaría a borrar lotes que pueden tener ventas
+                unicaRadio.disabled = true;
+                const aviso = document.getElementById('avisoModoVenta');
+                aviso.textContent = `Este evento tiene ${lotes.length} lotes. Para pasar a entrada única tendría que quedar uno solo, y los lotes que ya existen no se pueden borrar porque pueden tener ventas.`;
+                aviso.classList.remove('hidden');
+            }
+            if (ev.ventaSimple === true && lotes[0]) unicaRadio.checked = true; else lotesRadio.checked = true;
+            {
                 lotesContainer.replaceChildren();
                 loteIndex = 0;
                 lotes.forEach((l) => {
@@ -769,14 +782,15 @@
                     if (vendidas > 0) item.querySelector('input[name="lote_disponibles[]"]').min = String(vendidas);
                     const tipo = item.querySelector('select[name="lote_tipo[]"]');
                     tipo.value = l.tipo === 'fechas' || (!l.tipo && (l.desde || l.hasta)) ? 'fechas' : 'siempre';
-                    item.querySelector('input[name="lote_desde[]"]').value = l.desde || '';
+                    // La entrada única con "Se vende hasta" no tiene "desde": se completa con hoy (o con su "hasta" si ya pasó)
+                    const hoy = hoyEnArgentina();
+                    item.querySelector('input[name="lote_desde[]"]').value = l.desde || (l.hasta ? (hoy <= l.hasta ? hoy : l.hasta) : '');
                     item.querySelector('input[name="lote_hasta[]"]').value = l.hasta || '';
                     item.querySelectorAll('[data-fecha-lote]').forEach((c) => c.classList.toggle('hidden', tipo.value === 'siempre'));
                     const quitar = item.querySelector('.remove-lote');
                     if (quitar) quitar.remove(); // no se borra un lote que ya existe
                 });
             }
-            form.querySelectorAll('input[name="modoVenta"]').forEach((r) => { r.disabled = true; });
             mostrarModoDeVenta();
             // Organización y costo de servicio del evento
             (await superadmin).elegirDatosDelEvento({ organizacionId: ev.organizacionId, comisionCategoriaId: ev.comisionCategoriaId });
@@ -880,8 +894,10 @@
 
                 if (ventaSimple) {
                     const hastaUnica = document.getElementById('unicaHasta').value;
+                    // Al editar, el único lote conserva su nombre (las ventas se confirman por nombre y posición)
+                    const loteActual = eventoEditado && Array.isArray(eventoEditado.lotes) && eventoEditado.lotes.length === 1 ? eventoEditado.lotes[0] : null;
                     lotes.push({
-                        nombre: 'Entrada general', precio: parseFloat(document.getElementById('unicaPrecio').value),
+                        nombre: loteActual ? (loteActual.nombre || '') : 'Entrada general', precio: parseFloat(document.getElementById('unicaPrecio').value),
                         disponibles: parseInt(document.getElementById('unicaCantidad').value, 10), vendidas: 0,
                         tipo: hastaUnica ? 'fechas' : 'siempre', desde: '', hasta: hastaUnica || '',
                         vigencia: hastaUnica ? `Hasta el ${diaMes(hastaUnica)}` : ''

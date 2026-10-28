@@ -23,7 +23,7 @@ Hacer en este orden, con plan de OpenSpec, antes que cualquier otra cosa.
   desplegable para cambiar de organización y, al lado, el selector de eventos SOLO de esa organización. Cambiar de
   organización cambia los eventos en todas las páginas. Bug a corregir: en Reportes, con "Zavod" (sin eventos) elegida,
   el filtro de eventos de Resumen muestra eventos de otras organizaciones.
-- [ ] 12. **Editar evento**: poder cambiar "¿Cómo se venden las entradas?" (entrada única ↔ con lotes) también al editar
+- [x] 12. **Editar evento**: poder cambiar "¿Cómo se venden las entradas?" (entrada única ↔ con lotes) también al editar
   (hoy queda bloqueado). Cuidado: las ventas se confirman por la posición y el nombre del lote (server/confirmacion.js);
   si el evento ya tiene ventas, no se puede cambiar la estructura sin romperlas: explicarlo y ofrecer solo lo seguro.
 - [ ] 13. **Suspender, reactivar y eliminar eventos** (superadmin): "Suspender" (deja de verse y de venderse, se puede
