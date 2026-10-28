@@ -1,7 +1,30 @@
 {
   "outputDirectory": ".",
   "redirects": [
-    { "source": "/", "destination": "/public/index.html", "permanent": false },
-    { "source": "/admin", "destination": "/admin/login.html", "permanent": false }
+    {
+      "source": "/",
+      "destination": "/public/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/public",
+      "destination": "/public/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/public/",
+      "destination": "/public/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/admin/",
+      "destination": "/admin/login.html",
+      "permanent": false
+    }
   ]
 }
