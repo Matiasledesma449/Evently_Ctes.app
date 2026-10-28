@@ -70,7 +70,6 @@
         import { onSnapshot, query, collection, where, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { nombreParaMostrar, claveDeFormaDePago } from "../shared/formas-de-pago.js";
         import { datosDelResumen, dibujarResumenVisual } from "../shared/resumen-visual.js";
-        import { lugarCorto } from "../shared/evento-datos.js";
         import { consultaDeVentas } from "../shared/consulta-ventas.js";
 
         const resumenVisual = document.getElementById('resumenVisual');
@@ -104,7 +103,7 @@
                 }
                 eventoActual = { id: docSnap.id, ...docSnap.data() };
                 tituloDashboard.textContent = `Resumen - ${eventoActual.nombre || 'Sin nombre'}`;
-                subtituloEvento.textContent = [eventoActual.fecha, lugarCorto(eventoActual.lugar)].filter(Boolean).join(' - ');
+                subtituloEvento.textContent = ''; // solo el nombre del evento, sin fecha ni lugar (pedido de la persona)
                 refrescar();
             }, (error) => {
                 console.error("Error al escuchar evento:", error);

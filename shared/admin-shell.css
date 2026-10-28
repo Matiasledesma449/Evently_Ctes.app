@@ -201,8 +201,8 @@ body.franja-organizacion main #selectorEvento > select {
     body.franja-organizacion #franjaOrganizacion { left: 256px; }
     body.franja-organizacion.sidebar-colapsado #franjaOrganizacion { left: 76px; }
     body.menu-listo #franjaOrganizacion { transition: left 0.25s ease; }
-    /* El botón para achicar el menú asoma sobre la barra: va por encima para que se vea y se pueda tocar entero */
-    body.franja-organizacion #btnToggleSidebar { z-index: 75; }
+    /* El botón para achicar el menú baja por debajo de la barra: así no queda partido entre el menú y la barra */
+    body.franja-organizacion #btnToggleSidebar { top: 52px; }
     body.franja-organizacion > .flex.min-h-screen,
     body.franja-organizacion > .flex.h-screen {
         margin-top: 0;
