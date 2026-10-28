@@ -231,8 +231,8 @@ const $ = (n) => '$' + n.toLocaleString();
     verificar('D5 resumen: el metodo mas usado sale solo de las confirmadas (no cuenta "Efectivo" de la vieja ni los sin metodo)', !/Efectivo|Desconocido/.test(todo));
     const vacias = U.tarjetasDeResumen(U.cifrasDelEvento([evento], []));
     verificar('D6 resumen: sin ventas no se rompe y muestra $0', (vacias.find((x) => x.titulo === 'Total recaudado') || {}).valor === '$0');
-    verificar('D7 resumen: la pagina usa las funciones compartidas y ya no calcula ni usa los contadores "vendidas" de los lotes',
-      /cifrasDelEvento/.test(sinComentarios) && /tarjetasDeResumen/.test(sinComentarios) && !/\.vendidas|actualizarKPIs/.test(sinComentarios));
+    verificar('D7 resumen: la pagina usa los gráficos compartidos (shared/resumen-visual.js) y ya no calcula ni usa los contadores "vendidas" de los lotes',
+      /datosDelResumen/.test(sinComentarios) && /dibujarResumenVisual/.test(sinComentarios) && !/\.vendidas|actualizarKPIs/.test(sinComentarios));
     verificar('D8 resumen: no hay un texto "Cargando datos..." que se reemplace de golpe, y no redirige cuando falta el evento', !/Cargando datos/.test(sinComentarios) && !/window\.location\.href\s*=\s*'eventos-seleccion\.html'/.test(sinComentarios));
   }
 
@@ -264,8 +264,7 @@ const $ = (n) => '$' + n.toLocaleString();
     const kpi = { innerHTML: '' };
     const evento = { id: 'E', lotes: [{ nombre: 'General', disponibles: 100 }, { nombre: 'VIP', disponibles: 50 }] };
     const ctx2 = { ventas: VENTAS, eventos: [evento], loteFilter: { value: 'todos' }, metodoFilter: { value: 'todos' }, kpiContainer: kpi,
-      // el panel de porcentajes (pedido 17) tiene su propia prueba (40): acá no se dibuja
-      dibujarPanelPorcentajes: () => {}, porcentajesDelEvento: () => null, pesos: String, EN_TODOS: false, document: { getElementById: () => null }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar, claveDeFormaDePago })') };
+      pesos: String, EN_TODOS: false, document: { getElementById: () => null }, ...vm.runInNewContext(codigoUtils + '\n;({ resumenDeVentas, soloConfirmadas, cifrasDelEvento, tarjetasDeResumen, htmlDeTarjetasResumen, escaparHtml, nombreParaMostrar, claveDeFormaDePago })') };
     vm.createContext(ctx2);
     vm.runInContext(['cifrasActuales', 'dibujarTarjetas', 'renderResumen'].map((n) => extraerFuncion(html, n)).join('\n') + ';this.renderResumen = renderResumen;', ctx2);
     ctx2.renderResumen(U.soloConfirmadas(VENTAS));
@@ -311,7 +310,7 @@ const $ = (n) => '$' + n.toLocaleString();
 
   // ====================== 5. Reglas compartidas (el Panel global ya no existe) ======================
   {
-    verificar('G4 las tres pantallas importan las reglas compartidas', ['dashboard', 'reportes', 'ventas'].every((n) => /shared\/ventas-utils\.js/.test(leer('admin', n + '.html'))));
+    verificar('G4 las tres pantallas importan las reglas compartidas', ['reportes', 'ventas'].every((n) => /shared\/ventas-utils\.js/.test(leer('admin', n + '.html'))) && /shared\/resumen-visual\.js/.test(leer('admin', 'dashboard.html')));
   }
 
   console.log(mal === 0 ? '\nTodos los casos dieron lo esperado.' : '\nFALLARON ' + mal + ' casos.');

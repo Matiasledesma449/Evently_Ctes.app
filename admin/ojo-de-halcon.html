@@ -67,17 +67,6 @@
                     </button>
                 </section>
 
-                <section class="bg-white rounded-xl border border-gray-200 p-5 flex flex-col lg:col-span-2" aria-labelledby="tituloCorreo">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-violet-600">mail</span>
-                        <h2 id="tituloCorreo" class="text-lg font-bold text-gray-800">Ver el correo que recibe el comprador</h2>
-                    </div>
-                    <p class="text-sm text-gray-500 mt-1">Te manda a tu correo el mismo mensaje de confirmación que recibe quien compra, con datos de ejemplo. Sirve para comprobar que el envío de correos funciona.</p>
-                    <button id="ojoCorreoPrueba" type="button" class="mt-4 self-start inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <span class="material-symbols-outlined text-base">send</span> Mandarme un correo de prueba
-                    </button>
-                    <p id="ojoCorreoAviso" class="text-sm mt-3 min-h-[1.25rem]" aria-live="polite"></p>
-                </section>
             </div>
         </main>
     </div>
@@ -141,31 +130,6 @@
             window.location.href = 'eventos-seleccion.html';
         });
 
-        // Correo de prueba (pedido 23): lo manda el servidor al correo del superadmin conectado
-        const botonCorreo = document.getElementById('ojoCorreoPrueba');
-        const avisoCorreo = document.getElementById('ojoCorreoAviso');
-        botonCorreo.addEventListener('click', async () => {
-            botonCorreo.disabled = true;
-            avisoCorreo.className = 'text-sm mt-3 min-h-[1.25rem] text-gray-500';
-            avisoCorreo.textContent = 'Mandando…';
-            try {
-                const token = await auth.currentUser.getIdToken();
-                const respuesta = await fetch('/api/correo-de-prueba', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-                const datos = await respuesta.json().catch(() => ({}));
-                if (respuesta.ok && datos.ok) {
-                    avisoCorreo.className = 'text-sm mt-3 min-h-[1.25rem] text-green-700';
-                    avisoCorreo.textContent = `Listo: revisá ${datos.correo} (si no está, mirá en Spam o Promociones).`;
-                } else {
-                    avisoCorreo.className = 'text-sm mt-3 min-h-[1.25rem] text-red-600';
-                    avisoCorreo.textContent = (datos.error && datos.error.mensaje) || 'No se pudo mandar el correo de prueba.';
-                }
-            } catch (error) {
-                avisoCorreo.className = 'text-sm mt-3 min-h-[1.25rem] text-red-600';
-                avisoCorreo.textContent = 'No se pudo conectar con el servidor. Probá de nuevo.';
-            } finally {
-                botonCorreo.disabled = false;
-            }
-        });
 
         // Solo el superadmin real (en "Ver como organización" el menú ya lleva esta página a Eventos)
         onAuthStateChanged(auth, async (user) => {
