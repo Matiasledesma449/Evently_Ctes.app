@@ -132,9 +132,12 @@
 
     const aside = `
         <aside class="sidebar-principal hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0 flex-shrink-0">
-            <div class="p-6">
-                <span class="text-2xl font-bold text-violet-600">Evently</span>
-                <span class="block text-xs text-gray-500">Administración</span>
+            <div class="p-6 logo-menu">
+                <a href="eventos-seleccion.html" title="Ir al inicio" aria-label="Evently, ir al inicio">
+                    <span class="logo-menu-largo"><span class="text-2xl font-bold text-violet-600">Evently</span>
+                    <span class="block text-xs text-gray-500">Administración</span></span>
+                    <span class="logo-menu-corto text-2xl font-bold text-violet-600">E</span>
+                </a>
             </div>
             <nav class="admin-role-nav${claseInvisible} flex-1 overflow-y-auto px-4 py-3 space-y-1" aria-label="Navegación principal">
                 ${SECCIONES.map(enlaceEscritorio).join('\n                ')}
