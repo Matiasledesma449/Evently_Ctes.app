@@ -67,8 +67,28 @@ body.sidebar-colapsado aside.sidebar-principal {
     width: 76px !important;
 }
 
-body.sidebar-colapsado aside.sidebar-principal > div:first-child {
-    display: none !important;
+/* Menú achicado: el logo queda como una "E" que también vuelve al inicio */
+.logo-menu-corto {
+    display: none;
+}
+
+body.sidebar-colapsado aside.sidebar-principal .logo-menu {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    padding: 0 !important;
+    text-align: center;
+    z-index: 1;
+}
+
+body.sidebar-colapsado aside.sidebar-principal .logo-menu-largo {
+    display: none;
+}
+
+body.sidebar-colapsado aside.sidebar-principal .logo-menu-corto {
+    display: inline-block;
+    line-height: 36px;
 }
 
 /* Menú achicado: la flecha de achicar queda arriba (sin tocar ningún botón) y cada botón
