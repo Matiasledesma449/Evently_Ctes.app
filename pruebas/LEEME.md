@@ -29,6 +29,7 @@ Muestra una línea por archivo (`PASO` o `FALLO`) y, si algo falla, las líneas 
 | `13-panel-de-ventas.js` | Panel de administración: reglas compartidas, pantalla de Ventas, y cifras de Dashboard, Reportes y Panel Global |
 | `12-validacion-del-pedido.js` | Validación del pedido de compra: correos con código o símbolos raros, nombres, cantidad |
 | `11-pantalla-de-confirmacion.js` | `public/confirmacion.html`: estados, QR, consulta cada 3 segundos, guardar el enlace |
+| `31-limpiar-datos.js` | `herramientas/limpiar-datos.js` con una base falsa: vista previa, frase equivocada y confirmación |
 
 ## Cómo funcionan por dentro
 

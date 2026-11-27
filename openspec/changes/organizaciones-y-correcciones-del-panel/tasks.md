@@ -46,9 +46,9 @@ Convención: "se comprueba" dice cómo verificarlo. Los cálculos se prueban con
 
 Esta sección **no se hizo**: borra datos guardados y es una decisión de la persona (pregunta 2 del PR). Se hace cuando conteste.
 
-- [ ] 7.1 Crear `herramientas/limpiar-datos.js`: vista previa por defecto, `--borrar` más frase de confirmación, `--solo <colección>`, conserva `usuarios`, `configuracion` y `organizaciones`, informa lo borrado, sin leer ni imprimir la clave. Se comprueba leyendo el archivo; **Claude no la ejecuta**.
-- [ ] 7.2 Crear `herramientas/LEEME.md` con los pasos para que la persona la corra (dónde guardar su archivo de credenciales, qué comando, qué verá). Se comprueba leyendo el archivo: no contiene rutas personales ni nombres de archivos de claves.
-- [ ] 7.3 Una prueba con una base falsa (`pruebas/_ayuda-db-falsa.js`) que compruebe la vista previa (no borra), la frase equivocada (no borra) y la confirmación correcta (borra solo las tres colecciones). Se comprueba con `node`.
+- [x] 7.1 Crear `herramientas/limpiar-datos.js`: vista previa por defecto, `--borrar` más frase de confirmación, `--solo <colección>`, conserva `usuarios`, `configuracion` y `organizaciones`, informa lo borrado, sin leer ni imprimir la clave. Se comprueba leyendo el archivo; **Claude no la ejecuta**.
+- [x] 7.2 Crear `herramientas/LEEME.md` con los pasos para que la persona la corra (dónde guardar su archivo de credenciales, qué comando, qué verá). Se comprueba leyendo el archivo: no contiene rutas personales ni nombres de archivos de claves.
+- [x] 7.3 Una prueba con una base falsa (`pruebas/_ayuda-db-falsa.js`) que compruebe la vista previa (no borra), la frase equivocada (no borra) y la confirmación correcta (borra solo las tres colecciones). Se comprueba con `node`.
 
 ## 8. Revisión final
 
